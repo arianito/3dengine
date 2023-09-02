@@ -4,18 +4,126 @@
 #include <stdio.h>
 #include <assert.h>
 
-unsigned char calculate_padding(size_t address, unsigned char space, unsigned char alignment)
+inline int calculate_padding(size_t address, int alignment)
 {
-    unsigned char padding = 0;
-    unsigned char modulo = address & (alignment - 1);
-    
-    if (modulo != 0)
-        padding = alignment - modulo;
+    int modulo = address & (alignment - 1);
 
-    if (space > 0 && space > padding)
-        padding += alignment * ((space / alignment) + ((space & (alignment - 1)) > 0 ? 1 : 0));
+    if (modulo == 0)
+        return 0;
 
-    return padding;
+    return alignment - modulo;
+}
+
+inline int calculate_space(int min_required_space, int alignment)
+{
+    int padding = alignment * (min_required_space / alignment);
+    int modulo = min_required_space & (alignment - 1);
+
+    if (modulo == 0)
+        return padding;
+
+    return padding + alignment;
+}
+
+inline int calculate_alignment(size_t address, int min_required_space, int alignment)
+{
+    int padding = calculate_padding(address, alignment);
+    if (padding >= min_required_space)
+        return padding;
+    return padding + calculate_space(min_required_space, alignment);
+}
+
+ArenaMemory *arenap(void *m, size_t size, error_t *err)
+{
+    size_t address = (size_t)m;
+
+    int space = calculate_space(sizeof(ArenaMemory), sizeof(size_t));
+    int padding = calculate_padding(address, sizeof(size_t));
+    ArenaMemory *instance = (ArenaMemory *)(address + padding);
+    instance->size = size;
+    instance->offset = padding + space;
+    instance->padding = padding;
+
+    if (err != NULL)
+        *err = READY;
+
+    return instance;
+}
+
+ArenaMemory *arena(size_t size, error_t *err)
+{
+    void *m = malloc(size);
+    if (m == NULL)
+    {
+        if (err != NULL)
+            *err = INSUFFICIENT_MEMORY;
+        return NULL;
+    }
+    return arenap(m, size, err);
+}
+
+void arena_destroy(ArenaMemory **arena, error_t *err)
+{
+    if (*arena == NULL)
+    {
+        if (err != NULL)
+            *err = INVALID_INPUT;
+        return;
+    }
+    size_t original_pointer = (size_t)(*arena) - (*arena)->padding;
+    free((void *)(original_pointer));
+
+    (*arena) = NULL;
+    if (err != NULL)
+        *err = READY;
+}
+
+void *arena_ptr(ArenaMemory *arena, error_t *err)
+{
+    if (arena == NULL)
+    {
+        if (err != NULL)
+            *err = INVALID_INPUT;
+        return NULL;
+    }
+    size_t original_pointer = (size_t)arena - arena->padding;
+    return (void *)(original_pointer);
+}
+
+void *arena_allocate(ArenaMemory *arena, size_t size, int alignment, error_t *err)
+{
+    if (arena == NULL)
+    {
+        if (err != NULL)
+            *err = INVALID_INPUT;
+        return NULL;
+    }
+
+    if ((alignment & (alignment - 1)) != 0)
+    {
+        if (err != NULL)
+            *err = INVALID_ALIGNMENT;
+        return NULL;
+    }
+
+    size_t address = ((size_t)arena - arena->padding) + arena->offset;
+    int padding = calculate_padding(address, alignment);
+
+    if (arena->offset + size + padding > arena->size)
+    {
+        if (err != NULL)
+            *err = ALLOCATION_FAILED;
+        return NULL;
+    }
+    address += padding;
+    arena->offset += size + padding;
+    return (void *)(address);
+}
+
+void arena_reset(ArenaMemory *arena)
+{
+    int space = calculate_space(sizeof(ArenaMemory), sizeof(size_t));
+    arena->offset = arena->padding + space;
 }
 
 // stack memory allocator
@@ -23,135 +131,165 @@ unsigned char calculate_padding(size_t address, unsigned char space, unsigned ch
 typedef struct
 {
     void *next;
-    unsigned char padding;
-} StackNode;
+    size_t padding;
+} stacknode_t;
 
-typedef struct
+StackMemory *stackp(void *m, size_t size, error_t *err)
 {
-    void *head;
-    size_t size;
-    size_t seek;
-    size_t peak;
-    unsigned char alignment_padding;
-} StackHeader;
+    size_t address = (size_t)m;
+    int space = calculate_space(sizeof(StackMemory), sizeof(size_t));
+    int padding = calculate_padding(address, sizeof(size_t));
+    StackMemory *instance = (StackMemory *)(address + padding);
+    instance->head = NULL;
+    instance->size = size;
+    instance->offset = padding + space;
+    instance->peak = instance->offset;
+    instance->padding = padding;
 
-void *mstack_create(size_t size, unsigned char alignment)
+    if (err != NULL)
+        *err = READY;
+
+    return instance;
+}
+StackMemory *stack(size_t size, error_t *err)
 {
-    assert((alignment & (alignment - 1)) == 0 && "invalid alignment");
 
-    void *mem = malloc(size);
-    assert(mem != NULL && "insufficient memory");
-    size_t address = (size_t)mem;
-    unsigned char header_size = sizeof(StackHeader);
-    unsigned char padding = calculate_padding(address, header_size, alignment);
-    unsigned char alignment_padding = padding - header_size;
-
-    StackHeader *header = (StackHeader *)(address + alignment_padding);
-    header->head = NULL;
-    header->size = size;
-    header->seek = padding;
-    header->peak = header->seek;
-    header->alignment_padding = alignment_padding;
-
-    return (void *)header;
+    void *m = malloc(size);
+    if (m == NULL)
+    {
+        if (err != NULL)
+            *err = INSUFFICIENT_MEMORY;
+        return NULL;
+    }
+    return stackp(m, size, err);
 }
 
-void mstack_destroy(void *mem)
+void stack_destroy(StackMemory **stack, error_t *err)
 {
-    unsigned char header_size = sizeof(StackHeader);
-    StackHeader *header = (StackHeader *)(mem);
-    void *p = (void *)((size_t)header - header->alignment_padding);
-    free(p);
-    mem = NULL;
+    if (*stack == NULL)
+    {
+        if (err != NULL)
+            *err = INVALID_INPUT;
+        return;
+    }
+    size_t original_pointer = (size_t)(*stack) - (*stack)->padding;
+    free((void *)(original_pointer));
+
+    (*stack) = NULL;
+
+    if (err != NULL)
+        *err = READY;
 }
 
-char mstack_check(void *mem, size_t size, unsigned char alignment)
+void *stack_ptr(StackMemory **stack, error_t *err)
 {
+    if (*stack == NULL)
+    {
+        if (err != NULL)
+            *err = INVALID_INPUT;
+        return NULL;
+    }
+    size_t original_pointer = (size_t)(*stack) - (*stack)->padding;
+    return ((void *)(original_pointer));
+}
+
+void *stack_allocate(StackMemory *stack, size_t size, int alignment, error_t *err)
+{
+    if (stack == NULL)
+    {
+        if (err != NULL)
+            *err = INVALID_INPUT;
+        return NULL;
+    }
+
     if ((alignment & (alignment - 1)) != 0)
-        return 0;
+    {
+        if (err != NULL)
+            *err = INVALID_ALIGNMENT;
+        return NULL;
+    }
 
-    unsigned char node_size = sizeof(StackNode);
-    StackHeader *header = (StackHeader *)(mem);
-    size_t address = (size_t)mem - header->alignment_padding + header->seek;
-    unsigned char padding = calculate_padding(address, node_size, alignment);
+    size_t address = ((size_t)stack - stack->padding) + stack->offset;
+    int padding = calculate_alignment(address, sizeof(stacknode_t), alignment);
+    int space = calculate_space(sizeof(stacknode_t), sizeof(size_t));
 
-    if (header->seek + padding + size > header->size)
-        return 0;
-
-    return 1;
-}
-
-void *mstack_alloc(void *mem, size_t size, unsigned char alignment)
-{
-    assert((alignment & (alignment - 1)) == 0 && "invalid alignment");
-
-    unsigned char node_size = sizeof(StackNode);
-    StackHeader *header = (StackHeader *)(mem);
-    size_t address = (size_t)mem - header->alignment_padding + header->seek;
-    unsigned char padding = calculate_padding(address, node_size, alignment);
-
-    assert(header->seek + padding + size <= header->size && "not enough memory");
+    if (stack->offset + padding + size > stack->size)
+    {
+        if (err != NULL)
+            *err = ALLOCATION_FAILED;
+        return NULL;
+    }
 
     address += padding;
-    header->seek += padding + size;
+    stack->offset += padding + size;
 
-    if (header->seek > header->peak)
-        header->peak = header->seek;
+    if (stack->offset > stack->peak)
+        stack->peak = stack->offset;
 
-    StackNode *node = (StackNode *)(address - node_size);
-    node->next = header->head;
+    stacknode_t *node = (stacknode_t *)(address - space);
+    node->next = stack->head;
     node->padding = padding;
-    header->head = node;
+
+    stack->head = node;
+
+    if (err != NULL)
+        *err = READY;
 
     return (void *)address;
 }
 
-void mstack_free(void *mem, void *p)
+void stack_free(StackMemory *stack, void **p, error_t *err)
 {
-    assert(p != NULL && "already freed");
 
-    unsigned char node_size = sizeof(StackNode);
-    StackHeader *header = (StackHeader *)(mem);
-    StackNode *node = (StackNode *)((size_t)p - node_size);
+    if (stack == NULL || p == NULL || (*p) == NULL)
+    {
+        if (err != NULL)
+            *err = INVALID_INPUT;
+        return;
+    }
 
-    assert(node == header->head && "invalid ptr");
+    size_t start = (size_t)stack - stack->padding;
+    size_t address = (size_t)(*p);
+    size_t end = start + stack->size;
 
-    header->seek = ((size_t)p - node->padding) - ((size_t)header - header->alignment_padding);
-    header->head = ((StackNode *)header->head)->next;
-    p = NULL;
+    if (!(address >= start || address < end))
+    {
+        if (err != NULL)
+            *err = OUT_OF_BOUNDARY;
+        return;
+    }
+
+    if (address >= start + stack->offset)
+        return;
+
+    int space = calculate_space(sizeof(stacknode_t), sizeof(size_t));
+    stacknode_t *node = (stacknode_t *)(address - space);
+
+    if (node != stack->head)
+    {
+        if (err != NULL)
+            *err = OUT_OF_BOUNDARY;
+        return;
+    }
+
+    stack->offset = (address - start) - node->padding;
+    stack->head = ((stacknode_t *)stack->head)->next;
+
+    (*p) = NULL;
+
+    if (err != NULL)
+        *err = READY;
 }
 
-void *mstack_resize(void *mem, size_t new_size)
+void stack_reset(StackMemory *stack)
 {
-    unsigned char header_size = sizeof(StackHeader);
-    StackHeader *header = (StackHeader *)(mem);
-    unsigned char alignment_padding = header->alignment_padding;
-
-    assert(new_size != header->size && "new size must differ");
-
-    assert(new_size > header->seek && "new_size must be larger than current allocation space");
-
-    void *p = (void *)((size_t)header - header->alignment_padding);
-
-    void *new_mem = realloc(p, new_size);
-
-    assert(new_mem != NULL && "insufficient memory");
-
-    header = (StackHeader *)((size_t)new_mem + alignment_padding);
-
-    header->size = new_size;
-    header->peak = header->seek;
-
-    return header;
+    int space = calculate_space(sizeof(ArenaMemory), sizeof(size_t));
+    stack->offset = stack->padding + space;
+    stack->peak = stack->offset;
+    stack->head = NULL;
 }
 
-void mstack_usage(void *mem)
-{
-    StackHeader *header = (StackHeader *)(mem);
-    printf("space:%zu/%zu, peak:%zu\n", header->seek, header->size, header->peak);
-}
-
-// pool memory allocator
+/*
 
 typedef struct
 {
@@ -233,7 +371,7 @@ void *mpool_create(size_t size, size_t chunk_size, unsigned char alignment)
         if (cursor > size)
             break;
 
-        mpool_enqueue(header, (PoolNode*)(chunk_address + alignment_padding));
+        mpool_enqueue(header, (PoolNode *)(chunk_address + alignment_padding));
         header->free++;
     }
 
@@ -393,3 +531,5 @@ void mpool_usage(void *mem)
     }
     printf("free pools:%zu, size:%zu\n", header->free, header->size);
 }
+
+*/

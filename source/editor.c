@@ -6,6 +6,7 @@
 #include "debug.h"
 #include "input.h"
 #include "mathf.h"
+#include "mem.h"
 
 static char buff[128];
 
@@ -30,9 +31,6 @@ void editor_init()
 {
     center = vec3_zero;
     distance = vec3_dist(camera->position, center);
-
-    printf("%.2f, %.2f, %.2f\n", camera->position.x, camera->position.y, camera->position.z);
-    printf("%.2f\n", distance);
 }
 
 void save_state()
