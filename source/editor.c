@@ -93,11 +93,6 @@ void editor_update()
     float panningSensitivity = 0.25f;
     float zoomingSensitivity = 0.25f;
 
-    float x = input_axis(AXIS_HORIZONTAL);
-    float y = input_axis(AXIS_VERTICAL);
-
-    draw_cube(vec3(y * 100, x * 100, 0), color_white, vec3(20, 20, 4));
-
     if (editor->mode == ORBITING)
     {
         float d = clamp(500.0f / editor->distance, 0.05f, 0.5f);

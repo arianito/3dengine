@@ -6,6 +6,7 @@ set(name app)
 
 add_subdirectory(third-parties/glfw)
 include_directories(include)
+include_directories(src)
 include_directories(third-parties/glfw/include)
 include_directories(third-parties/glad/include)
 include_directories(third-parties/stb/include)
@@ -24,11 +25,13 @@ add_executable(
     source/input.c
     source/debug.c
     source/file.c
+    source/mesh.c
 
     source/mem.c
     source/sort.c
     source/benchmark.c
 
+    src/level1.c
     src/main.c
 )
 target_link_libraries(app glfw)

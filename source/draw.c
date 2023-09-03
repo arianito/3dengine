@@ -43,7 +43,7 @@ void draw_init()
     drawData->types[1] = GL_LINES;
     drawData->types[2] = GL_TRIANGLES;
 
-    drawData->shader = shader_load("draw.vs", "draw.fs");
+    drawData->shader = shader_load("shaders/draw.vs", "shaders/draw.fs");
     glGenVertexArrays(types_n, drawData->vaoIds);
     glGenBuffers(types_n, drawData->vboIds);
 

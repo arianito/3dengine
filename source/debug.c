@@ -24,7 +24,7 @@ static int num_quads = 0;
 
 void debug_init()
 {
-    shader = shader_load("debug.vs", "debug.fs");
+    shader = shader_load("shaders/debug.vs", "shaders/debug.fs");
     glGenVertexArrays(1, m_vaoIds);
     glGenBuffers(1, m_vboIds);
 

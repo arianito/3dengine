@@ -7,7 +7,7 @@
 
 #define MIN_MEMORY 1024
 
-void footprint_create(MemoryDef def)
+void alloc_create(MemoryDef def)
 {
     void *ptr;
     MemoryErrorEnum err = READY;
@@ -63,7 +63,7 @@ void footprint_create(MemoryDef def)
     handler_memory_error(err);
 }
 
-void footprint_terminate()
+void alloc_terminate()
 {
     MemoryErrorEnum err = READY;
 

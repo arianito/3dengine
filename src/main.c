@@ -1,4 +1,6 @@
 
+#include "stdio.h"
+
 #include "game.h"
 #include "draw.h"
 #include "alloc.h"
@@ -10,11 +12,11 @@
 #include "input.h"
 #include "file.h"
 
-#include "stdio.h"
+#include "level1.h"
 
 int main(int argc, const char *argv[])
 {
-    footprint_create((MemoryDef){
+    alloc_create((MemoryDef){
         .global = 1024 * KILOBYTES,
         .stack = 512 * KILOBYTES,
         .pool64 = 512 * KILOBYTES,
@@ -25,13 +27,15 @@ int main(int argc, const char *argv[])
     file_init("../../assets/");
 
     game_init();
+    input_init();
     camera_init();
     draw_init();
     grid_init();
     debug_init();
     editor_init();
-    input_init();
 
+    Level* level = level1_new();
+    level->load();
 
     alloc_debug();
     while (game_loop())
@@ -40,23 +44,18 @@ int main(int argc, const char *argv[])
         input_update();
         editor_update();
 
-
-
-
-
         draw_render();
         grid_render();
         debug_render();
-        
     }
 
-    input_terminate();
     editor_terminate();
-    camera_terminate();
+    debug_terminate();
     grid_terminate();
     draw_terminate();
+    camera_terminate();
+    input_terminate();
     game_terminate();
-    debug_terminate();
 
-    footprint_terminate();
+    alloc_terminate();
 }

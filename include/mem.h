@@ -65,12 +65,3 @@ PoolMemory *pool(size_t size, size_t chunkSize, MemoryErrorEnum *err);
 void pool_destroy(PoolMemory **instance, MemoryErrorEnum *err);
 void *pool_allocate(PoolMemory *instance, MemoryErrorEnum *err);
 void pool_free(PoolMemory *instance, void **p, MemoryErrorEnum *err);
-
-// void *mpool_create(size_t size, size_t chunk_size, unsigned char alignment);
-// void mpool_destroy(void *mem);
-// char mpool_check(void *mem);
-// void *mpool_alloc(void *mem);
-// void mpool_free(void *mem, void *p);
-// size_t mpool_space(void *mem);
-// void *mpool_resize(void *mem, size_t size);
-// void mpool_usage(void *mem);

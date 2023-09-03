@@ -36,7 +36,7 @@ void grid_init()
     gridData = (GridData *)alloc_global(sizeof(GridData));
     clear(gridData, sizeof(GridData));
 
-    gridData->shader = shader_load("grid.vs", "grid.fs");
+    gridData->shader = shader_load("shaders/grid.vs", "shaders/grid.fs");
     glGenVertexArrays(2, gridData->vaoIds);
     glGenBuffers(2, gridData->vboIds);
 

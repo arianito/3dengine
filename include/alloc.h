@@ -25,8 +25,8 @@ typedef struct
     size_t pool256;
 } MemoryDef;
 
-void footprint_create(MemoryDef def);
-void footprint_terminate();
+void alloc_create(MemoryDef def);
+void alloc_terminate();
 
 inline void alloc_debug()
 {
