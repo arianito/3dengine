@@ -1,49 +1,79 @@
+
 #include "input.h"
-#include "malloc.h"
+
+#include <GLFW/glfw3.h>
+
+#include "alloc.h"
 #include "game.h"
 
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-#include <glad/glad.h>
+#define AXIS_SPEED 8
 
-#define AXIS_SPEED 2
+typedef struct
+{
+    float value;
+    float velocity;
+} InputAxis;
 
-int keyboard_state[350];
-int last_keyboard_state[350];
+typedef struct
+{
+    int current;
+    int prev;
+} InputState;
 
-int mouse_state[3];
-int last_mouse_state[8];
-float axises[2];
+typedef struct
+{
+    InputState keyState[__KEY_COUNT];
+    InputState mouseState[__MOUSE_COUNT];
+    InputAxis axes[__AXIS_COUNT];
+} InputData;
+
+static InputData *globalInput;
 
 void update_axis(int ax, char low, char high)
 {
     float to = 0.0f + (low ? -1.0f : 0.0f) + (high ? 1.0f : 0.0f);
-    axises[ax] = lerp01(axises[ax], to, AXIS_SPEED * game->delta_time);
+    InputAxis *axis = &(globalInput->axes[ax]);
+    axis->value = moveTowards(axis->value, to, AXIS_SPEED * time->deltaTime);
 }
 
 void input_init()
 {
-    input = (Input *)malloc(sizeof(Input));
+    globalInput = (InputData *)alloc_global(sizeof(InputData));
+    clear(globalInput, sizeof(InputData));
+
+    input = (Input *)alloc_global(sizeof(Input));
     input->position = vec2_zero;
     input->delta = vec2_zero;
 }
 
 void input_update()
 {
-    for (int i = 0; i < 350; i++)
-        last_keyboard_state[i] = keyboard_state[i];
-    for (int i = 0; i < 3; i++)
-        last_mouse_state[i] = mouse_state[i];
+    for (int i = 0; i < __KEY_COUNT; i++)
+    {
+        InputState *state = &(globalInput->keyState[i]);
+        state->prev = state->current;
+    }
+    for (int i = 0; i < __MOUSE_COUNT; i++)
+    {
+        InputState *state = &(globalInput->mouseState[i]);
+        state->prev = state->current;
+    }
 
     double x, y;
     glfwGetCursorPos(game->window, &x, &y);
+
     input->delta.x = (float)x - input->position.x;
     input->delta.y = (float)y - input->position.y;
     input->position.x = (float)x;
     input->position.y = (float)y;
 
-    update_axis(input_AXIS_HORIZONTAL, input_keypress(input_LEFT) || input_keypress(input_A), input_keypress(input_RIGHT) || input_keypress(input_D));
-    update_axis(input_AXIS_VERTICAL, input_keypress(input_DOWN) || input_keypress(input_S), input_keypress(input_UP) || input_keypress(input_W));
+    update_axis(AXIS_HORIZONTAL,
+                input_keypress(KEY_LEFT) || input_keypress(KEY_A),
+                input_keypress(KEY_RIGHT) || input_keypress(KEY_D));
+
+    update_axis(AXIS_VERTICAL,
+                input_keypress(KEY_DOWN) || input_keypress(KEY_S),
+                input_keypress(KEY_UP) || input_keypress(KEY_W));
 }
 
 void input_infinite()
@@ -84,46 +114,52 @@ void input_infinite()
 
 void input_terminate()
 {
-    free(input);
 }
 
-char input_keypress(short key)
+int input_keypress(KeyEnum key)
 {
-    keyboard_state[key] = glfwGetKey(game->window, key);
-    return keyboard_state[key];
+    InputState *state = &globalInput->keyState[key];
+    state->current = glfwGetKey(game->window, key);
+    return state->current;
 }
 
-char input_keyup(short key)
+int input_keyup(KeyEnum key)
 {
-    keyboard_state[key] = glfwGetKey(game->window, key);
-    return !keyboard_state[key] && last_keyboard_state[key];
+    InputState *state = &globalInput->keyState[key];
+    state->current = glfwGetKey(game->window, key);
+    return (!(state->current) && state->prev);
 }
 
-char input_keydown(short key)
+int input_keydown(KeyEnum key)
 {
-    keyboard_state[key] = glfwGetKey(game->window, key);
-    return keyboard_state[key] && !last_keyboard_state[key];
+    InputState *state = &globalInput->keyState[key];
+    state->current = glfwGetKey(game->window, key);
+    return state->current && !state->prev;
 }
 
-char input_mousepress(short key)
+int input_mousepress(MouseEnum key)
 {
-    mouse_state[key] = glfwGetMouseButton(game->window, key);
-    return mouse_state[key];
+    InputState *state = &globalInput->mouseState[key];
+    state->current = glfwGetMouseButton(game->window, key);
+    return state->current;
 }
 
-char input_mouseup(short key)
+int input_mouseup(MouseEnum key)
 {
-    mouse_state[key] = glfwGetMouseButton(game->window, key);
-    return !mouse_state[key] && last_mouse_state[key];
+    InputState *state = &globalInput->mouseState[key];
+    state->current = glfwGetMouseButton(game->window, key);
+    return !state->current && state->prev;
 }
 
-char input_mousedown(short key)
+int input_mousedown(MouseEnum key)
 {
-    mouse_state[key] = glfwGetMouseButton(game->window, key);
-    return mouse_state[key] && !last_mouse_state[key];
+    InputState *state = &globalInput->mouseState[key];
+    state->current = glfwGetMouseButton(game->window, key);
+    return state->current && !state->prev;
 }
 
-float input_axis(int axis)
+float input_axis(AxisEnum a)
 {
-    return axises[axis];
+    InputAxis *state = &(globalInput->axes[a]);
+    return state->value;
 }

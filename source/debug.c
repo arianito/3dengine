@@ -4,7 +4,6 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
-#include "malloc.h"
 #include "game.h"
 #include "shader.h"
 #include "mathf.h"
@@ -19,13 +18,9 @@ static Shader *shader;
 static GLuint m_vaoIds[1];
 static GLuint m_vboIds[1];
 
-static Character buffer[1000];
+static Character buffer[2048];
 static int num_quads = 0;
 
-typedef struct
-{
-    Character buff[255];
-} Message;
 
 void debug_init()
 {

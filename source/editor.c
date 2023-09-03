@@ -6,120 +6,132 @@
 #include "debug.h"
 #include "input.h"
 #include "mathf.h"
-#include "mem.h"
+#include "alloc.h"
 
-static char buff[128];
-
-static Vec3 last_position;
-static Rot last_rotation;
-static Vec2 last_mousepos;
-static Vec2 mousepos;
-static Vec3 center;
-static float distance = 100;
-static float last_distance = 0;
-
-enum busy_mode
+typedef enum
 {
-    not_busy = 0,
-    busy_orbiting = 1,
-    busy_panning = 2,
-    busy_zooming = 4,
-};
-static char busy = 0;
+    NOT_BUSY = 0,
+    ORBITING = 1,
+    PANNING = 2,
+    ZOOMING = 4,
+} StatusEnum;
+
+typedef struct
+{
+    Vec3 last_position;
+    Rot last_rotation;
+    Vec2 last_mousepos;
+    Vec2 mousepos;
+    Vec3 center;
+    StatusEnum mode;
+    float distance;
+    float last_distance;
+} EditorData;
+
+static EditorData *editor;
 
 void editor_init()
 {
-    center = vec3_zero;
-    distance = vec3_dist(camera->position, center);
+    editor = (EditorData *)alloc_global(sizeof(EditorData));
+    clear(editor, sizeof(EditorData));
+
+    editor->center = vec3_zero;
+    editor->distance = vec3_dist(camera->position, editor->center);
 }
 
 void save_state()
 {
-    Vec3 forward = vec3_mulf(rot_forward(camera->rotation), distance);
-    center = vec3_add(camera->position, forward);
-    mousepos = vec2_zero;
-    last_mousepos = vec2_zero;
-    last_distance = distance;
-    last_position = camera->position;
-    last_rotation = camera->rotation;
+    Vec3 forward = vec3_mulf(rot_forward(camera->rotation), editor->distance);
+    editor->center = vec3_add(camera->position, forward);
+    editor->mousepos = vec2_zero;
+    editor->last_mousepos = vec2_zero;
+    editor->last_distance = editor->distance;
+    editor->last_position = camera->position;
+    editor->last_rotation = camera->rotation;
 }
 
 inline void handle_input()
 {
-    if (!busy && input_keypress(input_LEFT_ALT) && input_mousedown(input_MOUSE_RIGHT))
+    if (!editor->mode && input_keypress(KEY_LEFT_ALT) && input_mousedown(MOUSE_RIGHT))
     {
         save_state();
-        busy = busy_zooming;
+        editor->mode = ZOOMING;
     }
-    if (!busy && input_keypress(input_LEFT_ALT) && input_mousedown(input_MOUSE_LEFT))
+    if (!editor->mode && input_keypress(KEY_LEFT_ALT) && input_mousedown(MOUSE_LEFT))
     {
         save_state();
-        busy = busy_orbiting;
+        editor->mode = ORBITING;
     }
-    if (!busy && input_mousedown(input_MOUSE_RIGHT))
+    if (!editor->mode && input_mousedown(MOUSE_RIGHT))
     {
         save_state();
-        busy = busy_panning;
+        editor->mode = PANNING;
     }
-    if (busy && (input_mouseup(input_MOUSE_RIGHT) || input_mouseup(input_MOUSE_LEFT)))
-        busy = not_busy;
+    if (editor->mode && (input_mouseup(MOUSE_RIGHT) || input_mouseup(MOUSE_LEFT)))
+        editor->mode = NOT_BUSY;
 
-    if (input_keydown(input_F))
+    if (input_keydown(KEY_F))
     {
-        Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -distance);
-        center = vec3_zero;
-        camera->position = vec3_add(backward, center);
+        Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
+        editor->center = vec3_zero;
+        camera->position = vec3_add(backward, editor->center);
     }
 
-    if (busy)
+    if (editor->mode)
     {
-        mousepos.x += input->delta.x;
-        mousepos.y += input->delta.y;
+        editor->mousepos.x += input->delta.x;
+        editor->mousepos.y += input->delta.y;
     }
 }
+
 void editor_update()
 {
-    draw_axis(vec3_zero, quat_identity, 10);
-
     handle_input();
+    draw_axis(vec3_zero, quat_identity, 10);
 
     Vec2 orbiting_sensitivity = {0.25f, 0.25f};
     float panning_sensitivity = 0.25f;
-    float zooming_sensitivity = 0.5f;
+    float zooming_sensitivity = 0.25f;
 
-    draw_cube(vec3_zero, color_yellow, 40);
+    float x = input_axis(AXIS_HORIZONTAL);
+    float y = input_axis(AXIS_VERTICAL);
+    
+    draw_cube(vec3(y * 100, x * 100, 0), color_red, vec3(20, 20, 4));
 
-    if (busy == busy_orbiting)
+    if (editor->mode == ORBITING)
     {
-        float dy = (mousepos.y - last_mousepos.y) * orbiting_sensitivity.y;
-        float dx = (mousepos.x - last_mousepos.x) * orbiting_sensitivity.x;
+        float d = clamp(500.0f / editor->distance, 0.05f, 0.5f);
+        float dy = (editor->mousepos.y - editor->last_mousepos.y) * orbiting_sensitivity.y * d;
+        float dx = (editor->mousepos.x - editor->last_mousepos.x) * orbiting_sensitivity.x * d;
 
-        camera->rotation.pitch = last_rotation.pitch - dy;
-        camera->rotation.yaw = last_rotation.yaw + dx;
+        camera->rotation.pitch = editor->last_rotation.pitch - dy;
+        camera->rotation.yaw = editor->last_rotation.yaw + dx;
 
-        Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -distance);
-        camera->position = vec3_add(backward, center);
+        Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
+        camera->position = vec3_add(backward, editor->center);
         camera_update();
         input_infinite();
     }
-    else if (busy == busy_panning)
+    else if (editor->mode == PANNING)
     {
-        float dx = (mousepos.x - last_mousepos.x) * panning_sensitivity * -1.0f;
-        float dy = (mousepos.y - last_mousepos.y) * panning_sensitivity;
+        float d = clamp(editor->distance / 500.0f, 0.001f, 0.75f);
+        float dx = (editor->mousepos.x - editor->last_mousepos.x) * panning_sensitivity * d * -1.0f;
+        float dy = (editor->mousepos.y - editor->last_mousepos.y) * panning_sensitivity * d;
 
         Vec3 right = vec3_mulf(rot_right(camera->rotation), dx);
         Vec3 up = vec3_mulf(rot_up(camera->rotation), dy);
 
-        camera->position = vec3_add(last_position, vec3_add(up, right));
+        camera->position = vec3_add(editor->last_position, vec3_add(up, right));
 
         input_infinite();
     }
-    else if (busy == busy_zooming)
+    else if (editor->mode == ZOOMING)
     {
-        float y = mousepos.y * zooming_sensitivity;
-        distance = fmaxf(last_distance + y, EPSILON);
-        Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -distance);
-        camera->position = vec3_add(backward, center);
+        float d = clamp(1000.0f / editor->distance, 0.001f, 0.5f);
+        float y = (editor->mousepos.y * zooming_sensitivity) * d;
+        editor->distance = fmaxf(editor->last_distance + y, 0.5f);
+        Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
+        camera->position = vec3_add(backward, editor->center);
         input_infinite();
     }
 

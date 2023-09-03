@@ -1,7 +1,7 @@
 
 #include "game.h"
 #include "draw.h"
-#include "footprint.h"
+#include "alloc.h"
 #include "mathf.h"
 #include "grid.h"
 #include "camera.h"
@@ -14,8 +14,12 @@
 
 int main(int argc, const char *argv[])
 {
-    footprint_create(&(MemoryDef){
-        .total_memory = 512 * 1024 * 1024,
+    footprint_create((MemoryDef){
+        .global = 1024 * KILOBYTES,
+        .stack = 512 * KILOBYTES,
+        .pool64 = 512 * KILOBYTES,
+        .pool128 = 512 * KILOBYTES,
+        .pool256 = 512 * KILOBYTES,
     });
 
     file_init("../../assets/");
@@ -28,6 +32,8 @@ int main(int argc, const char *argv[])
     editor_init();
     input_init();
 
+
+    alloc_debug();
     while (game_loop())
     {
 
@@ -45,5 +51,6 @@ int main(int argc, const char *argv[])
     draw_terminate();
     game_terminate();
     debug_terminate();
+
     footprint_terminate();
 }

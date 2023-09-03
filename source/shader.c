@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
-#include "malloc.h"
+#include "alloc.h"
 #include "stdio.h"
 #include "file.h"
 #include "assert.h"
@@ -50,7 +50,7 @@ Shader *shader_create(const char *vs, const char *fs)
     glDeleteShader(vsp);
     glDeleteShader(fsp);
 
-    Shader *shader = (Shader *)malloc(sizeof(Shader));
+    Shader *shader = (Shader *)alloc_global(sizeof(Shader));
     shader->programId = programId;
     return shader;
 }
@@ -59,16 +59,15 @@ Shader *shader_load(const char *vs, const char *fs)
 {
     File *vsf = file_read(vs);
     File *fsf = file_read(fs);
-    
+
     Shader *sh = shader_create(vsf->text, fsf->text);
 
-    file_destroy(vsf);
     file_destroy(fsf);
+    file_destroy(vsf);
     return sh;
 }
 
 void shader_destroy(Shader *p)
 {
     glDeleteProgram(p->programId);
-    free(p);
 }

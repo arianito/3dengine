@@ -21,4 +21,5 @@ void draw_circleXY(Vec3 a, Color c, float r, int s);
 void draw_circleXZ(Vec3 a, Color c, float r, int s);
 void draw_circleYZ(Vec3 a, Color c, float r, int s);
 void draw_sphere(Vec3 a, Color c, float r, int s);
-void draw_cube(Vec3 a, Color c, float s);
+void draw_cubef(Vec3 a, Color c, float s);
+void draw_cube(Vec3 a, Color c, Vec3 s);

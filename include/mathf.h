@@ -110,10 +110,10 @@ typedef struct
 
 typedef enum
 {
-    AXIS_X,
-    AXIS_Y,
-    AXIS_Z,
-} Axis;
+    UNIT_AXIS_X,
+    UNIT_AXIS_Y,
+    UNIT_AXIS_Z,
+} UnitAxisEnum;
 
 static const float RAD2DEG = 57.295779513082321f;
 static const float DEG2RAD = 0.017453292519943f;
@@ -268,6 +268,54 @@ inline char finite(float a)
 inline float snap(float a, float size)
 {
     return floorf((a + size / 2.0f) / size) * size;
+}
+
+inline float moveTowards(float current, float target, float maxDelta)
+{
+    if (fabsf(target - current) <= maxDelta)
+        return target;
+    return current + sign(target - current) * maxDelta;
+}
+
+inline float moveTowardsAngle(float current, float target, float maxDelta)
+{
+    float da = deltaAngle(current, target);
+    if (-maxDelta < da && da < maxDelta)
+        return target;
+    return moveTowards(current, current + da, maxDelta);
+}
+
+inline float smoothStep(float from, float to, float t)
+{
+    float t0 = clamp01(t);
+    t0 = -2.0F * t0 * t0 * t0 + 3.0F * t0 * t0;
+    return to * t0 + from * (1.0F - t0);
+}
+
+inline float smoothDamp(float current, float target, float *currentVelocity, float smoothTime,
+                        float maxSpeed, float deltaTime)
+{
+    float smoothTime0 = fmaxf(0.0001F, smoothTime);
+    float omega = 2.0F / smoothTime0;
+    float x = omega * deltaTime;
+    float exp = 1.0F / (1.0F + x + 0.48F * x * x + 0.235F * x * x * x);
+    float change = current - target;
+    float originalTo = target;
+
+    float maxChange = maxSpeed * smoothTime0;
+    change = clamp(change, -maxChange, maxChange);
+    float target0 = current - change;
+    float temp = (*currentVelocity + omega * change) * deltaTime;
+    *currentVelocity = (*currentVelocity - omega * temp) * exp;
+    float output = target0 + (change + temp) * exp;
+
+    if (originalTo - current > 0.0F == output > originalTo)
+    {
+        output = originalTo;
+        *currentVelocity = (output - originalTo) / deltaTime;
+    }
+
+    return output;
 }
 
 // color
@@ -1590,24 +1638,24 @@ inline Mat4 mat4_origin(Vec3 a)
     return m;
 }
 
-inline Vec3 mat4_axis(const Mat4 *a, Axis ax)
+inline Vec3 mat4_axis(const Mat4 *a, UnitAxisEnum ax)
 {
     Vec3 b;
     switch (ax)
     {
-    case AXIS_X:
+    case UNIT_AXIS_X:
         b.x = a->m[0][0];
         b.y = a->m[0][1];
         b.z = a->m[0][2];
         return b;
 
-    case AXIS_Y:
+    case UNIT_AXIS_Y:
         b.x = a->m[1][0];
         b.y = a->m[1][1];
         b.z = a->m[1][2];
         return b;
 
-    case AXIS_Z:
+    case UNIT_AXIS_Z:
         b.x = a->m[2][0];
         b.y = a->m[2][1];
         b.z = a->m[2][2];
@@ -1715,13 +1763,13 @@ inline Mat4 mat4_lookat(Vec3 eye, Vec3 center, Vec3 up)
 inline Vec3 rot_right(Rot a)
 {
     Mat4 m = rot_matrix(a, vec3_zero);
-    return mat4_axis(&m, AXIS_Y);
+    return mat4_axis(&m, UNIT_AXIS_Y);
 }
 
 inline Vec3 rot_up(Rot a)
 {
     Mat4 m = rot_matrix(a, vec3_zero);
-    return mat4_axis(&m, AXIS_Z);
+    return mat4_axis(&m, UNIT_AXIS_Z);
 }
 
 inline Vec3 rot_rotate(Rot r, Vec3 b)
@@ -1792,7 +1840,7 @@ inline Rot mat4_rot(Mat4 m)
         0);
 
     Mat4 m2 = rot_matrix(r, vec3_zero);
-    Vec3 say = mat4_axis(&m2, AXIS_Y);
+    Vec3 say = mat4_axis(&m2, UNIT_AXIS_Y);
     r.roll = atan2d(vec3_dot(az, say), vec3_dot(ay, say));
     return r;
 }

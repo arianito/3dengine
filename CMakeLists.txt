@@ -16,7 +16,7 @@ add_executable(
     third-parties/glad/src/glad.c
     
     source/draw.c
-    source/footprint.c
+    source/alloc.c
     source/game.c
     source/grid.c
     source/shader.c

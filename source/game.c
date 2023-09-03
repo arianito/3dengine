@@ -1,6 +1,6 @@
 #include "game.h"
 
-#include "malloc.h"
+#include "alloc.h"
 #include "stdio.h"
 #include "mathf.h"
 
@@ -26,18 +26,20 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 
 void game_init()
 {
-    game = (Game *)malloc(sizeof(Game));
-    game->delta_time = 1 / 60.0f;
+    time = (Time *)alloc_global(sizeof(Time));
+    time->deltaTime = 1 / 60.0f;
+    time->time = 0;
+
+    game = (Game *)alloc_global(sizeof(Game));
     game->fps = 60;
     game->width = 800;
     game->height = 600;
-    game->time = 0;
     game->ratio = game->width / game->height;
 
     if (!glfwInit())
         return;
 
-    glfwWindowHint(GLFW_SAMPLES, 2);
+    glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -70,10 +72,10 @@ void game_init()
 
 inline void calculate_fps()
 {
-    game->delta_time = (float)glfwGetTime() - game->time;
-    game->time = (float)glfwGetTime();
+    time->deltaTime = (float)glfwGetTime() - time->time;
+    time->time = (float)glfwGetTime();
     frames++;
-    float f = (int)(floorf(game->time));
+    float f = (int)(floorf(time->time));
     if (f != last_check)
     {
         game->fps = frames;
@@ -88,14 +90,11 @@ char game_loop()
     glfwPollEvents();
     calculate_fps();
 
-    glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
+    glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-
     glDepthFunc(GL_LESS);
-
     glEnable(GL_BLEND);
-
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBlendEquation(GL_ADD);
 
@@ -107,6 +106,5 @@ char game_loop()
 
 void game_terminate()
 {
-    free(game);
     glfwTerminate();
 }

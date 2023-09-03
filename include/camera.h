@@ -1,7 +1,6 @@
 #pragma once
 
-#include "mathf.h"
-#include "malloc.h"
+#include "alloc.h"
 #include "mathf.h"
 #include "game.h"
 
@@ -21,16 +20,15 @@ Camera *camera;
 inline void camera_update()
 {
     camera->view = mat4_view(camera->position, camera->rotation);
-    camera->projection = mat4_perspective(camera->fov, game->ratio, 0.1f, 1000.0f);
+    camera->projection = mat4_perspective(camera->fov, game->ratio, 0.1f, 5000.0f);
     camera->viewProjection = mat4_mul(camera->view, camera->projection);
 }
 
 inline void camera_init()
 {
+    camera = (Camera *)alloc_global(sizeof(Camera));
 
-    camera = (Camera *)malloc(sizeof(Camera));
-
-    camera->rotation = rot(-20, 20, 0);
+    camera->rotation = rot(-35, 45, 0);
     Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -200);
     camera->position = vec3_add(backward, vec3_zero);
     camera->fov = 70;
@@ -40,7 +38,6 @@ inline void camera_init()
 
 inline void camera_terminate()
 {
-    free(camera);
 }
 
 inline char camera_worldToScreen(Vec3 p, Vec2 *out_screen)

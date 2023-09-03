@@ -6,12 +6,17 @@ typedef struct
     float width;
     float height;
     float ratio;
-    float time;
-    float delta_time;
     int fps;
 } Game;
 
+typedef struct
+{
+    float time;
+    float deltaTime;
+} Time;
+
 Game *game;
+Time *time;
 
 void game_init();
 char game_loop();

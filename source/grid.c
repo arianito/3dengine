@@ -16,7 +16,7 @@ static Shader *shader;
 enum
 {
     size = 10 * UNIT_SCALE,
-    d = 5,
+    d = 10,
     n = size / UNIT_SCALE,
     ne = (8 * n + 4),
 };

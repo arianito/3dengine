@@ -13,8 +13,6 @@
 #define BUFFER_OFFSET(x) ((const void *)(x))
 #define VERTEX_SIZE 4
 
-static Shader *shader;
-
 enum
 {
     types_n = 3,
@@ -23,26 +21,37 @@ enum
     triangles_count = 3 * vertices_count,
 };
 
-static GLuint m_vaoIds[types_n];
-static GLuint m_vboIds[types_n];
+typedef struct
+{
+    Vertex vertices[types_n][vertices_count];
+    Shader *shader;
+    int types[types_n];
+    int sizes[types_n];
+    int counter[types_n];
+    GLuint m_vaoIds[types_n];
+    GLuint m_vboIds[types_n];
+} DrawData;
 
-static int types[types_n] = {GL_POINTS, GL_LINES, GL_TRIANGLES};
-static int sizes[types_n] = {vertices_count, edges_count, triangles_count};
-static int counter[types_n];
-
-static Vertex vertices[types_n][vertices_count];
+static DrawData *drawData;
 
 void draw_init()
 {
-    shader = shader_load("draw.vs", "draw.fs");
-    glGenVertexArrays(types_n, m_vaoIds);
-    glGenBuffers(types_n, m_vboIds);
+    drawData = (DrawData *)alloc_global(sizeof(DrawData));
+    clear(drawData, sizeof(DrawData));
+
+    drawData->types[0] = GL_POINTS;
+    drawData->types[1] = GL_LINES;
+    drawData->types[2] = GL_TRIANGLES;
+
+    drawData->shader = shader_load("draw.vs", "draw.fs");
+    glGenVertexArrays(types_n, drawData->m_vaoIds);
+    glGenBuffers(types_n, drawData->m_vboIds);
 
     for (int i = 0; i < types_n; i++)
     {
-        glBindVertexArray(m_vaoIds[i]);
-        glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[i]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[i]), vertices[i], GL_DYNAMIC_DRAW);
+        glBindVertexArray(drawData->m_vaoIds[i]);
+        glBindBuffer(GL_ARRAY_BUFFER, drawData->m_vboIds[i]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(drawData->vertices[i]), drawData->vertices[i], GL_DYNAMIC_DRAW);
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
@@ -51,7 +60,7 @@ void draw_init()
         glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), BUFFER_OFFSET(16));
         glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), BUFFER_OFFSET(32));
 
-        counter[i] = 0;
+        drawData->counter[i] = 0;
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -59,25 +68,24 @@ void draw_init()
 
 void draw_render()
 {
-    shader_begin(shader);
-    shader_mat4(shader, "projection", &camera->projection);
-    shader_mat4(shader, "view", &camera->view);
+    shader_begin(drawData->shader);
+    shader_mat4(drawData->shader, "projection", &camera->projection);
+    shader_mat4(drawData->shader, "view", &camera->view);
 
     glLineWidth(1);
 
     for (int i = 0; i < types_n; i++)
     {
-        int count = counter[i];
+        int count = drawData->counter[i];
         if (count == 0)
             continue;
 
+        glBindVertexArray(drawData->m_vaoIds[i]);
+        glBindBuffer(GL_ARRAY_BUFFER, drawData->m_vboIds[i]);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, count * sizeof(Vertex), drawData->vertices[i]);
+        glDrawArrays(drawData->types[i], 0, count);
 
-        glBindVertexArray(m_vaoIds[i]);
-        glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[i]);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, count * sizeof(Vertex), vertices[i]);
-        glDrawArrays(types[i], 0, count);
-
-        counter[i] = 0;
+        drawData->counter[i] = 0;
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -88,19 +96,19 @@ void draw_render()
 
 void draw_terminate()
 {
-    glDeleteVertexArrays(types_n, m_vaoIds);
-    glDeleteBuffers(types_n, m_vboIds);
-    shader_destroy(shader);
+    glDeleteVertexArrays(types_n, drawData->m_vaoIds);
+    glDeleteBuffers(types_n, drawData->m_vboIds);
+    shader_destroy(drawData->shader);
 }
 
 void add_vertex(int type, Vertex v)
 {
-    int count = counter[type];
-    if (counter[type] == sizes[type])
+    int count = drawData->counter[type];
+    if (drawData->counter[type] == drawData->sizes[type])
         draw_render();
 
-    vertices[type][count] = v;
-    counter[type]++;
+    drawData->vertices[type][count] = v;
+    drawData->counter[type]++;
 }
 
 void draw_vertex(Vertex v)
@@ -278,8 +286,15 @@ void draw_sphere(Vec3 a, Color c, float r, int s)
     draw_circleXY(a, c, r, s);
     draw_circleYZ(a, c, r, s);
 }
-void draw_cube(Vec3 a, Color c, float s)
+
+void draw_cubef(Vec3 a, Color c, float s)
 {
     Vec3 size = vec3f(s * 0.5f);
+    draw_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
+}
+
+void draw_cube(Vec3 a, Color c, Vec3 s)
+{
+    Vec3 size = vec3_mulf(s, 0.5f);
     draw_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
 }
