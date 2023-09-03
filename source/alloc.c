@@ -20,15 +20,12 @@ void footprint_create(MemoryDef def)
     size += def.pool256;
 
     // layout
-
     footprint = arena(size, &err);
     handler_memory_error(err);
 
     // memory
     memory = (MemoryLayout *)arena_allocate(footprint, sizeof(MemoryLayout), sizeof(size_t), &err);
     handler_memory_error(err);
-
-    //
 
     // global
     ptr = arena_allocate(footprint, def.global, sizeof(size_t), &err);

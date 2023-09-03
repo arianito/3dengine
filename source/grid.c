@@ -12,28 +12,37 @@
 #include "camera.h"
 #include "mathf.h"
 
-static Shader *shader;
 enum
 {
-    size = 10 * UNIT_SCALE,
+    n = 10,
     d = 10,
-    n = size / UNIT_SCALE,
+    size = n * UNIT_SCALE,
     ne = (8 * n + 4),
 };
 
-static GLuint m_vaoIds[1];
-static GLuint m_vboIds[1];
-static Vertex base_grid[ne];
+typedef struct
+{
+    Shader *shader;
+    GLuint vaoIds[1];
+    GLuint vboIds[1];
+    Vertex vertices[ne];
+} GridData;
+
+static GridData *gridData;
 
 void grid_init()
 {
-    shader = shader_load("grid.vs", "grid.fs");
-    glGenVertexArrays(2, m_vaoIds);
-    glGenBuffers(2, m_vboIds);
 
-    glBindVertexArray(m_vaoIds[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(base_grid), base_grid, GL_DYNAMIC_DRAW);
+    gridData = (GridData *)alloc_global(sizeof(GridData));
+    clear(gridData, sizeof(GridData));
+
+    gridData->shader = shader_load("grid.vs", "grid.fs");
+    glGenVertexArrays(2, gridData->vaoIds);
+    glGenBuffers(2, gridData->vboIds);
+
+    glBindVertexArray(gridData->vaoIds[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, gridData->vboIds[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(gridData->vertices), gridData->vertices, GL_DYNAMIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -43,11 +52,10 @@ void grid_init()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // vertical
     Vertex a;
     Color c;
-    float gap = (float)size / n;
     int k = 0, i;
+    float gap = (float)size / n;
 
     c = color_alpha(color_white, 0.1f);
     for (i = -n; i < n + 1; i++)
@@ -56,11 +64,11 @@ void grid_init()
         a.pos.x = i * gap;
         a.pos.y = -size;
         a.pos.z = 0;
-        base_grid[k++] = a;
+        gridData->vertices[k++] = a;
         a.pos.x = i * gap;
         a.pos.y = size;
         a.pos.z = 0;
-        base_grid[k++] = a;
+        gridData->vertices[k++] = a;
     }
     for (i = -n; i < n + 1; i++)
     {
@@ -68,19 +76,19 @@ void grid_init()
         a.pos.x = -size;
         a.pos.y = i * gap;
         a.pos.z = 0;
-        base_grid[k++] = a;
+        gridData->vertices[k++] = a;
         a.pos.x = size;
         a.pos.y = i * gap;
         a.pos.z = 0;
-        base_grid[k++] = a;
+        gridData->vertices[k++] = a;
     }
 }
 
 void grid_terminate()
 {
-    glDeleteVertexArrays(2, m_vaoIds);
-    glDeleteBuffers(2, m_vboIds);
-    shader_destroy(shader);
+    glDeleteVertexArrays(2, gridData->vaoIds);
+    glDeleteBuffers(2, gridData->vboIds);
+    shader_destroy(gridData->shader);
 }
 
 void grid_render()
@@ -89,23 +97,23 @@ void grid_render()
     Vec3 t;
     int i, j;
 
-    shader_begin(shader);
-    shader_mat4(shader, "projection", &camera->projection);
-    shader_mat4(shader, "view", &camera->view);
+    shader_begin(gridData->shader);
+    shader_mat4(gridData->shader, "projection", &camera->projection);
+    shader_mat4(gridData->shader, "view", &camera->view);
 
     glLineWidth(1);
-    glBindVertexArray(m_vaoIds[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(base_grid), base_grid);
+    glBindVertexArray(gridData->vaoIds[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, gridData->vboIds[0]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(gridData->vertices), gridData->vertices);
 
     t.x = floorf(camera->position.x / UNIT_SCALE) * UNIT_SCALE;
     t.y = floorf(camera->position.y / UNIT_SCALE) * UNIT_SCALE;
     t.z = 0;
 
     world = mat4_origin(t);
-    shader_mat4(shader, "world", &world);
-    shader_float(shader, "alpha", 1.0f);
-    glDrawArrays(GL_LINES, 0, sizeof(base_grid));
+    shader_mat4(gridData->shader, "world", &world);
+    shader_float(gridData->shader, "alpha", 1.0f);
+    glDrawArrays(GL_LINES, 0, sizeof(gridData->vertices));
     for (i = -d; i < d + 1; i++)
     {
         for (j = -d; j < d + 1; j++)
@@ -114,9 +122,9 @@ void grid_render()
             t.y = j * UNIT_SCALE + floorf(camera->position.y / UNIT_SCALE) * UNIT_SCALE;
             t.z = 0;
             world = mat4_mul(mat4_scalef(0.1f), mat4_origin(t));
-            shader_mat4(shader, "world", &world);
-            shader_float(shader, "alpha", 0.5f);
-            glDrawArrays(GL_LINES, 0, sizeof(base_grid));
+            shader_mat4(gridData->shader, "world", &world);
+            shader_float(gridData->shader, "alpha", 0.5f);
+            glDrawArrays(GL_LINES, 0, sizeof(gridData->vertices));
         }
     }
 

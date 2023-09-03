@@ -25,11 +25,11 @@ typedef struct
 {
     Vertex vertices[types_n][vertices_count];
     Shader *shader;
+    GLuint vaoIds[types_n];
+    GLuint vboIds[types_n];
     int types[types_n];
     int sizes[types_n];
     int counter[types_n];
-    GLuint m_vaoIds[types_n];
-    GLuint m_vboIds[types_n];
 } DrawData;
 
 static DrawData *drawData;
@@ -44,13 +44,13 @@ void draw_init()
     drawData->types[2] = GL_TRIANGLES;
 
     drawData->shader = shader_load("draw.vs", "draw.fs");
-    glGenVertexArrays(types_n, drawData->m_vaoIds);
-    glGenBuffers(types_n, drawData->m_vboIds);
+    glGenVertexArrays(types_n, drawData->vaoIds);
+    glGenBuffers(types_n, drawData->vboIds);
 
     for (int i = 0; i < types_n; i++)
     {
-        glBindVertexArray(drawData->m_vaoIds[i]);
-        glBindBuffer(GL_ARRAY_BUFFER, drawData->m_vboIds[i]);
+        glBindVertexArray(drawData->vaoIds[i]);
+        glBindBuffer(GL_ARRAY_BUFFER, drawData->vboIds[i]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(drawData->vertices[i]), drawData->vertices[i], GL_DYNAMIC_DRAW);
 
         glEnableVertexAttribArray(0);
@@ -80,8 +80,8 @@ void draw_render()
         if (count == 0)
             continue;
 
-        glBindVertexArray(drawData->m_vaoIds[i]);
-        glBindBuffer(GL_ARRAY_BUFFER, drawData->m_vboIds[i]);
+        glBindVertexArray(drawData->vaoIds[i]);
+        glBindBuffer(GL_ARRAY_BUFFER, drawData->vboIds[i]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, count * sizeof(Vertex), drawData->vertices[i]);
         glDrawArrays(drawData->types[i], 0, count);
 
@@ -96,8 +96,8 @@ void draw_render()
 
 void draw_terminate()
 {
-    glDeleteVertexArrays(types_n, drawData->m_vaoIds);
-    glDeleteBuffers(types_n, drawData->m_vboIds);
+    glDeleteVertexArrays(types_n, drawData->vaoIds);
+    glDeleteBuffers(types_n, drawData->vboIds);
     shader_destroy(drawData->shader);
 }
 

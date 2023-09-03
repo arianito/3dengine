@@ -4,7 +4,7 @@
 
 
 void debug_init();
-void debug_update();
+void debug_render();
 void debug_terminate();
 
 void debug_string(char *s, Vec2 pos);

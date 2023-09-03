@@ -9,7 +9,7 @@
 #include <glad/glad.h>
 
 static int frames = 0;
-static float last_check = 0.0f;
+static float lastCheck = 0.0f;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
@@ -39,7 +39,7 @@ void game_init()
     if (!glfwInit())
         return;
 
-    glfwWindowHint(GLFW_SAMPLES, 4);
+    glfwWindowHint(GLFW_SAMPLES, 0);
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -76,11 +76,11 @@ inline void calculate_fps()
     time->time = (float)glfwGetTime();
     frames++;
     float f = (int)(floorf(time->time));
-    if (f != last_check)
+    if (f != lastCheck)
     {
         game->fps = frames;
         frames = 0;
-        last_check = f;
+        lastCheck = f;
     }
 }
 
@@ -90,7 +90,7 @@ char game_loop()
     glfwPollEvents();
     calculate_fps();
 
-    glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);

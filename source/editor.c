@@ -89,20 +89,20 @@ void editor_update()
     handle_input();
     draw_axis(vec3_zero, quat_identity, 10);
 
-    Vec2 orbiting_sensitivity = {0.25f, 0.25f};
-    float panning_sensitivity = 0.25f;
-    float zooming_sensitivity = 0.25f;
+    Vec2 orbitingSensitivity = {0.25f, 0.25f};
+    float panningSensitivity = 0.25f;
+    float zoomingSensitivity = 0.25f;
 
     float x = input_axis(AXIS_HORIZONTAL);
     float y = input_axis(AXIS_VERTICAL);
-    
-    draw_cube(vec3(y * 100, x * 100, 0), color_red, vec3(20, 20, 4));
+
+    draw_cube(vec3(y * 100, x * 100, 0), color_white, vec3(20, 20, 4));
 
     if (editor->mode == ORBITING)
     {
         float d = clamp(500.0f / editor->distance, 0.05f, 0.5f);
-        float dy = (editor->mousepos.y - editor->last_mousepos.y) * orbiting_sensitivity.y * d;
-        float dx = (editor->mousepos.x - editor->last_mousepos.x) * orbiting_sensitivity.x * d;
+        float dy = (editor->mousepos.y - editor->last_mousepos.y) * orbitingSensitivity.y * d;
+        float dx = (editor->mousepos.x - editor->last_mousepos.x) * orbitingSensitivity.x * d;
 
         camera->rotation.pitch = editor->last_rotation.pitch - dy;
         camera->rotation.yaw = editor->last_rotation.yaw + dx;
@@ -115,8 +115,8 @@ void editor_update()
     else if (editor->mode == PANNING)
     {
         float d = clamp(editor->distance / 500.0f, 0.001f, 0.75f);
-        float dx = (editor->mousepos.x - editor->last_mousepos.x) * panning_sensitivity * d * -1.0f;
-        float dy = (editor->mousepos.y - editor->last_mousepos.y) * panning_sensitivity * d;
+        float dx = (editor->mousepos.x - editor->last_mousepos.x) * panningSensitivity * d * -1.0f;
+        float dy = (editor->mousepos.y - editor->last_mousepos.y) * panningSensitivity * d;
 
         Vec3 right = vec3_mulf(rot_right(camera->rotation), dx);
         Vec3 up = vec3_mulf(rot_up(camera->rotation), dy);
@@ -128,7 +128,7 @@ void editor_update()
     else if (editor->mode == ZOOMING)
     {
         float d = clamp(1000.0f / editor->distance, 0.001f, 0.5f);
-        float y = (editor->mousepos.y * zooming_sensitivity) * d;
+        float y = (editor->mousepos.y * zoomingSensitivity) * d;
         editor->distance = fmaxf(editor->last_distance + y, 0.5f);
         Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
         camera->position = vec3_add(backward, editor->center);

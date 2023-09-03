@@ -39,7 +39,7 @@ void debug_init()
     glBindVertexArray(0);
 }
 
-void debug_update()
+void debug_render()
 {
     if (num_quads == 0)
         return;

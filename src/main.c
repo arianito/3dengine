@@ -37,11 +37,17 @@ int main(int argc, const char *argv[])
     while (game_loop())
     {
 
+        input_update();
+        editor_update();
+
+
+
+
+
         draw_render();
         grid_render();
-        editor_update();
-        debug_update();
-        input_update();
+        debug_render();
+        
     }
 
     input_terminate();

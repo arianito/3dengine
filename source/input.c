@@ -22,9 +22,9 @@ typedef struct
 
 typedef struct
 {
-    InputState keyState[__KEY_COUNT];
-    InputState mouseState[__MOUSE_COUNT];
-    InputAxis axes[__AXIS_COUNT];
+    InputState keyState[KEY_COUNT];
+    InputState mouseState[MOUSE_COUNT];
+    InputAxis axes[AXIS_COUNT];
 } InputData;
 
 static InputData *globalInput;
@@ -48,12 +48,12 @@ void input_init()
 
 void input_update()
 {
-    for (int i = 0; i < __KEY_COUNT; i++)
+    for (int i = 0; i < KEY_COUNT; i++)
     {
         InputState *state = &(globalInput->keyState[i]);
         state->prev = state->current;
     }
-    for (int i = 0; i < __MOUSE_COUNT; i++)
+    for (int i = 0; i < MOUSE_COUNT; i++)
     {
         InputState *state = &(globalInput->mouseState[i]);
         state->prev = state->current;

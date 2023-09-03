@@ -4,14 +4,14 @@
 
 typedef enum
 {
-    __AXIS_COUNT = 2,
+    AXIS_COUNT = 2,
     AXIS_HORIZONTAL = 0,
     AXIS_VERTICAL = 1,
 } AxisEnum;
 
 typedef enum
 {
-    __MOUSE_COUNT = 3,
+    MOUSE_COUNT = 3,
     MOUSE_LEFT = 0,
     MOUSE_RIGHT = 1,
     MOUSE_MIDDLE = 2,
@@ -20,7 +20,7 @@ typedef enum
 
 typedef enum
 {
-    __KEY_COUNT = 350,
+    KEY_COUNT = 350,
     KEY_SPACE = 32,
     KEY_APOSTROPHE = 39,
     KEY_COMMA = 44,
