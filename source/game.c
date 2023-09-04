@@ -1,15 +1,16 @@
 #include "game.h"
 
-#include "alloc.h"
-#include "stdio.h"
+#include <stdio.h>
+#include "memory/alloc.h"
 #include "mathf.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
-static int frames = 0;
-static float lastCheck = 0.0f;
+
+Game *game = NULL;
+Time *time = NULL;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
@@ -26,11 +27,11 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 
 void game_init()
 {
-    time = (Time *)alloc_global(sizeof(Time));
+    time = alloc_global(Time);
     time->deltaTime = 1 / 60.0f;
     time->time = 0;
 
-    game = (Game *)alloc_global(sizeof(Game));
+    game = alloc_global(Game);
     game->fps = 60;
     game->width = 800;
     game->height = 600;
@@ -70,12 +71,15 @@ void game_init()
     framebuffer_size_callback(game->window, w, h);
 }
 
+static int frames = 0;
+static int lastCheck = 0;
+
 inline void calculate_fps()
 {
     time->deltaTime = (float)glfwGetTime() - time->time;
     time->time = (float)glfwGetTime();
     frames++;
-    float f = (int)(floorf(time->time));
+    int f = (int)(floorf(time->time));
     if (f != lastCheck)
     {
         game->fps = frames;

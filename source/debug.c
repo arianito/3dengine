@@ -13,7 +13,7 @@
 #define VERTEX_SIZE 20
 #define CIRCLE_SEGMENTS 18
 
-static Shader *shader;
+static Shader shader;
 
 static GLuint m_vaoIds[1];
 static GLuint m_vboIds[1];

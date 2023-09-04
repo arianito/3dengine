@@ -1,15 +1,16 @@
 #include "shader.h"
 
+#include <stdio.h>
+#include <assert.h>
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
-#include "alloc.h"
-#include "stdio.h"
 #include "file.h"
-#include "assert.h"
 
-Shader *shader_create(const char *vs, const char *fs)
+
+Shader shader_create(const char *vs, const char *fs)
 {
     GLint status = GL_TRUE;
     char error_msg[1024];
@@ -50,24 +51,22 @@ Shader *shader_create(const char *vs, const char *fs)
     glDeleteShader(vsp);
     glDeleteShader(fsp);
 
-    Shader *shader = (Shader *)alloc_global(sizeof(Shader));
-    shader->programId = programId;
-    return shader;
+    return programId;
 }
 
-Shader *shader_load(const char *vs, const char *fs)
+Shader shader_load(const char *vs, const char *fs)
 {
     File *vsf = file_read(vs);
     File *fsf = file_read(fs);
 
-    Shader *sh = shader_create(vsf->text, fsf->text);
+    Shader sh = shader_create(vsf->text, fsf->text);
 
     file_destroy(fsf);
     file_destroy(vsf);
     return sh;
 }
 
-void shader_destroy(Shader *p)
+void shader_destroy(Shader p)
 {
-    glDeleteProgram(p->programId);
+    glDeleteProgram(p);
 }

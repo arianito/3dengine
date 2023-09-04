@@ -1,7 +1,7 @@
 #include "benchmark.h"
 
-#include "stdio.h"
-#include "time.h"
+#include <stdio.h>
+#include <time.h>
 
 static clock_t startTime;
 

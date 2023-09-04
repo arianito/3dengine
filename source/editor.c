@@ -6,7 +6,7 @@
 #include "debug.h"
 #include "input.h"
 #include "mathf.h"
-#include "alloc.h"
+#include "memory/alloc.h"
 
 typedef enum
 {
@@ -32,7 +32,7 @@ static EditorData *editor;
 
 void editor_init()
 {
-    editor = (EditorData *)alloc_global(sizeof(EditorData));
+    editor = alloc_global(EditorData);
     clear(editor, sizeof(EditorData));
 
     editor->center = vec3_zero;
@@ -131,8 +131,4 @@ void editor_update()
     }
 
     camera_update();
-}
-
-void editor_terminate()
-{
 }

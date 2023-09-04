@@ -15,8 +15,8 @@ typedef struct
     float deltaTime;
 } Time;
 
-Game *game;
-Time *time;
+extern Game *game;
+extern Time *time;
 
 void game_init();
 char game_loop();

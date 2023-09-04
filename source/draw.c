@@ -24,7 +24,7 @@ enum
 typedef struct
 {
     Vertex vertices[types_n][vertices_count];
-    Shader *shader;
+    Shader shader;
     GLuint vaoIds[types_n];
     GLuint vboIds[types_n];
     int types[types_n];
@@ -36,7 +36,7 @@ static DrawData *drawData;
 
 void draw_init()
 {
-    drawData = (DrawData *)alloc_global(sizeof(DrawData));
+    drawData = alloc_global(DrawData);
     clear(drawData, sizeof(DrawData));
 
     drawData->types[0] = GL_POINTS;

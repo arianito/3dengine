@@ -15,9 +15,12 @@ add_executable(
     app
     
     third-parties/glad/src/glad.c
+
     
+    source/memory/alloc.c
+    source/memory/memory.c
+
     source/draw.c
-    source/alloc.c
     source/game.c
     source/grid.c
     source/shader.c
@@ -26,13 +29,12 @@ add_executable(
     source/debug.c
     source/file.c
     source/mesh.c
-
-    source/mem.c
     source/sort.c
     source/benchmark.c
 
-    src/level1.c
-    src/main.c
+
+    source/Engine/Component.cpp
+    src/main.cpp
 )
 target_link_libraries(app glfw)
 

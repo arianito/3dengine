@@ -1,9 +1,12 @@
 
-#include "stdio.h"
+#include <stdio.h>
 
+
+extern "C"
+{
+#include "memory/alloc.h"
 #include "game.h"
 #include "draw.h"
-#include "alloc.h"
 #include "mathf.h"
 #include "grid.h"
 #include "camera.h"
@@ -11,18 +14,18 @@
 #include "debug.h"
 #include "input.h"
 #include "file.h"
+}
 
-#include "level1.h"
+#include "Engine/Component.hpp"
 
 int main(int argc, const char *argv[])
 {
-    alloc_create((MemoryDef){
-        .global = 1024 * KILOBYTES,
-        .stack = 512 * KILOBYTES,
-        .pool64 = 512 * KILOBYTES,
-        .pool128 = 512 * KILOBYTES,
-        .pool256 = 512 * KILOBYTES,
-    });
+    MemoryMetadata meta;
+    meta.components = 128 * KILOBYTES;
+    meta.stack = 128 * KILOBYTES;
+    meta.global = 1024 * KILOBYTES;
+
+    alloc_create(meta);
 
     file_init("../../assets/");
 
@@ -33,9 +36,6 @@ int main(int argc, const char *argv[])
     grid_init();
     debug_init();
     editor_init();
-
-    Level* level = level1_new();
-    level->load();
 
     alloc_debug();
     while (game_loop())
@@ -49,7 +49,6 @@ int main(int argc, const char *argv[])
         debug_render();
     }
 
-    editor_terminate();
     debug_terminate();
     grid_terminate();
     draw_terminate();

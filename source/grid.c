@@ -22,7 +22,7 @@ enum
 
 typedef struct
 {
-    Shader *shader;
+    Shader shader;
     GLuint vaoIds[1];
     GLuint vboIds[1];
     Vertex vertices[ne];
@@ -33,7 +33,7 @@ static GridData *gridData;
 void grid_init()
 {
 
-    gridData = (GridData *)alloc_global(sizeof(GridData));
+    gridData = alloc_global(GridData);
     clear(gridData, sizeof(GridData));
 
     gridData->shader = shader_load("shaders/grid.vs", "shaders/grid.fs");

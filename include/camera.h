@@ -1,8 +1,9 @@
 #pragma once
 
-#include "alloc.h"
 #include "mathf.h"
 #include "game.h"
+
+#include "memory/alloc.h"
 
 typedef struct
 {
@@ -26,7 +27,7 @@ inline void camera_update()
 
 inline void camera_init()
 {
-    camera = (Camera *)alloc_global(sizeof(Camera));
+    camera = alloc_global(Camera);
 
     camera->rotation = rot(-35, 45, 0);
     Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -200);

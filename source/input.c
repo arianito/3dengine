@@ -3,7 +3,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "alloc.h"
+#include "memory/alloc.h"
 #include "game.h"
 
 #define AXIS_SPEED 8
@@ -38,10 +38,10 @@ void update_axis(int ax, char low, char high)
 
 void input_init()
 {
-    globalInput = (InputData *)alloc_global(sizeof(InputData));
+    globalInput = alloc_global(InputData);
     clear(globalInput, sizeof(InputData));
 
-    input = (Input *)alloc_global(sizeof(Input));
+    input = alloc_global(Input);
     input->position = vec2_zero;
     input->delta = vec2_zero;
 }

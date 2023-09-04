@@ -1,5 +1,5 @@
 #include "sort.h"
-#include "mem.h"
+#include "memory/memory.h"
 
 void swap(int *a, int *b)
 {
@@ -57,8 +57,8 @@ void merge(StackMemory *stack, int arr[], int a, int m, int b)
     int n1 = m - a + 1;
     int n2 = b - m;
 
-    int *L = (int *)stack_allocate(stack, n1 * sizeof(int), 8, NULL);
-    int *R = (int *)stack_allocate(stack, n2 * sizeof(int), 8, NULL);
+    int *L = (int *)stack_alloc(stack, n1 * sizeof(int), 8);
+    int *R = (int *)stack_alloc(stack, n2 * sizeof(int), 8);
 
     for (int i = 0; i < n1; i++)
         L[i] = arr[a + i];
@@ -79,8 +79,8 @@ void merge(StackMemory *stack, int arr[], int a, int m, int b)
     while (j < n2)
         arr[k++] = R[j++];
 
-    stack_free(stack, &R, NULL);
-    stack_free(stack, &L, NULL);
+    stack_free(stack, &R);
+    stack_free(stack, &L);
 }
 
 void sort_merge(StackMemory *stack, int arr[], int a, int b)
