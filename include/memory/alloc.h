@@ -5,6 +5,8 @@
 #include <stddef.h>
 
 #include "memory/memory.h"
+#include "memory/arena.h"
+#include "memory/stack.h"
 
 typedef struct
 {

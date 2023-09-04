@@ -18,7 +18,13 @@ add_executable(
 
     
     source/memory/alloc.c
+    source/memory/rbt.c
     source/memory/memory.c
+    source/memory/std.c
+    source/memory/arena.c
+    source/memory/stack.c
+    source/memory/pool.c
+    source/memory/freelist.c
 
     source/draw.c
     source/game.c

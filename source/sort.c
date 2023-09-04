@@ -1,5 +1,5 @@
 #include "sort.h"
-#include "memory/memory.h"
+#include "memory/stack.h"
 
 void swap(int *a, int *b)
 {
