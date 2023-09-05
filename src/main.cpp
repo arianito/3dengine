@@ -15,10 +15,10 @@ extern "C"
 #include "file.h"
 #include "memory/pool.h"
 #include "memory/utils.h"
-#include "arena_debug.h"
+#include "debug/freelist_debug.h"
 }
 
-#include "Engine/Component.hpp"
+#include "engine/Component.hpp"
 
 class Box : public Entity
 {
@@ -43,9 +43,9 @@ class Box : public Entity
 int main(int argc, const char *argv[])
 {
 	MemoryMetadata meta;
-	meta.components = 128 * KILOBYTES;
-	meta.stack = 128 * KILOBYTES;
-	meta.global = 1024 * KILOBYTES;
+	meta.components = 100 * KILOBYTES;
+	meta.stack = 100 * KILOBYTES;
+	meta.global = 1 * MEGABYTES;
 
 	alloc_create(meta);
 

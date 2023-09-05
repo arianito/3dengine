@@ -21,7 +21,7 @@ Camera *camera;
 inline void camera_update()
 {
     camera->view = mat4_view(camera->position, camera->rotation);
-    camera->projection = mat4_perspective(camera->fov, game->ratio, 0.1f, 5000.0f);
+    camera->projection = mat4_perspective(camera->fov, game->ratio, 1.0f, 5000.0f);
     camera->viewProjection = mat4_mul(camera->view, camera->projection);
 }
 
@@ -29,10 +29,11 @@ inline void camera_init()
 {
     camera = alloc_global(Camera);
 
-    camera->rotation = rot(-35, 45, 0);
-    Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -300);
+    camera->rotation = rot(-50, 45, 0);
+    Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -200);
+	backward = vec3_add(backward, vec3(0, 128, 0));
     camera->position = vec3_add(backward, vec3_zero);
-    camera->fov = 70;
+    camera->fov = 90.0f;
 
     camera_update();
 }

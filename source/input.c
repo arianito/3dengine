@@ -85,25 +85,25 @@ void input_infinite()
     if (input->delta.x < 0 && input->position.x < pad)
     {
         input->position.x = width;
-        input->delta.x = 0;
+        input->delta.x = clamp(input->delta.x, -1.0f, 1.0f);
         changed = 1;
     }
     if (input->delta.x > 0 && input->position.x > width - pad)
     {
         input->position.x = 0;
-        input->delta.x = 0;
+        input->delta.x = clamp(input->delta.x, -1.0f, 1.0f);
         changed = 1;
     }
     if (input->delta.y < 0 && input->position.y < pad)
     {
         input->position.y = height;
-        input->delta.y = 0;
+        input->delta.y = clamp(input->delta.y, -1.0f, 1.0f);
         changed = 1;
     }
     if (input->delta.y > 0 && input->position.y > height - pad)
     {
         input->position.y = 0;
-        input->delta.y = 0;
+        input->delta.y = clamp(input->delta.y, -1.0f, 1.0f);
         changed = 1;
     }
     if (changed)

@@ -6,7 +6,6 @@ set(name app)
 
 add_subdirectory(third-parties/glfw)
 include_directories(include)
-include_directories(src)
 include_directories(third-parties/glfw/include)
 include_directories(third-parties/glad/include)
 include_directories(third-parties/stb/include)
@@ -16,7 +15,6 @@ add_executable(
     
     third-parties/glad/src/glad.c
 
-    
     source/memory/alloc.c
     source/memory/rbt.c
     source/memory/memory.c
@@ -39,7 +37,7 @@ add_executable(
     source/benchmark.c
 
 
-    source/Engine/Component.cpp
+    source/engine/Component.cpp
     src/main.cpp
 )
 target_link_libraries(app glfw)

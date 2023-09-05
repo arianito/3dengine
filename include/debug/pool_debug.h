@@ -1,10 +1,12 @@
 #pragma once
 
-#include "input.h"
-#include "memory/pool.h"
-#include "memory/utils.h"
-#include "memory/memory.h"
-#include "sort.h"
+#include "../input.h"
+#include "../mathf.h"
+#include "../draw.h"
+#include "../sort.h"
+#include "../memory/pool.h"
+#include "../memory/utils.h"
+#include "../memory/memory.h"
 
 PoolMemory *pool = NULL;
 enum
@@ -27,39 +29,41 @@ void memorydebug_update()
 {
 
 	size_t start = (size_t)pool - pool->padding;
-	int space = calculate_space(sizeof(PoolMemory), sizeof(size_t));
+	unsigned int space = calculate_space(sizeof(PoolMemory), sizeof(size_t));
 	size_t cursor = pool->padding + space;
 	space = calculate_space(sizeof(PoolMemoryNode), sizeof(size_t));
 	draw_bbox(BBox{{-10, 0, 0}, {10, (float)pool->size, 4}}, color_gray);
 	draw_bbox(BBox{{-10, 0, 0}, {10, (float)(cursor), 40}}, color_darkred);
 
-
 	while (1)
 	{
-		size_t chunk_address = start + cursor;
-		size_t padding = calculate_alignment(chunk_address, sizeof(PoolMemoryNode), sizeof(size_t));
-
+		size_t chunkAddress = start + cursor;
+		size_t padding = calculate_alignment(chunkAddress, sizeof(PoolMemoryNode), sizeof(size_t));
 
 		if (cursor + padding + chunk_size > pool->size)
 			break;
 
 		cursor += padding + chunk_size;
+		PoolMemoryNode *node = (PoolMemoryNode *)(chunkAddress + padding - space);
 
-		PoolMemoryNode *node = (PoolMemoryNode *)((chunk_address + padding) - space);
+		size_t address = (size_t)node - start;
+
+		float block = (float)(address + space - padding);
+		float head = (float)(address);
+		float data = (float)(address + space);
+		float next = (float)(data + chunk_size);
 
 		unsigned char used = 0;
 		byte7d(node->data, NULL, &used);
-
-		float head = (float)((size_t)node - start);
-		float data = (float)((size_t)node - start + space);
-		float next = (float)((size_t)node - start + space + chunk_size);
 		Color c = used ? color_red : color_green;
 		if (pool->head == node)
 			c = color_yellow;
-		draw_bbox(BBox{{-10, data, 0}, {10, next, 25.0f}}, c);
+
+		draw_bbox(BBox{{-10, block, 15}, {10, head, 20}}, color_white);
 		draw_bbox(BBox{{-10, head, 15}, {10, data, 20}}, color_gray);
+		draw_bbox(BBox{{-10, data, 0}, {10, next, 25}}, c);
 	}
-	
+
 	draw_bbox(BBox{{-10, (float)(cursor), 0}, {10, (float)(pool->size), 40}}, color_darkred);
 
 	if (input_keydown(KEY_SPACE))

@@ -1733,7 +1733,7 @@ inline Mat4 mat4_orthographic(float left, float right, float bottom, float top, 
 inline Mat4 mat4_perspective(float fov, float aspect, float near, float far)
 {
 
-	float t = tanf(fov * 0.5f);
+	float t = tand(fov * 0.5f);
 	float inv = 1.0f / (far - near);
 
 	Mat4 m;

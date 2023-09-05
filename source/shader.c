@@ -23,7 +23,7 @@ Shader shader_create(const char *vs, const char *fs)
     {
         glGetShaderInfoLog(vsp, 1024, &read, error_msg);
         printf("vs error: %s", error_msg);
-        return NULL;
+        return 0;
     }
     GLuint fsp = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fsp, 1, &fs, NULL);
@@ -33,7 +33,7 @@ Shader shader_create(const char *vs, const char *fs)
     {
         glGetShaderInfoLog(fsp, 1024, &read, error_msg);
         printf("fs error: %s", error_msg);
-        return NULL;
+        return 0;
     }
     GLint programId = glCreateProgram();
     glAttachShader(programId, vsp);
@@ -44,7 +44,7 @@ Shader shader_create(const char *vs, const char *fs)
     {
         glGetProgramInfoLog(programId, 1024, &read, error_msg);
         printf("compile error: %s", error_msg);
-        return NULL;
+        return 0;
     }
     glDetachShader(programId, vsp);
     glDetachShader(programId, fsp);

@@ -14,5 +14,5 @@ out float m_depth;
 void main(void) {
     gl_Position = projection * view * world * vec4(v_position, 1);
     m_color = v_color;
-    m_depth = 0.1 * gl_Position.z / alpha;
+    m_depth = 0.25 * gl_Position.z / alpha;
 }

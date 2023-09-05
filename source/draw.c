@@ -179,7 +179,6 @@ void draw_circleXY(Vec3 a, Color c, float r, int s)
 		r2.z = 0;
 		Vec3 v2 = vec3_add(vec3_mulf(r2, r), a);
 		draw_line(v1, v2, c);
-		draw_point(v2, c, VERTEX_SIZE);
 		r1 = r2;
 		v1 = v2;
 	}
@@ -200,7 +199,6 @@ void draw_circleXZ(Vec3 a, Color c, float r, int s)
 		r2.y = 0;
 		Vec3 v2 = vec3_add(vec3_mulf(r2, r), a);
 		draw_line(v1, v2, c);
-		draw_point(v2, c, VERTEX_SIZE);
 		r1 = r2;
 		v1 = v2;
 	}
@@ -222,7 +220,6 @@ void draw_circleYZ(Vec3 a, Color c, float r, int s)
 		r2.x = 0;
 		Vec3 v2 = vec3_add(vec3_mulf(r2, r), a);
 		draw_line(v1, v2, c);
-		draw_point(v2, c, VERTEX_SIZE);
 		r1 = r2;
 		v1 = v2;
 	}
@@ -264,9 +261,6 @@ void draw_bbox(BBox bbox, Color c)
 {
 	Vec3 vertices[8];
 	bbox_vertices(&bbox, vertices);
-
-	for (int i = 0; i < 8; i++)
-		draw_point(vertices[i], c, VERTEX_SIZE);
 
 	draw_line(vertices[0], vertices[1], c);
 	draw_line(vertices[1], vertices[2], c);

@@ -63,9 +63,8 @@ void save_state()
 
 void editor_update()
 {
-
 	int leftAlt = input_keypress(KEY_LEFT_ALT);
-	char allowed = time->time - editor->lastOrbit < 0.3;
+	char allowed = time->time - editor->lastOrbit < 0.25f;
 
 	if (!editor->mode && leftAlt && !allowed && input_mousedown(MOUSE_RIGHT))
 	{
@@ -100,12 +99,6 @@ void editor_update()
 		editor->center = vec3_zero;
 		camera->position = vec3_add(backward, editor->center);
 		camera_update();
-	}
-
-	if (editor->mode)
-	{
-		editor->mousePos.x += input->delta.x;
-		editor->mousePos.y += input->delta.y;
 	}
 
 	if (editor->mode == FLYING)
@@ -144,7 +137,7 @@ void editor_update()
 	}
 	else if (editor->mode == PANNING)
 	{
-		if (input_keydown(KEY_W) || input_keydown(KEY_S))
+		if (input_keydown(KEY_W) || input_keydown(KEY_S) || input_keydown(KEY_A) || input_keydown(KEY_D))
 		{
 			save_state();
 			editor->mode = FLYING;
@@ -175,10 +168,17 @@ void editor_update()
 	}
 	if (allowed)
 	{
-		draw_circleXY(editor->center, color_alpha(color_blue, 0.25), 10, 32);
-		draw_circleXZ(editor->center, color_alpha(color_green, 0.25), 10, 32);
-		draw_circleYZ(editor->center, color_alpha(color_red, 0.25), 10, 32);
-		draw_axis(editor->center, quat_identity, 10);
+		float r = editor->distance / 50.0f;
+		draw_circleXY(editor->center, color_blue, r, 12);
+		draw_circleXZ(editor->center, color_green, r, 12);
+		draw_circleYZ(editor->center, color_red, r, 12);
+		draw_axis(editor->center, quat_identity, r);
 	}
+	if (editor->mode)
+	{
+		editor->mousePos.x += input->delta.x;
+		editor->mousePos.y += input->delta.y;
+	}
+
 	draw_axis(vec3_zero, quat_identity, 10);
 }

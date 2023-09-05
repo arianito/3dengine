@@ -9,7 +9,8 @@ typedef struct
 	unsigned int padding;
 } ArenaMemory;
 
-ArenaMemory *make_arena(size_t size);
 void *arena_alloc(ArenaMemory *self, size_t size, unsigned int alignment);
 void arena_reset(ArenaMemory *self);
 void arena_destroy(ArenaMemory **self);
+ArenaMemory *arena_create(void *m, size_t size);
+ArenaMemory *make_arena(size_t size);

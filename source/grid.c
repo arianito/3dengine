@@ -1,7 +1,7 @@
 #include "draw.h"
 
 #define BUFFER_OFFSET(x) ((const void *)(x))
-#define UNIT_SCALE 100
+#define UNIT_SCALE 64
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -14,8 +14,8 @@
 
 enum
 {
-    n = 10,
-    d = 10,
+    n = 8,
+    d = 8,
     size = n * UNIT_SCALE,
     ne = (8 * n + 4),
 };
@@ -121,7 +121,7 @@ void grid_render()
             t.x = i * UNIT_SCALE + floorf(camera->position.x / UNIT_SCALE) * UNIT_SCALE;
             t.y = j * UNIT_SCALE + floorf(camera->position.y / UNIT_SCALE) * UNIT_SCALE;
             t.z = 0;
-            world = mat4_mul(mat4_scalef(0.1f), mat4_origin(t));
+            world = mat4_mul(mat4_scalef(1.0f / d), mat4_origin(t));
             shader_mat4(gridData->shader, "world", &world);
             shader_float(gridData->shader, "alpha", 0.5f);
             glDrawArrays(GL_LINES, 0, sizeof(gridData->vertices));

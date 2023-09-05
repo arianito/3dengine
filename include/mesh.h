@@ -33,7 +33,7 @@ inline void mesh_obj(const char *p)
     {
         perror("failed to open the mesh");
         exit(EXIT_FAILURE);
-        return NULL;
+        return;
     }
 
     char buffer[255];
@@ -42,5 +42,5 @@ inline void mesh_obj(const char *p)
         printf("%s", buffer);
     }
 
-    fclose(file);
+    fclose(f);
 }

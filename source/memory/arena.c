@@ -1,10 +1,10 @@
+#include "memory/arena.h"
 
 #include <malloc.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
-#include "memory/arena.h"
 #include "memory/utils.h"
 
 void *arena_alloc(ArenaMemory *self, size_t size, unsigned int alignment)
@@ -19,16 +19,15 @@ void *arena_alloc(ArenaMemory *self, size_t size, unsigned int alignment)
 		printf("arena: alloc failed, invalid instance\n");
 		return NULL;
 	}
-	ArenaMemory *instance = self;
-	size_t address = ((size_t)instance - instance->padding) + instance->offset;
+	size_t address = ((size_t)self - self->padding) + self->offset;
 	int padding = calculate_padding(address, alignment);
-	if (instance->offset + size + padding > instance->size)
+	if (self->offset + size + padding > self->size)
 	{
 		printf("arena: alloc failed, insufficient memory\n");
 		return NULL;
 	}
 	address += padding;
-	instance->offset += size + padding;
+	self->offset += size + padding;
 	return (void *)(address);
 }
 
@@ -39,9 +38,8 @@ void arena_reset(ArenaMemory *self)
 		printf("arena: reset failed, invalid instance\n");
 		return;
 	}
-	ArenaMemory *instance = self;
 	unsigned int space = calculate_space(sizeof(ArenaMemory), sizeof(size_t));
-	instance->offset = instance->padding + space;
+	self->offset = self->padding + space;
 }
 
 void arena_destroy(ArenaMemory **self)
@@ -51,10 +49,21 @@ void arena_destroy(ArenaMemory **self)
 		printf("arena: destroy failed, invalid instance\n");
 		return;
 	}
-	ArenaMemory *instance = *self;
-	size_t op = (size_t)instance - instance->padding;
+	size_t op = (size_t)(*self) - (*self)->padding;
 	free((void *)(op));
 	*self = NULL;
+}
+
+ArenaMemory *arena_create(void *m, size_t size)
+{
+	size_t address = (size_t)m;
+	unsigned int space = calculate_space(sizeof(ArenaMemory), sizeof(size_t));
+	unsigned int padding = calculate_padding(address, sizeof(size_t));
+	ArenaMemory *self = (ArenaMemory *)(address + padding);
+	self->size = size;
+	self->offset = padding + space;
+	self->padding = padding;
+	return self;
 }
 
 ArenaMemory *make_arena(size_t size)
@@ -66,12 +75,5 @@ ArenaMemory *make_arena(size_t size)
 		exit(EXIT_FAILURE);
 		return NULL;
 	}
-	size_t address = (size_t)m;
-	unsigned int space = calculate_space(sizeof(ArenaMemory), sizeof(size_t));
-	unsigned int padding = calculate_padding(address, sizeof(size_t));
-	ArenaMemory *instance = (ArenaMemory *)(address + padding);
-	instance->size = size;
-	instance->offset = padding + space;
-	instance->padding = padding;
-	return instance;
+	return arena_create(m, size);
 }

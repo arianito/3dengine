@@ -2,7 +2,7 @@
 
 #include <type_traits>
 #include <memory>
-#include "Data/LinkedList.hpp"
+#include "data/LinkedList.hpp"
 
 extern "C"
 {

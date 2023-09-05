@@ -1,4 +1,4 @@
-
+#include "memory/pool.h"
 
 #include <malloc.h>
 #include <stdlib.h>
@@ -6,7 +6,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "memory/pool.h"
 #include "memory/utils.h"
 
 void pool_enqueue(PoolMemory *self, PoolMemoryNode *node)
@@ -75,7 +74,7 @@ unsigned char pool_free(PoolMemory *self, void **p)
 	size_t address = (size_t)(*p);
 	size_t end = start + self->size;
 
-	if (!(address >= start || address < end))
+	if (!(address >= start && address < end))
 	{
 		printf("pool: free failed, out of boundary\n");
 		return 0;
@@ -110,15 +109,8 @@ void pool_destroy(PoolMemory **self)
 	(*self) = NULL;
 }
 
-PoolMemory *make_pool(size_t size, unsigned int chunkSize)
+PoolMemory *pool_create(void *m, size_t size, unsigned int chunkSize)
 {
-	void *m = malloc(size);
-	if (m == NULL)
-	{
-		printf("pool: make failed, system can't provide free memory\n");
-		exit(EXIT_FAILURE);
-		return NULL;
-	}
 	size_t start = (size_t)m;
 	unsigned int space = calculate_space(sizeof(PoolMemory), sizeof(size_t));
 	unsigned int padding = calculate_padding(start, sizeof(size_t));
@@ -131,14 +123,26 @@ PoolMemory *make_pool(size_t size, unsigned int chunkSize)
 	space = calculate_space(sizeof(PoolMemoryNode), sizeof(size_t));
 	while (1)
 	{
-		size_t chunk_address = start + cursor;
-		padding = calculate_alignment(chunk_address, sizeof(PoolMemoryNode), sizeof(size_t));
+		size_t address = start + cursor;
+		padding = calculate_alignment(address, sizeof(PoolMemoryNode), sizeof(size_t));
 		cursor += padding + chunkSize;
 		if (cursor > size)
 			break;
 
-		pool_enqueue(self, (PoolMemoryNode *)((chunk_address + padding) - space));
+		pool_enqueue(self, (PoolMemoryNode *)(address + padding - space));
 		self->capacity++;
 	}
 	return self;
+}
+
+PoolMemory *make_pool(size_t size, unsigned int chunkSize)
+{
+	void *m = malloc(size);
+	if (m == NULL)
+	{
+		printf("pool: make failed, system can't provide free memory\n");
+		exit(EXIT_FAILURE);
+		return NULL;
+	}
+	return pool_create(m, size, chunkSize);
 }

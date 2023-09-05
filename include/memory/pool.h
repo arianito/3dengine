@@ -12,10 +12,11 @@ typedef struct
 
 typedef struct
 {
-	size_t data;
+	size_t data; // 7bytes offset 1byte used
 } PoolMemoryNode;
 
-PoolMemory *make_pool(size_t size, unsigned int chunkSize);
 void *pool_alloc(PoolMemory *self);
 unsigned char pool_free(PoolMemory *self, void **ptr);
 void pool_destroy(PoolMemory **self);
+PoolMemory *pool_create(void *m, size_t size, unsigned int chunkSize);
+PoolMemory *make_pool(size_t size, unsigned int chunkSize);

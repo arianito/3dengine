@@ -1,8 +1,10 @@
 #pragma once
 
-#include "input.h"
-#include "memory/arena.h"
-#include "memory/utils.h"
+#include "../input.h"
+#include "../mathf.h"
+#include "../draw.h"
+#include "../memory/arena.h"
+#include "../memory/utils.h"
 
 ArenaMemory *arena = NULL;
 
@@ -23,7 +25,6 @@ void memorydebug_update()
 	draw_bbox(BBox{{-10, end, 0}, {10, (float)arena->offset, 6}}, color_yellow);
 
 	draw_bbox(BBox{{-10, end, 0}, {10, (float)arena->offset, 25.0f}}, color_red);
-
 
 	if (space + arena->padding != arena->offset)
 	{
