@@ -1,5 +1,9 @@
 #pragma once
 
-void sort_insert(int arr[], int a, int b);
-void sort_quick(int arr[], int a, int b);
-void sort_merge(void *allocator, int arr[], int a, int b);
+#include <stddef.h>
+#include "memory/stack.h"
+
+void sort_insert(size_t arr[], int a, int b);
+void sort_quick(size_t arr[], int a, int b);
+void sort_merge(StackMemory *stack, size_t arr[], int a, int b);
+void sort_shuffle(size_t arr[], int a, int b);

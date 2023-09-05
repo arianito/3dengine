@@ -5,9 +5,9 @@
 typedef struct
 {
 	void *head;
-	size_t padding;
 	size_t size;
-	size_t capacity;
+	unsigned int padding;
+	unsigned int capacity;
 } PoolMemory;
 
 typedef struct
@@ -15,8 +15,7 @@ typedef struct
 	size_t data;
 } PoolMemoryNode;
 
-PoolMemory *make_pool_from(void *ptr, size_t size, size_t chunkSize);
-PoolMemory *make_pool(size_t size, size_t chunkSize);
+PoolMemory *make_pool(size_t size, unsigned int chunkSize);
 void *pool_alloc(PoolMemory *self);
-void pool_free(PoolMemory *self, void **ptr);
+unsigned char pool_free(PoolMemory *self, void **ptr);
 void pool_destroy(PoolMemory **self);

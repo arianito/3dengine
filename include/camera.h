@@ -30,7 +30,7 @@ inline void camera_init()
     camera = alloc_global(Camera);
 
     camera->rotation = rot(-35, 45, 0);
-    Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -200);
+    Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -300);
     camera->position = vec3_add(backward, vec3_zero);
     camera->fov = 70;
 
