@@ -26,11 +26,11 @@ PoolMemoryNode *pool_dequeue(PoolMemory *self)
 	if (self->head == NULL)
 		return NULL;
 	PoolMemoryNode *node = self->head;
+	byte7a1(&node->data, 1);
 
-	size_t start = (size_t)self - self->padding;
 	size_t offset;
 	byte7d(node->data, &offset, NULL);
-	byte7a(&node->data, offset, 1);
+	size_t start = (size_t)self - self->padding;
 	//
 	if (offset == 0)
 		self->head = NULL;
@@ -84,9 +84,8 @@ unsigned char pool_free(PoolMemory *self, void **p)
 	unsigned int space = calculate_space(sizeof(PoolMemoryNode), sizeof(size_t));
 	PoolMemoryNode *node = (PoolMemoryNode *)(address - space);
 
-	size_t offset;
 	unsigned char used;
-	byte7d(node->data, &offset, &used);
+	byte7d(node->data, NULL, &used);
 	if (!used)
 	{
 		printf("pool: free failed, already freed\n");

@@ -147,6 +147,7 @@ static const Vec4 vec4_one = {1, 1, 1, 1};
 static const Color color_black = {0, 0, 0, 1};
 static const Color color_white = {1, 1, 1, 1};
 static const Color color_red = {1, 0, 0, 1};
+static const Color color_darkred = {0.5, 0, 0, 1};
 static const Color color_green = {0, 1, 0, 1};
 static const Color color_blue = {0, 0, 1, 1};
 static const Color color_yellow = {1, 1, 0, 1};

@@ -31,16 +31,19 @@ void memorydebug_update()
 	size_t cursor = pool->padding + space;
 	space = calculate_space(sizeof(PoolMemoryNode), sizeof(size_t));
 	draw_bbox(BBox{{-10, 0, 0}, {10, (float)pool->size, 4}}, color_gray);
+	draw_bbox(BBox{{-10, 0, 0}, {10, (float)(cursor), 40}}, color_darkred);
+
 
 	while (1)
 	{
 		size_t chunk_address = start + cursor;
 		size_t padding = calculate_alignment(chunk_address, sizeof(PoolMemoryNode), sizeof(size_t));
 
-		cursor += padding + chunk_size;
 
-		if (cursor > pool->size)
+		if (cursor + padding + chunk_size > pool->size)
 			break;
+
+		cursor += padding + chunk_size;
 
 		PoolMemoryNode *node = (PoolMemoryNode *)((chunk_address + padding) - space);
 
@@ -51,13 +54,13 @@ void memorydebug_update()
 		float data = (float)((size_t)node - start + space);
 		float next = (float)((size_t)node - start + space + chunk_size);
 		Color c = used ? color_red : color_green;
-
 		if (pool->head == node)
 			c = color_yellow;
-
-		draw_bbox(BBox{{-10, head, 5}, {10, data, 10}}, c);
-		draw_bbox(BBox{{-10, data, 0}, {10, next, 10}}, c);
+		draw_bbox(BBox{{-10, data, 0}, {10, next, 25.0f}}, c);
+		draw_bbox(BBox{{-10, head, 15}, {10, data, 20}}, color_gray);
 	}
+	
+	draw_bbox(BBox{{-10, (float)(cursor), 0}, {10, (float)(pool->size), 40}}, color_darkred);
 
 	if (input_keydown(KEY_SPACE))
 	{

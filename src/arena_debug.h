@@ -14,10 +14,21 @@ void memorydebug_create()
 void memorydebug_update()
 {
 
-	draw_bbox(BBox{{-10, 0, 0}, {10, (float)arena->size, 4}}, color_gray);
-	draw_bbox(BBox{{-10, 0, 0}, {10, (float)arena->offset, 3}}, color_yellow);
+	draw_bbox(BBox{{-10, 0, 0}, {10, (float)arena->size, 5}}, color_gray);
 
-	draw_bbox(BBox{{-10, 0, 0}, {10, (float)arena->offset, 20}}, color_red);
+	int space = calculate_space(sizeof(ArenaMemory), sizeof(size_t));
+	float end = (float)(space + arena->padding);
+
+	draw_bbox(BBox{{-10, 0, 0}, {10, end, 40}}, color_darkred);
+	draw_bbox(BBox{{-10, end, 0}, {10, (float)arena->offset, 6}}, color_yellow);
+
+	draw_bbox(BBox{{-10, end, 0}, {10, (float)arena->offset, 25.0f}}, color_red);
+
+
+	if (space + arena->padding != arena->offset)
+	{
+		draw_bbox(BBox{{-10, (float)arena->offset, 0}, {10, (float)arena->size, 40}}, color_darkred);
+	}
 
 	if (input_keydown(KEY_SPACE))
 	{

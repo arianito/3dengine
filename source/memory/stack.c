@@ -84,8 +84,7 @@ unsigned char stack_free(StackMemory *self, void **p)
 	byte7d(node->data, &offset, &nodePad);
 	self->offset = (address - start) - nodePad;
 	StackMemoryNode *head = (StackMemoryNode *)self->head;
-
-	byte7d(head->data, &offset, &nodePad);
+	byte7d(head->data, &offset, NULL);
 	if (offset == 0)
 		self->head = NULL;
 	else
