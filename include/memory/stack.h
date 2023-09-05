@@ -13,8 +13,7 @@ typedef struct
 
 typedef struct
 {
-	void *next;
-	size_t padding;
+	size_t data;
 } StackMemoryNode;
 
 StackMemory *make_stack(size_t size);

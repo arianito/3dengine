@@ -7,6 +7,7 @@
 #include "memory/stack.h"
 #include "memory/utils.h"
 
+
 void *stack_alloc(StackMemory *self, size_t size, unsigned int alignment)
 {
 	if ((alignment & (alignment - 1)) != 0)
@@ -19,23 +20,29 @@ void *stack_alloc(StackMemory *self, size_t size, unsigned int alignment)
 		printf("stack: alloc failed, invalid instance\n");
 		return NULL;
 	}
-	StackMemory *instance = self;
-	size_t address = ((size_t)instance - instance->padding) + instance->offset;
+	size_t start = (size_t)self - self->padding;
+	size_t address = start + self->offset;
 	unsigned int padding = calculate_alignment(address, sizeof(StackMemoryNode), alignment);
 	unsigned int space = calculate_space(sizeof(StackMemoryNode), sizeof(size_t));
-	if (instance->offset + padding + size > instance->size)
+	if (self->offset + padding + size > self->size)
 	{
 		printf("stack: alloc failed, insufficient memory\n");
 		return NULL;
 	}
 	address += padding;
-	instance->offset += padding + size;
-	if (instance->offset > instance->peak)
-		instance->peak = instance->offset;
+	self->offset += padding + size;
+	if (self->offset > self->peak)
+		self->peak = self->offset;
+
 	StackMemoryNode *node = (StackMemoryNode *)(address - space);
-	node->next = instance->head;
-	node->padding = padding;
-	instance->head = node;
+
+	if (self->head == NULL)
+		byte7a(&node->data, 0, padding);
+	else
+		byte7a(&node->data, (size_t)self->head - start, padding);
+
+	self->head = node;
+
 	return (void *)address;
 }
 
@@ -51,29 +58,38 @@ unsigned char stack_free(StackMemory *self, void **p)
 		printf("stack: free failed, invalid pointer\n");
 		return 0;
 	}
-	StackMemory *instance = self;
-	size_t start = (size_t)instance - instance->padding;
+	size_t start = (size_t)self - self->padding;
 	size_t address = (size_t)(*p);
-	size_t end = start + instance->size;
+	size_t end = start + self->size;
 	if (!(address >= start || address < end))
 	{
 		printf("stack: free failed, out of boundary\n");
 		return 0;
 	}
-	if (address >= start + instance->offset)
+	if (address >= start + self->offset)
 	{
 		printf("stack: free failed, invalid order of free\n");
 		return 0;
 	}
 	unsigned int space = calculate_space(sizeof(StackMemoryNode), sizeof(size_t));
 	StackMemoryNode *node = (StackMemoryNode *)(address - space);
-	if (node != instance->head)
+	if (node != self->head)
 	{
 		printf("stack: free failed, you must free the stack in order\n");
 		return 0;
 	}
-	instance->offset = (address - start) - node->padding;
-	instance->head = ((StackMemoryNode *)instance->head)->next;
+
+	size_t offset;
+	unsigned char nodePad;
+	byte7d(node->data, &offset, &nodePad);
+	self->offset = (address - start) - nodePad;
+	StackMemoryNode *head = (StackMemoryNode *)self->head;
+
+	byte7d(head->data, &offset, &nodePad);
+	if (offset == 0)
+		self->head = NULL;
+	else
+		self->head = (StackMemoryNode *)(start + offset);
 	*p = NULL;
 	return 1;
 }

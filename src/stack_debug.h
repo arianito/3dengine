@@ -10,7 +10,7 @@ void *pools[10];
 
 void memorydebug_create()
 {
-	stack = make_stack(512);
+	stack = make_stack(256);
 }
 
 void memorydebug_update()
@@ -36,8 +36,12 @@ void memorydebug_update()
 		draw_bbox(BBox{{-10, head, 8}, {10, data, 10}}, color_red);
 		draw_bbox(BBox{{-10, data, 0}, {10, end, 20}}, color_green);
 
+		size_t offset;
+		byte7d(node->data, &offset, NULL);
 
-		node = (StackMemoryNode *)node->next;
+		if(offset == 0)
+		break;
+		node = (StackMemoryNode *)(start + offset);
 		end = head;
 	}
 

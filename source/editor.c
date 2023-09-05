@@ -175,9 +175,9 @@ void editor_update()
 	}
 	if (allowed)
 	{
-		draw_circleXY(editor->center, color_blue, 5, 8);
-		draw_circleXZ(editor->center, color_green, 5, 8);
-		draw_circleYZ(editor->center, color_red, 5, 8);
+		draw_circleXY(editor->center, color_alpha(color_blue, 0.25), 10, 32);
+		draw_circleXZ(editor->center, color_alpha(color_green, 0.25), 10, 32);
+		draw_circleYZ(editor->center, color_alpha(color_red, 0.25), 10, 32);
 		draw_axis(editor->center, quat_identity, 10);
 	}
 	draw_axis(vec3_zero, quat_identity, 10);

@@ -11,11 +11,10 @@
 
 void pool_enqueue(PoolMemory *self, PoolMemoryNode *node)
 {
-	unsigned int space = calculate_space(sizeof(PoolMemory), sizeof(size_t));
 	size_t start = (size_t)self - self->padding;
 
 	if (self->head == NULL)
-		byte7a(&node->data, 0, 0);
+		node->data = 0;
 	else
 		byte7a(&node->data, (size_t)self->head - start, 0);
 
@@ -28,22 +27,15 @@ PoolMemoryNode *pool_dequeue(PoolMemory *self)
 		return NULL;
 	PoolMemoryNode *node = self->head;
 
-	unsigned int space = calculate_space(sizeof(PoolMemory), sizeof(size_t));
 	size_t start = (size_t)self - self->padding;
-	// set used
 	size_t offset;
 	byte7d(node->data, &offset, NULL);
 	byte7a(&node->data, offset, 1);
 	//
 	if (offset == 0)
-	{
 		self->head = NULL;
-	}
 	else
-	{
-		PoolMemoryNode *next = (PoolMemoryNode *)(start + offset);
-		self->head = next;
-	}
+		self->head = (PoolMemoryNode *)(start + offset);
 	//
 	return node;
 }
