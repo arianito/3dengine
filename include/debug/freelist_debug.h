@@ -11,14 +11,17 @@
 FreeListMemory *freelist = NULL;
 enum
 {
-	npool = 20,
+	npool = 200,
 };
 size_t pools[npool];
 
 void memorydebug_create()
 {
-	freelist = make_freelist(512);
+	freelist = make_freelist(2048);
 	clear(pools, sizeof(pools));
+
+	printf("0x%zx\n", BYTE_MASK(size_t, short));
+	printf("0x%zx\n", ~BYTE_MASK(size_t, short));
 }
 
 void memorydebug_update()
@@ -28,7 +31,7 @@ void memorydebug_update()
 	unsigned int space = calculate_space(sizeof(FreeListMemory), sizeof(size_t));
 	size_t cursor = freelist->padding;
 
-		size_t start = (size_t)freelist + space - freelist->padding;
+	size_t start = (size_t)freelist + space - freelist->padding;
 	FreeListMemory *node = (FreeListMemory *)freelist->next;
 
 	draw_bbox(BBox{{-10, 0, 0}, {10, (float)(cursor), 40}}, color_darkred);
@@ -69,7 +72,7 @@ void memorydebug_update()
 		}
 	}
 
-	if (input_keydown(KEY_SPACE))
+	if (input_keypress(KEY_SPACE))
 	{
 		sort_quick(pools, 0, npool - 1);
 		void *ptr = (void *)pools[0];
@@ -84,7 +87,7 @@ void memorydebug_update()
 			}
 		}
 	}
-	if (input_keydown(KEY_M))
+	if (input_keypress(KEY_M))
 	{
 		sort_quick(pools, 0, npool - 1);
 		int a = npool - 1;

@@ -58,29 +58,6 @@ inline void byte7a1(size_t *f, unsigned char b)
 	*f = ((size_t)b << m) | ((((size_t)1 << m) - 1) & *f);
 }
 
-inline void byte6a(size_t *f, size_t a, unsigned short b)
-{
-	size_t m = (8 * (sizeof(a) - sizeof(b)));
-	*f = ((size_t)b << m) | (a & (((size_t)1 << m) - 1));
-}
-
-inline void byte6d(size_t f, size_t *a, unsigned short *b)
-{
-	size_t m = (8 * (sizeof(*a) - sizeof(*b)));
-	if (a != NULL)
-		*a = (f & (((size_t)1 << m) - 1));
-	if (b != NULL)
-		*b = (f >> m) & (((size_t)1 << (sizeof(*b) * 8)) - 1);
-}
-
-inline void byte6a6(size_t *f, size_t a)
-{
-	size_t mask = (((size_t)1 << (8 * (sizeof(a) - sizeof(short)))) - 1);
-	*f = (~mask & *f) | (mask & a);
-}
-
-inline void byte6a2(size_t *f, unsigned short b)
-{
-	size_t m = (8 * (sizeof(*f) - sizeof(b)));
-	*f = ((size_t)b << m) | ((((size_t)1 << m) - 1) & *f);
-}
+#define BYTE_POW(big_type, small_type) ((8 * (sizeof(big_type) - sizeof(small_type))))
+#define BYTE_MASK(big_type, small_type) (((size_t)1 << BYTE_POW(big_type, small_type)) - 1)
+#define BYTE611()

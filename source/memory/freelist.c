@@ -22,7 +22,7 @@ void freelist_first(FreeListMemory *self, size_t size, unsigned int alignment, u
 	while (node != NULL)
 	{
 		padding = calculate_alignment(NODE_LOWER(node), sizeof(FreeListMemory), alignment);
-		if (node->size >= size + padding + space)
+		if (node->size > size + padding + space)
 			break;
 
 		prev = node;
@@ -36,49 +36,23 @@ void freelist_first(FreeListMemory *self, size_t size, unsigned int alignment, u
 void freelist_insert(FreeListMemory *self, FreeListMemory *prevNode, FreeListMemory *newNode)
 {
 	if (prevNode == NULL)
-	{ // first node
-		if (self->next != NULL)
-		{
-			newNode->next = self->next;
-		}
-		else
-		{
-			newNode->next = NULL;
-		}
-		self->next = newNode;
-	}
-	else
 	{
-		if (prevNode->next == NULL)
-		{ // end node
-			prevNode->next = newNode;
-			newNode->next = NULL;
-		}
-		else
-		{ // middle node
-			newNode->next = prevNode->next;
-			prevNode->next = newNode;
-		}
+		newNode->next = self->next;
+		self->next = newNode;
+		return;
 	}
+	newNode->next = prevNode->next;
+	prevNode->next = newNode;
 }
 
 void freelist_remove(FreeListMemory *self, FreeListMemory *prevNode, FreeListMemory *node)
 {
 	if (prevNode == NULL)
-	{ // first node
-		if (node->next == NULL)
-		{
-			self->next = NULL;
-		}
-		else
-		{
-			self->next = node->next;
-		}
-	}
-	else
 	{
-		prevNode->next = node->next;
+		self->next = node->next;
+		return;
 	}
+	prevNode->next = node->next;
 }
 
 void freelist_joinnext(FreeListMemory *self, FreeListMemory *previousNode, FreeListMemory *freeNode)

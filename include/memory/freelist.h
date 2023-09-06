@@ -4,11 +4,10 @@
 
 typedef struct
 {
-	void* next;
+	void *next;
 	unsigned int size;
 	unsigned int padding;
 } FreeListMemory;
-
 
 void *freelist_alloc(FreeListMemory *self, size_t size, unsigned int alignment);
 unsigned char freelist_free(FreeListMemory *self, void **ptr);
