@@ -19,7 +19,8 @@ void freelist_first(FreeListMemory *self, size_t size, unsigned int alignment, u
 	while (node != NULL)
 	{
 		padding = MEMORY_ALIGNMENT(NODE_LOWER(node), sizeof(FreeListMemory), alignment);
-		if (node->size > size + padding + MEMORY_SPACE_STD(FreeListMemory))
+		size_t space = size + padding + MEMORY_SPACE_STD(FreeListMemory);
+		if (node->size > space)
 			break;
 
 		prev = node;
@@ -28,6 +29,34 @@ void freelist_first(FreeListMemory *self, size_t size, unsigned int alignment, u
 	*outPrevNode = prev;
 	*outNode = node;
 	*outPadding = padding;
+}
+
+void freelist_best(FreeListMemory *self, size_t size, unsigned int alignment, unsigned int *outPadding, FreeListMemory **outPrevNode, FreeListMemory **outNode)
+{
+	FreeListMemory
+		*node = self->next,
+		*best = NULL,
+		*prev = NULL,
+		*bestPrev = NULL;
+	unsigned int padding, bestPad = 0;
+	size_t min = (~(0LL) - 1);
+	while (node != NULL)
+	{
+		padding = MEMORY_ALIGNMENT(NODE_LOWER(node), sizeof(FreeListMemory), alignment);
+		size_t space = size + padding + MEMORY_SPACE_STD(FreeListMemory);
+		if (node->size > space && (node->size - space) < min)
+		{
+			best = node;
+			bestPrev = prev;
+			bestPad = padding;
+			min = node->size - space;
+		}
+		prev = node;
+		node = node->next;
+	}
+	*outNode = best;
+	*outPrevNode = bestPrev;
+	*outPadding = bestPad;
 }
 
 void freelist_insert(FreeListMemory *self, FreeListMemory *prevNode, FreeListMemory *newNode)
@@ -83,7 +112,7 @@ void *freelist_alloc(FreeListMemory *self, size_t size, unsigned int alignment)
 	unsigned int padding;
 	FreeListMemory *prevNode;
 	FreeListMemory *node;
-	freelist_first(self, size, alignment, &padding, &prevNode, &node);
+	freelist_best(self, size, alignment, &padding, &prevNode, &node);
 
 	if (node == NULL)
 	{

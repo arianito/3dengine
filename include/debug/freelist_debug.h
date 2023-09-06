@@ -4,6 +4,7 @@
 #include "../mathf.h"
 #include "../draw.h"
 #include "../sort.h"
+#include "../game.h"
 #include "../memory/freelist.h"
 #include "../memory/utils.h"
 #include "../memory/memory.h"
@@ -15,6 +16,8 @@ enum
 };
 size_t pools[npool];
 
+float lastHit = 0;
+
 void memorydebug_create()
 {
 	freelist = make_freelist(2048);
@@ -23,7 +26,7 @@ void memorydebug_create()
 
 void memorydebug_update()
 {
-	draw_bbox(BBox{{-10, 0, 0}, {10, (float)freelist->size, 5}}, color_gray);
+	fill_bbox(BBox{{-15, 0, -10}, {15, (float)freelist->size, -1}}, color_gray);
 
 	const unsigned int space = MEMORY_SPACE_STD(FreeListMemory);
 	size_t cursor = freelist->padding;
@@ -32,8 +35,7 @@ void memorydebug_update()
 	FreeListMemory *node = (FreeListMemory *)freelist->next;
 
 	draw_bbox(BBox{{-10, 0, 0}, {10, (float)(cursor), 40}}, color_darkred);
-	int i = 0;
-	while (node != NULL && i < 1000)
+	while (node != NULL)
 	{
 		size_t address = (size_t)node - start;
 
@@ -44,10 +46,10 @@ void memorydebug_update()
 
 		draw_bbox(BBox{{-10, block, 15}, {10, head, 20}}, color_white);
 		draw_bbox(BBox{{-10, head, 15}, {10, data, 20}}, color_gray);
-		draw_bbox(BBox{{-10, data, 0}, {10, next, 25}}, color_green);
+		fill_bbox(BBox{{-10, data, 0}, {10, next, 25}}, color_alpha(color_green, 0.25));
+		draw_bbox(BBox{{-10, data, 0}, {10, next, 25}}, color_black);
 
 		node = (FreeListMemory *)node->next;
-		i++;
 	}
 
 	for (int i = 0; i < npool; i++)
@@ -65,26 +67,28 @@ void memorydebug_update()
 
 			draw_bbox(BBox{{-10, block, 15}, {10, head, 20}}, color_white);
 			draw_bbox(BBox{{-10, head, 15}, {10, data, 20}}, color_gray);
-			draw_bbox(BBox{{-10, data, 0}, {10, next, 25}}, color_red);
+			fill_bbox(BBox{{-10, data, 0}, {10, next, 25}}, color_alpha(color_red, 0.25));
+			draw_bbox(BBox{{-10, data, 0}, {10, next, 25}}, color_black);
 		}
 	}
 
-	if (input_keypress(KEY_SPACE))
+	if (input_keypress(KEY_SPACE) && (time->time - lastHit > 0.1f))
 	{
 		sort_quick(pools, 0, npool - 1);
 		void *ptr = (void *)pools[0];
 		if (ptr == NULL)
 		{
 
-			size_t newSize = (size_t)(randf() * 76 + 1);
-			void *newPtr = freelist_alloc(freelist, newSize, (int)((powf(2, (int)randf() * 5 + 3)) * 8));
+			size_t newSize = (size_t)(randf() * 120 + 1);
+			void *newPtr = freelist_alloc(freelist, newSize, 8);
 			if (newPtr != NULL)
 			{
 				pools[0] = (size_t)newPtr;
 			}
 		}
+		lastHit = time->time;
 	}
-	if (input_keypress(KEY_M))
+	if (input_keypress(KEY_M) && (time->time - lastHit > 0.1f))
 	{
 		sort_quick(pools, 0, npool - 1);
 		int a = npool - 1;
@@ -101,6 +105,8 @@ void memorydebug_update()
 		if (ptr != NULL)
 			if (freelist_free(freelist, &ptr))
 				pools[npool - 1] = 0;
+
+		lastHit = time->time;
 	}
 	if (input_keydown(KEY_N))
 	{

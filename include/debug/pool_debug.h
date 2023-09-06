@@ -16,6 +16,7 @@ enum
 size_t pools[npool];
 int chunk_size = 23;
 int capacity = 0;
+float lastHit = 0;
 
 void memorydebug_create()
 {
@@ -65,7 +66,7 @@ void memorydebug_update()
 
 	draw_bbox(BBox{{-10, (float)(cursor), 0}, {10, (float)(pool->size), 40}}, color_darkred);
 
-	if (input_keypress(KEY_SPACE))
+	if (input_keypress(KEY_SPACE) && (time->time - lastHit > 0.1f))
 	{
 		sort_quick(pools, 0, npool - 1);
 		void *ptr = (void *)pools[0];
@@ -79,9 +80,9 @@ void memorydebug_update()
 				printf("alloc %d \n", pool->capacity);
 			}
 		}
+		lastHit = time->time;
 	}
-
-	if (input_keypress(KEY_M))
+	if (input_keypress(KEY_M) && (time->time - lastHit > 0.1f))
 	{
 		sort_quick(pools, 0, npool - 1);
 		int a = npool - 1;
@@ -103,6 +104,7 @@ void memorydebug_update()
 				pools[npool - 1] = 0;
 			}
 		}
+		lastHit = time->time;
 	}
 	if (input_keydown(KEY_N))
 	{

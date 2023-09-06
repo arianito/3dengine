@@ -34,13 +34,13 @@ void game_init()
     game = alloc_global(Game);
     game->fps = 60;
     game->width = 1200;
-    game->height = 480;
+    game->height = 780;
     game->ratio = game->width / game->height;
 
     if (!glfwInit())
         return;
 
-    glfwWindowHint(GLFW_SAMPLES, 0);
+    glfwWindowHint(GLFW_SAMPLES, 2);
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);

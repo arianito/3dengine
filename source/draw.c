@@ -76,7 +76,7 @@ void draw_render()
 	shader_mat4(drawData->shader, "projection", &camera->projection);
 	shader_mat4(drawData->shader, "view", &camera->view);
 
-	glLineWidth(1);
+	glLineWidth(2);
 
 	for (int i = 0; i < types_n; i++)
 	{
@@ -105,7 +105,7 @@ void draw_terminate()
 	shader_destroy(drawData->shader);
 }
 
-void add_vertex(int type, Vertex v)
+inline void add_vertex(int type, Vertex v)
 {
 	int count = drawData->counter[type];
 	if (drawData->counter[type] == drawData->sizes[type])
@@ -113,23 +113,6 @@ void add_vertex(int type, Vertex v)
 
 	drawData->vertices[type][count] = v;
 	drawData->counter[type]++;
-}
-
-void draw_vertex(Vertex v)
-{
-	add_vertex(0, v);
-}
-
-void draw_segment(Vertex v1, Vertex v2)
-{
-	add_vertex(1, v1);
-	add_vertex(1, v2);
-}
-void draw_triangle(Vertex v1, Vertex v2, Vertex v3)
-{
-	add_vertex(2, v1);
-	add_vertex(2, v2);
-	add_vertex(2, v3);
 }
 
 void draw_point(Vec3 pos, Color c, float size)
@@ -141,26 +124,217 @@ void draw_point(Vec3 pos, Color c, float size)
 	add_vertex(0, v);
 }
 
-void draw_edge(Edge e, Color c)
-{
-	Vertex v1;
-	v1.pos = e.a;
-	v1.color = c;
-	Vertex v2;
-	v2.pos = e.a;
-	v2.color = c;
-	draw_segment(v1, v2);
-}
-
 void draw_line(Vec3 a, Vec3 b, Color c)
 {
-	Vertex v1;
-	v1.pos = a;
-	v1.color = c;
-	Vertex v2;
-	v2.pos = b;
-	v2.color = c;
-	draw_segment(v1, v2);
+	Vertex va;
+	va.color = c;
+	va.pos = a;
+	add_vertex(1, va);
+	va.pos = b;
+	add_vertex(1, va);
+}
+
+void draw_axis(Vec3 a, Quat q, float s)
+{
+	Vec3 forward = vec3_add(a, vec3_mulf(quat_forward(q), s));
+	Vec3 right = vec3_add(a, vec3_mulf(quat_right(q), s));
+	Vec3 up = vec3_add(a, vec3_mulf(quat_up(q), s));
+
+	Vertex va;
+	va.size = VERTEX_SIZE;
+
+	va.pos = a;
+	va.color = color_red;
+	add_vertex(1, va);
+	va.pos = forward;
+	add_vertex(1, va);
+	add_vertex(0, va);
+
+	va.pos = a;
+	va.color = color_green;
+	add_vertex(1, va);
+	va.pos = right;
+	add_vertex(1, va);
+	add_vertex(0, va);
+
+	va.pos = a;
+	va.color = color_blue;
+	add_vertex(1, va);
+	va.pos = up;
+	add_vertex(1, va);
+	add_vertex(0, va);
+}
+
+void draw_axisRot(Vec3 a, Rot r, float s)
+{
+	Vec3 forward = vec3_add(a, vec3_mulf(rot_forward(r), s));
+	Vec3 right = vec3_add(a, vec3_mulf(rot_right(r), s));
+	Vec3 up = vec3_add(a, vec3_mulf(rot_up(r), s));
+
+	Vertex va;
+	va.size = VERTEX_SIZE;
+
+	va.pos = a;
+	va.color = color_red;
+	add_vertex(1, va);
+	va.pos = forward;
+	add_vertex(1, va);
+	add_vertex(0, va);
+
+	va.pos = a;
+	va.color = color_green;
+	add_vertex(1, va);
+	va.pos = right;
+	add_vertex(1, va);
+	add_vertex(0, va);
+
+	va.pos = a;
+	va.color = color_blue;
+	add_vertex(1, va);
+	va.pos = up;
+	add_vertex(1, va);
+	add_vertex(0, va);
+}
+
+void draw_bbox(BBox bbox, Color c)
+{
+	Vec3 vertices[8];
+	bbox_vertices(&bbox, vertices);
+
+	Vertex va;
+	va.color = c;
+
+	for (int i = 0; i < 4; i++)
+	{
+		va.pos = vertices[i];
+		add_vertex(1, va);
+		va.pos = vertices[(i + 1) % 4];
+		add_vertex(1, va);
+
+		va.pos = vertices[i + 4];
+		add_vertex(1, va);
+		va.pos = vertices[(i + 1) % 4 + 4];
+		add_vertex(1, va);
+
+		va.pos = vertices[i];
+		add_vertex(1, va);
+		va.pos = vertices[i + 4];
+		add_vertex(1, va);
+	}
+}
+
+inline void fill_face(Vertex *va, const Vec3 *a, const Vec3 *b, const Vec3 *c, const Vec3 *d)
+{
+
+	va->pos = *a;
+	add_vertex(2, *va);
+	va->pos = *b;
+	add_vertex(2, *va);
+	va->pos = *c;
+	add_vertex(2, *va);
+
+
+	va->pos = *a;
+	add_vertex(2, *va);
+	va->pos = *c;
+	add_vertex(2, *va);
+	va->pos = *d;
+	add_vertex(2, *va);
+}
+void fill_bbox(BBox bbox, Color c)
+{
+	Vec3 vertices[8];
+	bbox_vertices(&bbox, vertices);
+
+	Vertex va;
+	va.color = color_alpha(c, 0.25);
+
+	fill_face(&va, &vertices[1], &vertices[5], &vertices[6], &vertices[2]);
+	fill_face(&va, &vertices[0], &vertices[4], &vertices[7], &vertices[3]);
+	
+	fill_face(&va, &vertices[3], &vertices[7], &vertices[6], &vertices[2]);
+	fill_face(&va, &vertices[0], &vertices[4], &vertices[5], &vertices[1]);
+
+	fill_face(&va, &vertices[4], &vertices[5], &vertices[6], &vertices[7]);
+	fill_face(&va, &vertices[0], &vertices[1], &vertices[2], &vertices[3]);
+
+
+}
+
+void draw_cube(Vec3 a, Color c, Vec3 s)
+{
+	Vec3 size = vec3_mulf(s, 0.5f);
+	draw_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
+}
+
+void draw_cubef(Vec3 a, Color c, float s)
+{
+	Vec3 size = vec3f(s * 0.5f);
+	draw_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
+}
+
+void draw_edge(Edge e, Color c)
+{
+	Vertex va;
+	va.color = c;
+	va.pos = e.a;
+	add_vertex(1, va);
+	va.pos = e.b;
+	add_vertex(1, va);
+}
+
+void draw_triangle(Triangle t, Color c)
+{
+	Vertex va;
+	va.color = c;
+	va.pos = t.a;
+	add_vertex(1, va);
+	va.pos = t.b;
+	add_vertex(1, va);
+
+	va.pos = t.b;
+	add_vertex(1, va);
+	va.pos = t.c;
+	add_vertex(1, va);
+
+	va.pos = t.c;
+	add_vertex(1, va);
+	va.pos = t.a;
+	add_vertex(1, va);
+}
+void draw_tetrahedron(Tetrahedron t, Color c)
+{
+	Vertex va;
+	va.color = c;
+	va.pos = t.a;
+	add_vertex(1, va);
+	va.pos = t.b;
+	add_vertex(1, va);
+
+	va.pos = t.b;
+	add_vertex(1, va);
+	va.pos = t.c;
+	add_vertex(1, va);
+
+	va.pos = t.c;
+	add_vertex(1, va);
+	va.pos = t.a;
+	add_vertex(1, va);
+
+	va.pos = t.a;
+	add_vertex(1, va);
+	va.pos = t.d;
+	add_vertex(1, va);
+
+	va.pos = t.b;
+	add_vertex(1, va);
+	va.pos = t.d;
+	add_vertex(1, va);
+
+	va.pos = t.c;
+	add_vertex(1, va);
+	va.pos = t.d;
+	add_vertex(1, va);
 }
 
 void draw_circleXY(Vec3 a, Color c, float r, int s)
@@ -178,7 +352,14 @@ void draw_circleXY(Vec3 a, Color c, float r, int s)
 		r2.y = sp * r1.x + cp * r1.y;
 		r2.z = 0;
 		Vec3 v2 = vec3_add(vec3_mulf(r2, r), a);
-		draw_line(v1, v2, c);
+
+		Vertex va;
+		va.color = c;
+		va.pos = v1;
+		add_vertex(1, va);
+		va.pos = v2;
+		add_vertex(1, va);
+
 		r1 = r2;
 		v1 = v2;
 	}
@@ -198,7 +379,14 @@ void draw_circleXZ(Vec3 a, Color c, float r, int s)
 		r2.z = sp * r1.x + cp * r1.z;
 		r2.y = 0;
 		Vec3 v2 = vec3_add(vec3_mulf(r2, r), a);
-		draw_line(v1, v2, c);
+
+		Vertex va;
+		va.color = c;
+		va.pos = v1;
+		add_vertex(1, va);
+		va.pos = v2;
+		add_vertex(1, va);
+
 		r1 = r2;
 		v1 = v2;
 	}
@@ -219,63 +407,17 @@ void draw_circleYZ(Vec3 a, Color c, float r, int s)
 		r2.z = sp * r1.y + cp * r1.z;
 		r2.x = 0;
 		Vec3 v2 = vec3_add(vec3_mulf(r2, r), a);
-		draw_line(v1, v2, c);
+
+		Vertex va;
+		va.color = c;
+		va.pos = v1;
+		add_vertex(1, va);
+		va.pos = v2;
+		add_vertex(1, va);
+
 		r1 = r2;
 		v1 = v2;
 	}
-}
-
-void draw_axis(Vec3 a, Quat q, float s)
-{
-	Vec3 forward = vec3_add(a, vec3_mulf(quat_forward(q), s));
-	Vec3 right = vec3_add(a, vec3_mulf(quat_right(q), s));
-	Vec3 up = vec3_add(a, vec3_mulf(quat_up(q), s));
-
-	draw_line(a, forward, color_red);
-	draw_line(a, right, color_green);
-	draw_line(a, up, color_blue);
-
-	draw_point(forward, color_red, VERTEX_SIZE);
-	draw_point(right, color_green, VERTEX_SIZE);
-	draw_point(up, color_blue, VERTEX_SIZE);
-	draw_point(a, color_yellow, VERTEX_SIZE);
-}
-
-void draw_axisRot(Vec3 a, Rot r, float s)
-{
-	Vec3 forward = vec3_add(a, vec3_mulf(rot_forward(r), s));
-	Vec3 right = vec3_add(a, vec3_mulf(rot_right(r), s));
-	Vec3 up = vec3_add(a, vec3_mulf(rot_up(r), s));
-
-	draw_line(a, forward, color_red);
-	draw_line(a, right, color_green);
-	draw_line(a, up, color_blue);
-
-	draw_point(forward, color_red, VERTEX_SIZE);
-	draw_point(right, color_green, VERTEX_SIZE);
-	draw_point(up, color_blue, VERTEX_SIZE);
-	draw_point(a, color_yellow, VERTEX_SIZE);
-}
-
-void draw_bbox(BBox bbox, Color c)
-{
-	Vec3 vertices[8];
-	bbox_vertices(&bbox, vertices);
-
-	draw_line(vertices[0], vertices[1], c);
-	draw_line(vertices[1], vertices[2], c);
-	draw_line(vertices[2], vertices[3], c);
-	draw_line(vertices[3], vertices[0], c);
-
-	draw_line(vertices[4], vertices[5], c);
-	draw_line(vertices[5], vertices[6], c);
-	draw_line(vertices[6], vertices[7], c);
-	draw_line(vertices[7], vertices[4], c);
-
-	draw_line(vertices[0], vertices[4], c);
-	draw_line(vertices[1], vertices[5], c);
-	draw_line(vertices[2], vertices[6], c);
-	draw_line(vertices[3], vertices[7], c);
 }
 
 void draw_sphere(Vec3 a, Color c, float r, int s)
@@ -283,16 +425,4 @@ void draw_sphere(Vec3 a, Color c, float r, int s)
 	draw_circleXZ(a, c, r, s);
 	draw_circleXY(a, c, r, s);
 	draw_circleYZ(a, c, r, s);
-}
-
-void draw_cubef(Vec3 a, Color c, float s)
-{
-	Vec3 size = vec3f(s * 0.5f);
-	draw_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
-}
-
-void draw_cube(Vec3 a, Color c, Vec3 s)
-{
-	Vec3 size = vec3_mulf(s, 0.5f);
-	draw_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
 }

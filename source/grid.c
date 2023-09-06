@@ -1,7 +1,7 @@
 #include "draw.h"
 
 #define BUFFER_OFFSET(x) ((const void *)(x))
-#define UNIT_SCALE 64
+#define UNIT_SCALE 100
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -14,8 +14,8 @@
 
 enum
 {
-    n = 8,
-    d = 8,
+    n = 10,
+    d = 10,
     size = n * UNIT_SCALE,
     ne = (8 * n + 4),
 };
