@@ -33,8 +33,8 @@ void game_init()
 
     game = alloc_global(Game);
     game->fps = 60;
-    game->width = 800;
-    game->height = 600;
+    game->width = 1200;
+    game->height = 480;
     game->ratio = game->width / game->height;
 
     if (!glfwInit())

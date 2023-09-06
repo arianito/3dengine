@@ -7,17 +7,22 @@
 
 #include "memory/utils.h"
 
-void freelist_first(FreeListMemory *self, size_t size, FreeListMemoryNode **outPrevNode, FreeListMemoryNode **outNode)
+#define NODE_SPACE() (calculate_space(sizeof(FreeListMemory), sizeof(size_t)))
+
+#define NODE_LOWER(node) ((size_t)(node) + NODE_SPACE() - (node)->padding)
+#define NODE_HIGHER(node) ((size_t)(node) + NODE_SPACE())
+
+void freelist_first(FreeListMemory *self, size_t size, unsigned int alignment, unsigned int *outPadding, FreeListMemory **outPrevNode, FreeListMemory **outNode)
 {
-	FreeListMemoryNode
-		*node = self->head,
+	const unsigned int space = calculate_space(sizeof(FreeListMemory), sizeof(size_t));
+	FreeListMemory
+		*node = self->next,
 		*prev = NULL;
+	unsigned int padding;
 	while (node != NULL)
 	{
-		size_t nodeSize;
-		unsigned short padding;
-		byte6d(node->data, &nodeSize, &padding);
-		if (nodeSize >= size + padding)
+		padding = calculate_alignment(NODE_LOWER(node), sizeof(FreeListMemory), alignment);
+		if (node->size >= size + padding + space)
 			break;
 
 		prev = node;
@@ -25,21 +30,22 @@ void freelist_first(FreeListMemory *self, size_t size, FreeListMemoryNode **outP
 	}
 	*outPrevNode = prev;
 	*outNode = node;
+	*outPadding = padding;
 }
 
-void freelist_insert(FreeListMemory *self, FreeListMemoryNode *prevNode, FreeListMemoryNode *newNode)
+void freelist_insert(FreeListMemory *self, FreeListMemory *prevNode, FreeListMemory *newNode)
 {
 	if (prevNode == NULL)
 	{ // first node
-		if (self->head != NULL)
+		if (self->next != NULL)
 		{
-			newNode->next = self->head;
+			newNode->next = self->next;
 		}
 		else
 		{
 			newNode->next = NULL;
 		}
-		self->head = newNode;
+		self->next = newNode;
 	}
 	else
 	{
@@ -56,17 +62,17 @@ void freelist_insert(FreeListMemory *self, FreeListMemoryNode *prevNode, FreeLis
 	}
 }
 
-void freelist_remove(FreeListMemory *self, FreeListMemoryNode *prevNode, FreeListMemoryNode *node)
+void freelist_remove(FreeListMemory *self, FreeListMemory *prevNode, FreeListMemory *node)
 {
 	if (prevNode == NULL)
 	{ // first node
 		if (node->next == NULL)
 		{
-			self->head = NULL;
+			self->next = NULL;
 		}
 		else
 		{
-			self->head = node->next;
+			self->next = node->next;
 		}
 	}
 	else
@@ -75,48 +81,22 @@ void freelist_remove(FreeListMemory *self, FreeListMemoryNode *prevNode, FreeLis
 	}
 }
 
-void freelist_joinnext(FreeListMemory *self, FreeListMemoryNode *prevNode, FreeListMemoryNode *freeNode)
+void freelist_joinnext(FreeListMemory *self, FreeListMemory *previousNode, FreeListMemory *freeNode)
 {
-	unsigned int space = calculate_space(sizeof(FreeListMemoryNode), sizeof(size_t));
-
-	if (freeNode->next != NULL)
+	FreeListMemory *next = (FreeListMemory *)freeNode->next;
+	if (next != NULL && NODE_LOWER(freeNode) + freeNode->size == NODE_LOWER(next))
 	{
-		size_t nodeSize;
-		unsigned short nodePadding;
-		byte6d(freeNode->data, &nodeSize, &nodePadding);
-
-		size_t nodeNextSize;
-		unsigned short nodeNextPadding;
-		byte6d(((FreeListMemoryNode *)freeNode->next)->data, &nodeNextSize, &nodeNextPadding);
-
-		size_t start = (size_t)freeNode + space - nodePadding;
-		size_t end = (size_t)freeNode->next + space - nodeNextPadding;
-		if (start + nodeSize == end)
-		{
-			byte6a6(&freeNode->data, nodeSize + nodeNextSize);
-			freelist_remove(self, freeNode, freeNode->next);
-		}
+		freeNode->size += next->size;
+		freelist_remove(self, freeNode, freeNode->next);
 	}
 
-	if (prevNode != NULL)
+	if (previousNode != NULL && NODE_LOWER(previousNode) + previousNode->size == NODE_LOWER(freeNode))
 	{
-		size_t nodeSize;
-		unsigned short nodePadding;
-		byte6d(prevNode->data, &nodeSize, &nodePadding);
-
-		size_t nodeNextSize;
-		unsigned short nodeNextPadding;
-		byte6d(freeNode->data, &nodeNextSize, &nodeNextPadding);
-
-		size_t start = (size_t)prevNode + space - nodePadding;
-		size_t end = (size_t)freeNode + space - nodeNextPadding;
-		if (start + nodeSize == end)
-		{
-			byte6a6(&prevNode->data, nodeSize + nodeNextSize);
-			freelist_remove(self, prevNode, freeNode);
-		}
+		previousNode->size += freeNode->size;
+		freelist_remove(self, previousNode, freeNode);
 	}
 }
+
 void *freelist_alloc(FreeListMemory *self, size_t size, unsigned int alignment)
 {
 	if ((alignment & (alignment - 1)) != 0)
@@ -129,10 +109,10 @@ void *freelist_alloc(FreeListMemory *self, size_t size, unsigned int alignment)
 		printf("freelist: alloc failed, invalid instance\n");
 		return NULL;
 	}
-
-	FreeListMemoryNode *prevNode;
-	FreeListMemoryNode *node;
-	freelist_first(self, size, &prevNode, &node);
+	unsigned int padding;
+	FreeListMemory *prevNode;
+	FreeListMemory *node;
+	freelist_first(self, size, alignment, &padding, &prevNode, &node);
 
 	if (node == NULL)
 	{
@@ -140,29 +120,31 @@ void *freelist_alloc(FreeListMemory *self, size_t size, unsigned int alignment)
 		return NULL;
 	}
 
-	unsigned int space = calculate_space(sizeof(FreeListMemoryNode), sizeof(size_t));
+	unsigned int space = calculate_space(sizeof(FreeListMemory), sizeof(size_t));
 
-	size_t nodeSize;
-	unsigned short nodePadding;
-	byte6d(node->data, &nodeSize, &nodePadding);
-	size_t requiredSpace = size + nodePadding;
-	size_t remainingSpace = nodeSize - requiredSpace;
-	size_t blockStart = (size_t)node + space - nodePadding;
+	size_t requiredSpace = size + padding;
+	size_t remainingSpace = node->size - requiredSpace;
+
+	size_t addr = NODE_LOWER(node);
+	void *tmp = node->next;
+	node = (FreeListMemory *)(addr + padding - space);
+	node->padding = padding;
+	node->next = tmp;
+
+	node->size = requiredSpace;
 
 	if (remainingSpace > 0)
 	{
-		size_t newAddress = blockStart + requiredSpace;
-		unsigned int padding = calculate_alignment(newAddress, sizeof(FreeListMemoryNode), sizeof(size_t));
-
-		FreeListMemoryNode *newNode = (FreeListMemoryNode *)(newAddress + padding - space);
-		byte6a(&newNode->data, remainingSpace, padding);
+		FreeListMemory *newNode = (FreeListMemory *)(addr + requiredSpace);
+		newNode->padding = space;
+		newNode->size = remainingSpace;
 		freelist_insert(self, node, newNode);
 	}
 	freelist_remove(self, prevNode, node);
-	byte6a6(&node->data, requiredSpace);
 
-	return (void *)((size_t)node + space);
+	return (void *)NODE_HIGHER(node);
 }
+
 unsigned char freelist_free(FreeListMemory *self, void **ptr)
 {
 
@@ -177,7 +159,7 @@ unsigned char freelist_free(FreeListMemory *self, void **ptr)
 		return 0;
 	}
 
-	size_t start = (size_t)self - self->padding;
+	size_t start = NODE_LOWER(self);
 	size_t address = (size_t)(*ptr);
 	size_t end = start + self->size;
 	if (!(address >= start && address < end))
@@ -186,13 +168,13 @@ unsigned char freelist_free(FreeListMemory *self, void **ptr)
 		return 0;
 	}
 
-	unsigned int space = calculate_space(sizeof(FreeListMemoryNode), sizeof(size_t));
+	unsigned int space = calculate_space(sizeof(FreeListMemory), sizeof(size_t));
 
-	FreeListMemoryNode *freeedNode = (FreeListMemoryNode *)((size_t)(*ptr) - space);
+	FreeListMemory *freeedNode = (FreeListMemory *)((size_t)(*ptr) - space);
 	freeedNode->next = NULL;
 
-	FreeListMemoryNode *prevNode = NULL;
-	FreeListMemoryNode *node = self->head;
+	FreeListMemory *prevNode = NULL;
+	FreeListMemory *node = self->next;
 
 	while (node != NULL)
 	{
@@ -207,6 +189,20 @@ unsigned char freelist_free(FreeListMemory *self, void **ptr)
 
 	freelist_joinnext(self, prevNode, freeedNode);
 
+	if (prevNode == NULL && freeedNode == self->next)
+	{
+		size_t lower = NODE_LOWER(freeedNode);
+		size_t higher = NODE_HIGHER(freeedNode);
+		void *tmp = freeedNode->next;
+		size_t size = freeedNode->size;
+
+		node = (FreeListMemory *)(lower);
+		node->padding = space;
+		node->size = size;
+		node->next = tmp;
+		self->next = node;
+	}
+
 	*ptr = NULL;
 	return 1;
 }
@@ -218,36 +214,35 @@ void freelist_destroy(FreeListMemory **self)
 		printf("freelist: destroy failed, invalid instance\n");
 		return;
 	}
-	size_t op = (size_t)(*self) - (*self)->padding;
-	free((void *)(op));
+	free((void *)NODE_LOWER(*self));
 	*self = NULL;
 }
 
 void freelist_reset(FreeListMemory *self)
 {
-	unsigned int selfSpace = calculate_space(sizeof(FreeListMemory), sizeof(size_t));
-	size_t start = (size_t)self - self->padding;
-	size_t end = start + self->size;
+	const unsigned int space = calculate_space(sizeof(FreeListMemory), sizeof(size_t));
+	size_t start = NODE_HIGHER(self);
+	unsigned int padding = calculate_alignment(start, sizeof(FreeListMemory), sizeof(size_t));
 
-	size_t blockStart = start + (self->padding + selfSpace);
+	FreeListMemory *node = (FreeListMemory *)start;
 
-	unsigned int padding = calculate_alignment(blockStart, sizeof(FreeListMemoryNode), sizeof(size_t));
-	unsigned int space = calculate_space(sizeof(FreeListMemoryNode), sizeof(size_t));
-
-	FreeListMemoryNode *node = (FreeListMemoryNode *)(blockStart + padding - space);
+	self->next = NULL;
+	node->padding = padding;
+	node->size = self->size - (self->padding);
 	node->next = NULL;
+
 	freelist_insert(self, NULL, node);
-	byte6a(&node->data, end - blockStart, padding);
 }
 
 FreeListMemory *freelist_create(void *m, size_t size)
 {
 	size_t address = (size_t)m;
-	unsigned int padding = calculate_padding(address, sizeof(size_t));
-	FreeListMemory *self = (FreeListMemory *)(address + padding);
+	const unsigned int space = calculate_space(sizeof(FreeListMemory), sizeof(size_t));
+	const unsigned int padding = calculate_alignment(address, sizeof(FreeListMemory), sizeof(size_t));
+
+	FreeListMemory *self = (FreeListMemory *)(address + padding - space);
 	self->size = size;
 	self->padding = padding;
-	self->head = NULL;
 
 	freelist_reset(self);
 	return self;

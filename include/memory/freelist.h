@@ -4,16 +4,11 @@
 
 typedef struct
 {
-	void *head;
-	size_t size;
-	size_t padding;
+	void* next;
+	unsigned int size;
+	unsigned int padding;
 } FreeListMemory;
 
-typedef struct
-{
-	void *next;
-	size_t data; // 6bytes size 2byte padding
-} FreeListMemoryNode;
 
 void *freelist_alloc(FreeListMemory *self, size_t size, unsigned int alignment);
 unsigned char freelist_free(FreeListMemory *self, void **ptr);
