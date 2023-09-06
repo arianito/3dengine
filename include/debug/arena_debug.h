@@ -18,7 +18,7 @@ void memorydebug_update()
 
 	draw_bbox(BBox{{-10, 0, 0}, {10, (float)arena->size, 5}}, color_gray);
 
-	int space = calculate_space(sizeof(ArenaMemory), sizeof(size_t));
+	int space = MEMORY_SPACE_STD(ArenaMemory);
 	float end = (float)(space + arena->padding);
 
 	draw_bbox(BBox{{-10, 0, 0}, {10, end, 40}}, color_darkred);

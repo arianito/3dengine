@@ -20,11 +20,9 @@ void memorydebug_create()
 
 void memorydebug_update()
 {
-
-	draw_axis(Vec3{0, 40, 0}, quat_identity, 8);
 	draw_bbox(BBox{{-10, 0, 0}, {10, (float)stack->size, 5}}, color_gray);
 
-	int space = calculate_space(sizeof(StackMemory), sizeof(size_t));
+	int space = MEMORY_SPACE_STD(StackMemory);
 	float end = (float)(space + stack->padding);
 
 	draw_bbox(BBox{{-10, 0, 0}, {10, end, 40}}, color_darkred);
@@ -37,23 +35,22 @@ void memorydebug_update()
 	}
 
 	size_t start = (size_t)stack - stack->padding;
-	space = calculate_space(sizeof(StackMemoryNode), sizeof(size_t));
+	space = MEMORY_SPACE_STD(StackMemoryNode);
 	StackMemoryNode *node = (StackMemoryNode *)stack->head;
 
 	end = (float)stack->offset;
 	while (node != NULL)
 	{
 
-		size_t offset;
-		unsigned char pad;
-		byte7d(node->data, &offset, &pad);
+		size_t offset = BYTE71_GET_7(node->data);
+		unsigned char pad = BYTE71_GET_1(node->data);
 
 		size_t address = (size_t)node - start;
 
 		float block = (float)(address + space - pad);
 		float head = (float)(address);
 		float data = (float)(address + space);
-		
+
 		Color c = color_red;
 		if (stack->head == node)
 			c = color_yellow;

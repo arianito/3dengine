@@ -16,7 +16,7 @@
 enum
 {
 	types_n = 3,
-	vertices_count = 1 * 4096,
+	vertices_count = 1 * 8192,
 	edges_count = 2 * vertices_count,
 	triangles_count = 3 * vertices_count,
 };

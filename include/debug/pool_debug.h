@@ -11,7 +11,7 @@
 PoolMemory *pool = NULL;
 enum
 {
-	npool = 20,
+	npool = 200,
 };
 size_t pools[npool];
 int chunk_size = 23;
@@ -19,7 +19,7 @@ int capacity = 0;
 
 void memorydebug_create()
 {
-	pool = make_pool(300, chunk_size);
+	pool = make_pool(2048, chunk_size);
 	printf("capacity:::: %d \n", pool->capacity);
 	capacity = pool->capacity;
 	clear(pools, sizeof(pools));
@@ -29,16 +29,16 @@ void memorydebug_update()
 {
 
 	size_t start = (size_t)pool - pool->padding;
-	unsigned int space = calculate_space(sizeof(PoolMemory), sizeof(size_t));
+	unsigned int space = MEMORY_SPACE_STD(PoolMemory);
 	size_t cursor = pool->padding + space;
-	space = calculate_space(sizeof(PoolMemoryNode), sizeof(size_t));
+	space = MEMORY_SPACE_STD(PoolMemoryNode);
 	draw_bbox(BBox{{-10, 0, 0}, {10, (float)pool->size, 4}}, color_gray);
 	draw_bbox(BBox{{-10, 0, 0}, {10, (float)(cursor), 40}}, color_darkred);
 
 	while (1)
 	{
 		size_t chunkAddress = start + cursor;
-		size_t padding = calculate_alignment(chunkAddress, sizeof(PoolMemoryNode), sizeof(size_t));
+		size_t padding = MEMORY_ALIGNMENT_STD(chunkAddress, PoolMemoryNode);
 
 		if (cursor + padding + chunk_size > pool->size)
 			break;
@@ -53,8 +53,7 @@ void memorydebug_update()
 		float data = (float)(address + space);
 		float next = (float)(data + chunk_size);
 
-		unsigned char used = 0;
-		byte7d(node->data, NULL, &used);
+		unsigned char used = BYTE71_GET_1(node->data);
 		Color c = used ? color_red : color_green;
 		if (pool->head == node)
 			c = color_yellow;
@@ -66,7 +65,7 @@ void memorydebug_update()
 
 	draw_bbox(BBox{{-10, (float)(cursor), 0}, {10, (float)(pool->size), 40}}, color_darkred);
 
-	if (input_keydown(KEY_SPACE))
+	if (input_keypress(KEY_SPACE))
 	{
 		sort_quick(pools, 0, npool - 1);
 		void *ptr = (void *)pools[0];
@@ -82,7 +81,7 @@ void memorydebug_update()
 		}
 	}
 
-	if (input_keydown(KEY_M))
+	if (input_keypress(KEY_M))
 	{
 		sort_quick(pools, 0, npool - 1);
 		int a = npool - 1;

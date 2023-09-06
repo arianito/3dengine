@@ -20,7 +20,7 @@ void *arena_alloc(ArenaMemory *self, size_t size, unsigned int alignment)
 		return NULL;
 	}
 	size_t address = ((size_t)self - self->padding) + self->offset;
-	int padding = calculate_padding(address, alignment);
+	int padding = MEMORY_PADDING(address, alignment);
 	if (self->offset + size + padding > self->size)
 	{
 		printf("arena: alloc failed, insufficient memory\n");
@@ -38,7 +38,7 @@ void arena_reset(ArenaMemory *self)
 		printf("arena: reset failed, invalid instance\n");
 		return;
 	}
-	unsigned int space = calculate_space(sizeof(ArenaMemory), sizeof(size_t));
+	const unsigned int space = MEMORY_SPACE_STD(ArenaMemory);
 	self->offset = self->padding + space;
 }
 
@@ -57,8 +57,8 @@ void arena_destroy(ArenaMemory **self)
 ArenaMemory *arena_create(void *m, size_t size)
 {
 	size_t address = (size_t)m;
-	unsigned int space = calculate_space(sizeof(ArenaMemory), sizeof(size_t));
-	unsigned int padding = calculate_padding(address, sizeof(size_t));
+	const unsigned int space = MEMORY_SPACE_STD(ArenaMemory);
+	const unsigned int padding = MEMORY_PADDING_STD(address);
 	ArenaMemory *self = (ArenaMemory *)(address + padding);
 	self->size = size;
 	self->offset = padding + space;

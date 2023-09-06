@@ -19,16 +19,13 @@ void memorydebug_create()
 {
 	freelist = make_freelist(2048);
 	clear(pools, sizeof(pools));
-
-	printf("0x%zx\n", BYTE_MASK(size_t, short));
-	printf("0x%zx\n", ~BYTE_MASK(size_t, short));
 }
 
 void memorydebug_update()
 {
 	draw_bbox(BBox{{-10, 0, 0}, {10, (float)freelist->size, 5}}, color_gray);
 
-	unsigned int space = calculate_space(sizeof(FreeListMemory), sizeof(size_t));
+	const unsigned int space = MEMORY_SPACE_STD(FreeListMemory);
 	size_t cursor = freelist->padding;
 
 	size_t start = (size_t)freelist + space - freelist->padding;

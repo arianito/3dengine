@@ -21,8 +21,8 @@ void *stack_alloc(StackMemory *self, size_t size, unsigned int alignment)
 	}
 	size_t start = (size_t)self - self->padding;
 	size_t address = start + self->offset;
-	unsigned int padding = calculate_alignment(address, sizeof(StackMemoryNode), alignment);
-	unsigned int space = calculate_space(sizeof(StackMemoryNode), sizeof(size_t));
+	const unsigned int padding = MEMORY_ALIGNMENT(address, sizeof(StackMemoryNode), alignment);
+	const unsigned int space = MEMORY_SPACE(sizeof(StackMemoryNode), sizeof(size_t));
 	if (self->offset + padding + size > self->size)
 	{
 		printf("stack: alloc failed, insufficient memory\n");
@@ -35,9 +35,9 @@ void *stack_alloc(StackMemory *self, size_t size, unsigned int alignment)
 	StackMemoryNode *node = (StackMemoryNode *)(address + padding - space);
 
 	if (self->head == NULL)
-		byte7a(&node->data, 0, padding);
+		node->data = BYTE71(0, padding);
 	else
-		byte7a(&node->data, (size_t)self->head - start, padding);
+		node->data = BYTE71((size_t)self->head - start, padding);
 
 	self->head = node;
 
@@ -69,7 +69,7 @@ unsigned char stack_free(StackMemory *self, void **p)
 		printf("stack: free failed, invalid order of free\n");
 		return 0;
 	}
-	unsigned int space = calculate_space(sizeof(StackMemoryNode), sizeof(size_t));
+	const unsigned int space = MEMORY_SPACE_STD(StackMemoryNode);
 	StackMemoryNode *node = (StackMemoryNode *)(address - space);
 	if (node != self->head)
 	{
@@ -77,12 +77,14 @@ unsigned char stack_free(StackMemory *self, void **p)
 		return 0;
 	}
 
-	size_t offset;
-	unsigned char padding;
-	byte7d(node->data, &offset, &padding);
+	size_t offset = BYTE71_GET_7(node->data);
+	unsigned char padding = BYTE71_GET_1(node->data);
+
 	self->offset = (address - padding) - start;
 	StackMemoryNode *head = (StackMemoryNode *)self->head;
-	byte7d(head->data, &offset, NULL);
+
+	offset = BYTE71_GET_7(head->data);
+
 	if (offset == 0)
 		self->head = NULL;
 	else
@@ -98,7 +100,7 @@ void stack_reset(StackMemory *self)
 		printf("stack: reset failed, invalid instance\n");
 		return;
 	}
-	unsigned int space = calculate_space(sizeof(StackMemory), sizeof(size_t));
+	const unsigned int space = MEMORY_SPACE_STD(StackMemory);
 	self->offset = self->padding + space;
 	self->peak = self->offset;
 	self->head = NULL;
@@ -119,8 +121,8 @@ void stack_destroy(StackMemory **self)
 StackMemory *stack_create(void *m, size_t size)
 {
 	size_t address = (size_t)m;
-	unsigned int space = calculate_space(sizeof(StackMemory), sizeof(size_t));
-	unsigned int padding = calculate_padding(address, sizeof(size_t));
+	const unsigned int space = MEMORY_SPACE_STD(StackMemory);
+	const unsigned int padding = MEMORY_PADDING_STD(address);
 	StackMemory *self = (StackMemory *)(address + padding);
 	self->head = NULL;
 	self->size = size;

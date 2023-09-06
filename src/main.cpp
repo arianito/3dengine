@@ -45,7 +45,7 @@ int main(int argc, const char *argv[])
 	MemoryMetadata meta;
 	meta.components = 100 * KILOBYTES;
 	meta.stack = 100 * KILOBYTES;
-	meta.global = 1 * MEGABYTES;
+	meta.global = 2 * MEGABYTES;
 
 	alloc_create(meta);
 

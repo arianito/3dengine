@@ -19,7 +19,7 @@ void *std_alloc(size_t size, unsigned int alignment)
 	}
 
 	size_t address = (size_t)ptr;
-	unsigned int padding = calculate_alignment(address, 1, alignment);
+	unsigned int padding = MEMORY_ALIGNMENT(address, 1, alignment);
 	address += padding;
 	*((char *)(address - 1)) = padding;
 	return (void *)address;

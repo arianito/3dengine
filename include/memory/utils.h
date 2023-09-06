@@ -2,62 +2,25 @@
 
 #include <stddef.h>
 
-inline unsigned int calculate_padding(size_t address, unsigned int alignment)
-{
-	unsigned int modulo = address & (alignment - 1);
+#define MODULO(address, alignment) (address & (alignment - 1ULL))
+#define MEMORY_PADDING(address, alignment) ((alignment - (address & (alignment - 1ULL))) & (alignment - 1ULL))
+#define MEMORY_PADDING_STD(address) (MEMORY_PADDING(address, sizeof(size_t)))
+#define MEMORY_SPACE(space, alignment) ((space + alignment - 1ULL) & ~(alignment - 1ULL))
+#define MEMORY_SPACE_STD(type) (MEMORY_SPACE(sizeof(type), sizeof(size_t)))
+#define MEMORY_ALIGNMENT(address, space, alignment) (MEMORY_PADDING(address, alignment) + ((MEMORY_PADDING(address, alignment) >= space) ? 0ULL : MEMORY_SPACE(space, alignment)))
+#define MEMORY_ALIGNMENT_STD(address, type) (MEMORY_ALIGNMENT(address, sizeof(type), sizeof(size_t)))
 
-	if (modulo == 0)
-		return 0;
+#define BYTE_BE(offset) ((sizeof(1ULL) - (size_t)(offset + 1ULL)) << 3ULL)
+#define BYTE_LE(offset) ((size_t)(offset) << 3ULL)
+#define MASK_BE(offset) ((1ULL << BYTE_BE(offset - 1ULL)) - 1ULL)
+#define MASK_LE(offset) ((1ULL << BYTE_LE(offset)) - 1ULL)
+#define SET_NTH_BE(number, bytes, offset) (((number & MASK_LE(bytes)) << BYTE_BE(offset)))
+#define SET_NTH_LE(number, bytes, offset) (((number & MASK_LE(bytes)) << BYTE_LE(offset)))
+#define GET_NTH_BE(number, bytes, offset) (((size_t)number >> BYTE_BE(offset)) & MASK_LE(bytes))
+#define GET_NTH_LE(number, bytes, offset) (((size_t)number >> BYTE_LE(offset)) & MASK_LE(bytes))
 
-	return alignment - modulo;
-}
-
-inline unsigned int calculate_space(unsigned int space, unsigned int alignment)
-{
-	unsigned int padding = alignment * (space / alignment);
-	unsigned int modulo = space & (alignment - 1);
-
-	if (modulo == 0)
-		return padding;
-
-	return padding + alignment;
-}
-
-inline unsigned int calculate_alignment(size_t address, unsigned int space, unsigned int alignment)
-{
-	unsigned int padding = calculate_padding(address, alignment);
-	if (padding >= space)
-		return padding;
-	return padding + calculate_space(space, alignment);
-}
-
-inline void byte7a(size_t *f, size_t a, unsigned char b)
-{
-	size_t m = (8 * (sizeof(a) - sizeof(b)));
-	*f = ((size_t)b << m) | (a & (((size_t)1 << m) - 1));
-}
-
-inline void byte7d(size_t f, size_t *a, unsigned char *b)
-{
-	size_t m = (8 * (sizeof(*a) - sizeof(*b)));
-	if (a != NULL)
-		*a = (f & (((size_t)1 << m) - 1));
-	if (b != NULL)
-		*b = (f >> m) & (((size_t)1 << (sizeof(*b) * 8)) - 1);
-}
-
-inline void byte7a7(size_t *f, size_t a)
-{
-	size_t mask = (((size_t)1 << (8 * (sizeof(a) - sizeof(char)))) - 1);
-	*f = (~mask & *f) | (mask & a);
-}
-
-inline void byte7a1(size_t *f, unsigned char b)
-{
-	size_t m = (8 * (sizeof(*f) - sizeof(b)));
-	*f = ((size_t)b << m) | ((((size_t)1 << m) - 1) & *f);
-}
-
-#define BYTE_POW(big_type, small_type) ((8 * (sizeof(big_type) - sizeof(small_type))))
-#define BYTE_MASK(big_type, small_type) (((size_t)1 << BYTE_POW(big_type, small_type)) - 1)
-#define BYTE611()
+#define BYTE71(n7, n1) (SET_NTH_LE(n7, 7ULL, 0ULL) | SET_NTH_BE(n1, 1ULL, 0ULL))
+#define BYTE71_GET_7(full) (GET_NTH_LE(full, 7ULL, 0))
+#define BYTE71_GET_1(full) (GET_NTH_BE(full, 1ULL, 0))
+#define BYTE71_SET_7(full, n7) (full | SET_NTH_LE(n7, 7ULL, 0))
+#define BYTE71_SET_1(full, n1) (full | SET_NTH_BE(n1, 1ULL, 0))
