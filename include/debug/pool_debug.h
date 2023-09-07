@@ -1,9 +1,36 @@
 #pragma once
+/******************************************************************************
+ *                                                                            *
+ *  Copyright (c) 2023 Aryan Alikhani                                      *
+ *  GitHub: github.com/arianito                                               *
+ *  Email: alikhaniaryan@gmail.com                                            *
+ *                                                                            *
+ *  Permission is hereby granted, free of charge, to any person obtaining a   *
+ *  copy of this software and associated documentation files (the "Software"),*
+ *  to deal in the Software without restriction, including without limitation *
+ *  the rights to use, copy, modify, merge, publish, distribute, sublicense,  *
+ *  and/or sell copies of the Software, and to permit persons to whom the      *
+ *  Software is furnished to do so, subject to the following conditions:       *
+ *                                                                            *
+ *  The above copyright notice and this permission notice shall be included   *
+ *  in all copies or substantial portions of the Software.                    *
+ *                                                                            *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS   *
+ *  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF                *
+ *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN *
+ *  NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,   *
+ *  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR     *
+ *  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE  *
+ *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
+ *                                                                            *
+ *****************************************************************************/
 
 #include "../input.h"
 #include "../mathf.h"
 #include "../draw.h"
 #include "../sort.h"
+#include "../game.h"
+#include "../camera.h"
 #include "../memory/pool.h"
 #include "../memory/utils.h"
 #include "../memory/memory.h"
@@ -14,13 +41,14 @@ enum
 	npool = 200,
 };
 size_t pools[npool];
-int chunk_size = 23;
+int chunk_size = 32;
 int capacity = 0;
 float lastHit = 0;
+float flyTime = 90;
 
 void memorydebug_create()
 {
-	pool = make_pool(2048, chunk_size);
+	pool = make_pool(1024, chunk_size);
 	printf("capacity:::: %d \n", pool->capacity);
 	capacity = pool->capacity;
 	clear(pools, sizeof(pools));
@@ -33,7 +61,7 @@ void memorydebug_update()
 	unsigned int space = MEMORY_SPACE_STD(PoolMemory);
 	size_t cursor = pool->padding + space;
 	space = MEMORY_SPACE_STD(PoolMemoryNode);
-	draw_bbox(BBox{{-10, 0, 0}, {10, (float)pool->size, 4}}, color_gray);
+	fill_bbox(BBox{{-15, 0, -10}, {15, (float)pool->size, -1}}, color_gray);
 	draw_bbox(BBox{{-10, 0, 0}, {10, (float)(cursor), 40}}, color_darkred);
 
 	while (1)
@@ -61,12 +89,13 @@ void memorydebug_update()
 
 		draw_bbox(BBox{{-10, block, 15}, {10, head, 20}}, color_white);
 		draw_bbox(BBox{{-10, head, 15}, {10, data, 20}}, color_gray);
-		draw_bbox(BBox{{-10, data, 0}, {10, next, 25}}, c);
+		fill_bbox(BBox{{-10, data, 0}, {10, next, 25}}, c);
+		draw_bbox(BBox{{-10, data, 0}, {10, next, 25}}, color_black);
 	}
 
 	draw_bbox(BBox{{-10, (float)(cursor), 0}, {10, (float)(pool->size), 40}}, color_darkred);
 
-	if (input_keypress(KEY_SPACE) && (time->time - lastHit > 0.1f))
+	if (input_keypress(KEY_SPACE) && (time->time - lastHit > 0.07f))
 	{
 		sort_quick(pools, 0, npool - 1);
 		void *ptr = (void *)pools[0];
@@ -115,5 +144,20 @@ void memorydebug_update()
 			pool = make_pool(newSize, chunk_size);
 			capacity = pool->capacity;
 		}
+	}
+	
+	if (input_keypress(KEY_ENTER))
+	{
+		// Vec3 forward = vec3(-300, sind(flyTime) * 512 + 512, 120);
+		// camera->rotation = rot(-15, 0, 0);
+		// camera->position = forward;
+		// camera_update();
+		// flyTime += time->deltaTime * 10.0f;
+		
+		Vec3 forward = vec3(0, sind(flyTime) * 512 + 400, 15);
+		camera->rotation = rot(0, 90, 0);
+		camera->position = forward;
+		camera_update();
+		flyTime += time->deltaTime * 10.0f;
 	}
 }

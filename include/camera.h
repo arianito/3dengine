@@ -1,4 +1,29 @@
 #pragma once
+/******************************************************************************
+ *                                                                            *
+ *  Copyright (c) 2023 Aryan Alikhani                                      *
+ *  GitHub: github.com/arianito                                               *
+ *  Email: alikhaniaryan@gmail.com                                            *
+ *                                                                            *
+ *  Permission is hereby granted, free of charge, to any person obtaining a   *
+ *  copy of this software and associated documentation files (the "Software"),*
+ *  to deal in the Software without restriction, including without limitation *
+ *  the rights to use, copy, modify, merge, publish, distribute, sublicense,  *
+ *  and/or sell copies of the Software, and to permit persons to whom the      *
+ *  Software is furnished to do so, subject to the following conditions:       *
+ *                                                                            *
+ *  The above copyright notice and this permission notice shall be included   *
+ *  in all copies or substantial portions of the Software.                    *
+ *                                                                            *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS   *
+ *  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF                *
+ *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN *
+ *  NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,   *
+ *  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR     *
+ *  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE  *
+ *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
+ *                                                                            *
+ *****************************************************************************/
 
 #include "mathf.h"
 #include "game.h"
@@ -29,9 +54,9 @@ inline void camera_init()
 {
     camera = alloc_global(Camera);
 
-    camera->rotation = rot(-50, 45, 0);
+    camera->rotation = rot(-15, 45, 0);
     Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -200);
-	backward = vec3_add(backward, vec3(0, 128, 0));
+	backward.y += 120;
     camera->position = vec3_add(backward, vec3_zero);
     camera->fov = 90.0f;
 

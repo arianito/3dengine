@@ -15,7 +15,7 @@ extern "C"
 #include "file.h"
 #include "memory/pool.h"
 #include "memory/utils.h"
-#include "debug/freelist_debug.h"
+#include "debug/arena_debug.h"
 }
 
 #include "engine/Component.hpp"
