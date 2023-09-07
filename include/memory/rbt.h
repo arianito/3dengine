@@ -36,11 +36,11 @@ typedef enum
 
 typedef struct
 {
-	int data;
-	RedBlackTreeColorEnum color;
 	void *parent;
 	void *left;
 	void *right;
+	RedBlackTreeColorEnum color;
+	int data;
 } RedBlackTreeNode;
 
 RedBlackTreeNode *createNode(int data);

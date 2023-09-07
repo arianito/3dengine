@@ -30,7 +30,7 @@
 typedef struct
 {
 	size_t size;
-	size_t offset;
+	unsigned int offset;
 	unsigned int padding;
 } ArenaMemory;
 

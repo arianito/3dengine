@@ -30,9 +30,9 @@
 typedef struct
 {
 	void *head;
-	size_t size;
-	unsigned int padding;
-	unsigned int capacity;
+	unsigned int size;
+	unsigned short padding;
+	unsigned short capacity;
 } PoolMemory;
 
 typedef struct
