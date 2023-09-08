@@ -39,3 +39,4 @@ void arena_reset(ArenaMemory *self);
 void arena_destroy(ArenaMemory **self);
 ArenaMemory *arena_create(void *m, size_t size);
 ArenaMemory *make_arena(size_t size);
+ArenaMemory *make_arena_exact(size_t size);

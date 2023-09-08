@@ -169,3 +169,18 @@ PoolMemory *make_pool(size_t size, unsigned int chunkSize)
 	}
 	return pool_create(m, size, chunkSize);
 }
+
+PoolMemory *make_pool_exact(size_t size, unsigned int chunkSize)
+{
+	if (size % chunkSize != 0)
+	{
+
+		printf("pool: make failed, invalid chunk size\n");
+		exit(EXIT_FAILURE);
+		return NULL;
+	}
+	unsigned int n = size / chunkSize;
+	size += MEMORY_SPACE_STD(PoolMemory) + sizeof(size_t);
+	size += n * sizeof(PoolMemoryNode);
+	return make_pool(size, chunkSize);
+}

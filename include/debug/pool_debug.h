@@ -48,7 +48,7 @@ float flyTime = 90;
 
 void memorydebug_create()
 {
-	pool = make_pool(1024, chunk_size);
+	pool = make_pool_exact(256, chunk_size);
 	printf("capacity:::: %d \n", pool->capacity);
 	capacity = pool->capacity;
 	clear(pools, sizeof(pools));

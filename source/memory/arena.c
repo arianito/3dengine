@@ -102,3 +102,9 @@ ArenaMemory *make_arena(size_t size)
 	}
 	return arena_create(m, size);
 }
+
+ArenaMemory *make_arena_exact(size_t size)
+{
+	size += MEMORY_SPACE_STD(ArenaMemory) + sizeof(size_t);
+	return make_arena(size);
+}

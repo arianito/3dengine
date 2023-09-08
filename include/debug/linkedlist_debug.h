@@ -33,8 +33,17 @@
 #include "../memory/arena.h"
 #include "../memory/utils.h"
 
+typedef struct
+{
+	size_t data;
+	TreeNode* left;
+	TreeNode* right;
+} TreeNode;
+
+
 void memorydebug_create()
 {
+	printf("%zu", 1ULL << 10);
 }
 
 void memorydebug_update()

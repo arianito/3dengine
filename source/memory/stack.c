@@ -168,3 +168,9 @@ StackMemory *make_stack(size_t size)
 	}
 	return stack_create(m, size);
 }
+
+StackMemory *make_stack_exact(size_t size)
+{
+	size += MEMORY_SPACE_STD(StackMemory) + sizeof(size_t);
+	return make_stack(size);
+}

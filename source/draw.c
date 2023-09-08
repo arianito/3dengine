@@ -272,7 +272,7 @@ void fill_bbox(BBox bbox, Color c)
 	bbox_vertices(&bbox, vertices);
 
 	Vertex va;
-	va.color = color_alpha(c, 0.25);
+	va.color = c;
 
 	fill_face(&va, &vertices[1], &vertices[5], &vertices[6], &vertices[2]);
 	fill_face(&va, &vertices[0], &vertices[4], &vertices[7], &vertices[3]);

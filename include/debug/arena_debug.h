@@ -39,7 +39,7 @@ float lastHit = 0;
 
 void memorydebug_create()
 {
-	arena = make_arena(1024);
+	arena = make_arena(KILOBYTES);
 }
 
 void memorydebug_update()
@@ -69,19 +69,5 @@ void memorydebug_update()
 		{
 			printf("alloc %zu \n", arena->offset);
 		}
-	}
-	if (input_keypress(KEY_ENTER))
-	{
-		// Vec3 forward = vec3(-300, sind(flyTime) * 512 + 512, 120);
-		// camera->rotation = rot(-15, 0, 0);
-		// camera->position = forward;
-		// camera_update();
-		// flyTime += time->deltaTime * 10.0f;
-
-		// Vec3 forward = vec3(0, sind(flyTime) * 512 + 400, 15);
-		// camera->rotation = rot(0, 90, 0);
-		// camera->position = forward;
-		// camera_update();
-		// flyTime += time->deltaTime * 10.0f;
 	}
 }

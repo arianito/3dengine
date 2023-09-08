@@ -60,7 +60,7 @@ void game_init()
 	game->width = 1200;
 	game->height = 780;
 	game->ratio = game->width / game->height;
-	game->fullScreen = 1;
+	game->fullScreen = 0;
 
 	if (!glfwInit())
 		return;

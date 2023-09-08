@@ -45,3 +45,4 @@ unsigned char pool_free(PoolMemory *self, void **ptr);
 void pool_destroy(PoolMemory **self);
 PoolMemory *pool_create(void *m, size_t size, unsigned int chunkSize);
 PoolMemory *make_pool(size_t size, unsigned int chunkSize);
+PoolMemory *make_pool_exact(size_t size, unsigned int chunkSize);

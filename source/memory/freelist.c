@@ -279,3 +279,9 @@ FreeListMemory *make_freelist(size_t size)
 	}
 	return freelist_create(m, size);
 }
+
+FreeListMemory *make_freelist_exact(size_t size)
+{
+	size += MEMORY_SPACE_STD(FreeListMemory) + sizeof(size_t);
+	return make_freelist(size);
+}

@@ -47,3 +47,4 @@ void stack_reset(StackMemory *self);
 void stack_destroy(StackMemory **self);
 StackMemory *stack_create(void* m, size_t size);
 StackMemory *make_stack(size_t size);
+StackMemory *make_stack_exact(size_t size);

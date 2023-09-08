@@ -15,7 +15,7 @@ extern "C"
 #include "file.h"
 #include "memory/pool.h"
 #include "memory/utils.h"
-#include "debug/linkedlist_debug.h"
+#include "debug/pool_debug.h"
 }
 
 #include "engine/Component.hpp"
