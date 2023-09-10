@@ -33,68 +33,84 @@
 #include "shader.h"
 #include "mathf.h"
 #include "font.h"
+#include "camera.h"
 
 #define BUFFER_OFFSET(x) ((const void *)(x))
-#define VERTEX_SIZE 20
-#define CIRCLE_SEGMENTS 18
 
-static Shader shader;
+enum
+{
+	quad_n = 4096,
+};
 
-static GLuint m_vaoIds[1];
-static GLuint m_vboIds[1];
+typedef struct
+{
+	Character buffer[quad_n * 6];
+	Shader shader;
+	GLuint vaoIds[1];
+	GLuint vboIds[1];
+	int quads;
+} DrawData;
 
-static Character buffer[2048];
-static int num_quads = 0;
-
+static DrawData *drawData;
 
 void debug_init()
 {
-    shader = shader_load("shaders/debug.vs", "shaders/debug.fs");
-    glGenVertexArrays(1, m_vaoIds);
-    glGenBuffers(1, m_vboIds);
+	drawData = alloc_global(DrawData);
+	clear(drawData, sizeof(DrawData));
 
-    glBindVertexArray(m_vaoIds[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(buffer), buffer, GL_DYNAMIC_DRAW);
+	drawData->shader = shader_load("shaders/debug.vs", "shaders/debug.fs");
+	glGenVertexArrays(1, drawData->vaoIds);
+	glGenBuffers(1, drawData->vboIds);
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Character), BUFFER_OFFSET(0));
+	glBindVertexArray(drawData->vaoIds[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, drawData->vboIds[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(drawData->buffer), drawData->buffer, GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Character), BUFFER_OFFSET(0));
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 }
 
 void debug_render()
 {
-    if (num_quads == 0)
-        return;
+	if (drawData->quads == 0)
+		return;
 
-    shader_begin(shader);
+	shader_begin(drawData->shader);
 
-    Mat4 projection = mat4_orthographic(0, game->width, game->height, 0, -1, 1);
-    shader_mat4(shader, "projection", &projection);
+	Mat4 projection = mat4_orthographic(0, game->width, game->height, 0, -1, 1);
+	shader_mat4(drawData->shader, "projection", &projection);
 
-    glBindVertexArray(m_vaoIds[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(buffer), buffer);
-    glDrawArrays(GL_TRIANGLES, 0, num_quads * 6);
+	glBindVertexArray(drawData->vaoIds[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, drawData->vboIds[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(drawData->buffer), drawData->buffer);
+	glDrawArrays(GL_TRIANGLES, 0, drawData->quads * 6);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 
-    shader_end();
+	shader_end();
 
-    num_quads = 0;
+	drawData->quads = 0;
 }
 
 void debug_terminate()
 {
-    glDeleteVertexArrays(1, m_vaoIds);
-    glDeleteBuffers(1, m_vboIds);
-    shader_destroy(shader);
+	glDeleteVertexArrays(1, drawData->vaoIds);
+	glDeleteBuffers(1, drawData->vboIds);
+	shader_destroy(drawData->shader);
 }
 
-void debug_string(char *s, Vec2 pos)
+void debug_string(const char *s, Vec2 pos)
 {
-    num_quads = stb_easy_font_print(pos.x, pos.y, s, 0, buffer, sizeof(buffer));
+	drawData->quads += stb_easy_font_print(pos.x, pos.y, s, 0, drawData->buffer + drawData->quads * 6, sizeof(drawData->buffer) - drawData->quads * 6);
+}
+
+void debug_string3d(const char *s, Vec3 pos)
+{
+	Vec2 scr;
+	camera_worldToScreen(pos, &scr);
+	drawData->quads += stb_easy_font_print(scr.x, scr.y, s, 0, drawData->buffer + drawData->quads * 6, sizeof(drawData->buffer) - drawData->quads * 6);
 }

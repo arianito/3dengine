@@ -45,5 +45,5 @@ FileData *file;
 
 void resolve(const char *p, char out[URL_LENGTH]);
 void file_init(const char *pfx);
-File *file_read(const char *p);
+File *file_read(const char *p, char endline);
 void file_destroy(File *f);

@@ -34,7 +34,11 @@
 
 void *std_alloc(size_t size, unsigned int alignment)
 {
-	assert((alignment & (alignment - 1)) == 0 && "invalid alignment");
+	if (!ISPOW2(alignment))
+	{
+		printf("std: alloc failed, invalid alignment\n");
+		return NULL;
+	}
 	void *ptr = malloc(size + alignment);
 	if (ptr == NULL)
 	{

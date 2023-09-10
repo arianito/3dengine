@@ -34,7 +34,7 @@
 
 void *stack_alloc(StackMemory *self, size_t size, unsigned int alignment)
 {
-	if ((alignment & (alignment - 1)) != 0)
+	if (!ISPOW2(alignment))
 	{
 		printf("stack: alloc failed, invalid alignment\n");
 		return NULL;

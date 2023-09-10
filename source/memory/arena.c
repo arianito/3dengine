@@ -34,7 +34,7 @@
 
 void *arena_alloc(ArenaMemory *self, size_t size, unsigned int alignment)
 {
-	if ((alignment & (alignment - 1)) != 0)
+	if (!ISPOW2(alignment))
 	{
 		printf("arena: alloc failed, invalid alignment\n");
 		return NULL;

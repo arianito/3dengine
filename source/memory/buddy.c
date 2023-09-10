@@ -1,4 +1,3 @@
-#pragma once
 /******************************************************************************
  *                                                                            *
  *  Copyright (c) 2023 Aryan Alikhani                                      *
@@ -25,70 +24,72 @@
  *                                                                            *
  *****************************************************************************/
 
-#include "../input.h"
-#include "../mathf.h"
-#include "../draw.h"
-#include "../game.h"
-#include "../debug.h"
-#include "../sort.h"
-#include "../camera.h"
-#include "../memory/buddy.h"
-#include "../memory/utils.h"
+#include "memory/buddy.h"
 
-BuddyMemory *buddy;
-enum
-{
-	npool = 200
-};
-size_t pools[npool];
-float lastHit = 0;
+#include <malloc.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
-void memorydebug_create()
+#include "memory/utils.h"
+
+BuddyMemory *buddy_create(void *m, unsigned char level)
 {
-	buddy = make_buddy(9);
+	size_t start = (size_t)m;
+	const unsigned char padding = MEMORY_ALIGNMENT(start, 1, sizeof(size_t));
+	unsigned int size = 1 << level;
+
+	((char*)(start + padding - 1))[0] = padding;
+	
+	BuddyMemory *self = (BuddyMemory *)(start + padding);
+	self->next = NULL;
+	self->order = level;
+	self->status = 0;
+
+	return self;
 }
 
-void memorydebug_update()
+BuddyMemory *make_buddy(unsigned char level)
 {
-
-	draw_cubef(vec3_zero, color_blue, 20);
-	draw_cubef(vec3_zero, color_blue, 40);
-
-	if (input_keypress(KEY_SPACE) && (time->time - lastHit > 0.07f))
+	unsigned int size = 1 << level;
+	size += MEMORY_SPACE_STD(BuddyMemory) + sizeof(size_t);
+	void *m = malloc(size);
+	if (m == NULL)
 	{
-		sort_quick(pools, 0, npool - 1);
-		void *ptr = (void *)pools[0];
-		if (ptr == NULL)
-		{
-			size_t size = (int)powf(2, (int)(randf() * 6 + 3));
-			void *newPtr = buddy_alloc(buddy, size);
-			if (newPtr != NULL)
-			{
-				pools[0] = (size_t)newPtr;
-			}
-		}
-		lastHit = time->time;
+		printf("buddy: make failed, system can't provide free memory\n");
+		exit(EXIT_FAILURE);
+		return NULL;
 	}
-	if (input_keypress(KEY_M) && (time->time - lastHit > 0.1f))
+	memset(m, 0, size);
+	return buddy_create(m, level);
+}
+
+void *buddy_alloc(BuddyMemory *self, size_t size)
+{
+	if (!ISPOW2(size))
 	{
-		sort_quick(pools, 0, npool - 1);
-		int a = npool - 1;
-		for (int i = npool - 1; i >= 0; i--)
-		{
-			if (pools[i] != 0 && i < a)
-			{
-				a = i;
-			}
-		}
-		sort_shuffle(pools, a, npool - 1);
-		void *ptr = (void *)pools[npool - 1];
-		if (ptr != NULL)
-		{
-			if (buddy_free(buddy, &ptr))
-			{
-				pools[npool - 1] = 0;
-			}
-		}
-		lastHit = time->time;
+		printf("buddy: alloc failed, invalid alignment\n");
+		return NULL;
 	}
+	if (self == NULL)
+	{
+		printf("buddy: alloc failed, invalid instance\n");
+		return NULL;
+	}
+	return NULL;
+}
+unsigned char buddy_free(BuddyMemory *self, void **ptr)
+{
+	if (self == NULL)
+	{
+		printf("buddy: free failed, invalid instance\n");
+		return 0;
+	}
+	if (ptr == NULL || (*ptr) == NULL)
+	{
+		printf("buddy: free failed, invalid pointer\n");
+		return 0;
+	}
+	return 0;
 }

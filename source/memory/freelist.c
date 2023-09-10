@@ -124,7 +124,7 @@ void freelist_joinnext(FreeListMemory *self, FreeListMemory *previousNode, FreeL
 
 void *freelist_alloc(FreeListMemory *self, size_t size, unsigned int alignment)
 {
-	if ((alignment & (alignment - 1)) != 0)
+	if (!ISPOW2(alignment))
 	{
 		printf("freelist: alloc failed, invalid alignment\n");
 		return NULL;

@@ -28,6 +28,7 @@
 #include <stddef.h>
 
 #define MODULO(address, alignment) (address & (alignment - 1ULL))
+#define ISPOW2(alignment) (!(alignment & (alignment - 1ULL)))
 #define MEMORY_PADDING(address, alignment) ((alignment - (address & (alignment - 1ULL))) & (alignment - 1ULL))
 #define MEMORY_PADDING_STD(address) (MEMORY_PADDING(address, sizeof(size_t)))
 #define MEMORY_SPACE(space, alignment) ((space + alignment - 1ULL) & ~(alignment - 1ULL))

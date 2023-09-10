@@ -55,7 +55,6 @@ typedef struct
 	float orbitingSensitivity;
 	float panningSensitivity;
 	float zoomingSensitivity;
-	float lastOrbit;
 	//
 	StatusEnum mode;
 } EditorData;
@@ -70,9 +69,8 @@ void editor_init()
 	editor->center = vec3_zero;
 	editor->distance = vec3_dist(camera->position, editor->center);
 	editor->orbitingSensitivity = 0.25f;
-	editor->panningSensitivity = 0.25f;
-	editor->zoomingSensitivity = 0.25f;
-	editor->lastOrbit = -1;
+	editor->panningSensitivity = 0.5f;
+	editor->zoomingSensitivity = 0.5f;
 }
 
 void save_state()
@@ -88,42 +86,24 @@ void save_state()
 
 void editor_update()
 {
-	int leftAlt = input_keypress(KEY_LEFT_ALT);
-	char allowed = time->time - editor->lastOrbit < 0.25f;
-
-	if (!editor->mode && leftAlt && !allowed && input_mousedown(MOUSE_RIGHT))
+	if (!editor->mode && input_keypress(KEY_LEFT_CONTROL) && input_mousedown(MOUSE_MIDDLE))
 	{
 		save_state();
 		editor->mode = ZOOMING;
 	}
-	if (!editor->mode && input_mousedown(MOUSE_RIGHT))
+	if (!editor->mode && input_keypress(KEY_LEFT_SHIFT) && input_mousedown(MOUSE_MIDDLE))
 	{
 		save_state();
 		editor->mode = PANNING;
 	}
-	if (!editor->mode && leftAlt && input_mousedown(MOUSE_LEFT))
+	if (!editor->mode && input_mousedown(MOUSE_MIDDLE))
 	{
 		save_state();
 		editor->mode = ORBITING;
-		editor->lastOrbit = time->time;
 	}
-
-	if (input_keyup(KEY_LEFT_ALT))
-	{
-		editor->lastOrbit = -1;
-	}
-
-	if (editor->mode && (input_mouseup(MOUSE_RIGHT) || input_mouseup(MOUSE_LEFT)))
+	if (editor->mode && (input_mouseup(MOUSE_MIDDLE) || input_mouseup(MOUSE_RIGHT) || input_mouseup(MOUSE_LEFT)))
 	{
 		editor->mode = NOT_BUSY;
-	}
-
-	if (input_keydown(KEY_F))
-	{
-		Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
-		editor->center = vec3_zero;
-		camera->position = vec3_add(backward, editor->center);
-		camera_update();
 	}
 
 	if (editor->mode == FLYING)
@@ -137,15 +117,19 @@ void editor_update()
 		camera->rotation.pitch = editor->lastCamRot.pitch - dy;
 		camera->rotation.yaw = editor->lastCamRot.yaw + dx;
 
-		Vec3 forward = vec3_mulf(rot_forward(camera->rotation), axisY);
-		Vec3 right = vec3_mulf(rot_right(camera->rotation), axisX);
+		if (!(camera->ortho & VIEW_ORTHOGRAPHIC))
+		{
+			Vec3 forward = vec3_mulf(rot_forward(camera->rotation), axisY);
+			Vec3 right = vec3_mulf(rot_right(camera->rotation), axisX);
 
-		camera->position = vec3_add(camera->position, vec3_add(forward, right));
-		editor->lastOrbit = -1;
+			camera->position = vec3_add(camera->position, vec3_add(forward, right));
+		}
+
 		camera_update();
 		input_infinite();
 	}
-	else if (editor->mode == ORBITING)
+
+	if (editor->mode == ORBITING)
 	{
 		float d = clamp(500.0f / editor->distance, 0.05f, 0.5f);
 		float dy = (editor->mousePos.y - editor->lastMousePos.y) * editor->orbitingSensitivity * d;
@@ -156,11 +140,12 @@ void editor_update()
 
 		Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
 		camera->position = vec3_add(backward, editor->center);
-		editor->lastOrbit = time->time;
+		camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
 		camera_update();
 		input_infinite();
 	}
-	else if (editor->mode == PANNING)
+
+	if (editor->mode == PANNING)
 	{
 		if (input_keydown(KEY_W) || input_keydown(KEY_S) || input_keydown(KEY_A) || input_keydown(KEY_D))
 		{
@@ -169,41 +154,188 @@ void editor_update()
 			return;
 		}
 		float d = clamp(editor->distance / 500.0f, 0.001f, 0.75f);
-		float dx = (editor->mousePos.x - editor->lastMousePos.x) * editor->panningSensitivity * d * -1.0f;
-		float dy = (editor->mousePos.y - editor->lastMousePos.y) * editor->panningSensitivity * d;
+		float sensitivity = editor->panningSensitivity;
+		if (camera->ortho & VIEW_ORTHOGRAPHIC)
+		{
+			sensitivity = 1.0f;
+		}
+		float dx = (editor->mousePos.x - editor->lastMousePos.x) * sensitivity * d * -1.0f;
+		float dy = (editor->mousePos.y - editor->lastMousePos.y) * sensitivity * d;
 
 		Vec3 right = vec3_mulf(rot_right(camera->rotation), dx);
 		Vec3 up = vec3_mulf(rot_up(camera->rotation), dy);
 		camera->position = vec3_add(editor->lastCamPos, vec3_add(up, right));
-		editor->lastOrbit = time->time;
 		Vec3 forward = vec3_mulf(rot_forward(camera->rotation), editor->distance);
 		editor->center = vec3_add(camera->position, forward);
 		camera_update();
 		input_infinite();
 	}
-	else if (editor->mode == ZOOMING)
+
+	if (editor->mode == ZOOMING)
 	{
-		float d = clamp(1000.0f / editor->distance, 0.001f, 0.5f);
+		float d = clamp(editor->lastDistance / 500.0f, 0.001f, 10.0f);
 		float y = (editor->mousePos.y * editor->zoomingSensitivity) * d;
-		editor->distance = fmaxf(editor->lastDistance + y, 0.5f);
+		editor->distance = fmaxf(editor->lastDistance + y, 1.0f);
 		Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
 		camera->position = vec3_add(backward, editor->center);
+		camera->zoom = editor->distance;
 		camera_update();
 		input_infinite();
 	}
-	if (allowed)
+
+	if (!near0(input->wheel.y))
 	{
-		float r = editor->distance / 50.0f;
-		draw_circleXY(editor->center, color_blue, r, 12);
-		draw_circleXZ(editor->center, color_green, r, 12);
-		draw_circleYZ(editor->center, color_red, r, 12);
-		draw_axis(editor->center, quat_identity, r);
+		float d = clamp(editor->distance / 500.0f, 0.001f, 10.0f);
+		editor->distance = fmaxf(editor->distance - input->wheel.y * d * 20.0f, 0.5f);
+		Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
+		camera->position = vec3_add(backward, editor->center);
+		camera->zoom = editor->distance;
+		camera_update();
 	}
+
+	if (input_keydown(KEY_1))
+	{
+		camera->ortho ^= VIEW_ORTHOGRAPHIC;
+		camera_update();
+	}
+
+	if (input_keydown(KEY_2))
+	{
+		if (camera->ortho & (VIEW_LEFT | VIEW_RIGHT))
+			editor->center.y = 0;
+		else if (camera->ortho & (VIEW_TOP | VIEW_BOTTOM))
+			editor->center.z = 0;
+		camera->ortho |= VIEW_ORTHOGRAPHIC;
+
+		if (camera->ortho & VIEW_FRONT)
+		{
+
+			camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+			camera->ortho |= VIEW_BACK;
+			camera->rotation = rot(0, 0, 0);
+		}
+		else
+		{
+			camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+			camera->ortho |= VIEW_FRONT;
+			camera->rotation = rot(0, 180, 0);
+		}
+
+		Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
+		camera->position = vec3_add(backward, editor->center);
+		camera->zoom = editor->distance;
+		camera_update();
+	}
+
+	if (input_keydown(KEY_3))
+	{
+		if (camera->ortho & (VIEW_BACK | VIEW_FRONT))
+			editor->center.x = 0;
+		else if (camera->ortho & (VIEW_TOP | VIEW_BOTTOM))
+			editor->center.z = 0;
+		camera->ortho |= VIEW_ORTHOGRAPHIC;
+
+		if (camera->ortho & VIEW_RIGHT)
+		{
+
+			camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+			camera->ortho |= VIEW_LEFT;
+			camera->rotation = rot(0, 90, 0);
+		}
+		else
+		{
+			camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+			camera->ortho |= VIEW_RIGHT;
+			camera->rotation = rot(0, -90, 0);
+		}
+
+		Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
+		camera->position = vec3_add(backward, editor->center);
+		camera->zoom = editor->distance;
+		camera_update();
+	}
+	if (input_keydown(KEY_4))
+	{
+		if (camera->ortho & (VIEW_BACK | VIEW_FRONT))
+		{
+			editor->center.x = 0;
+			editor->center.z = 0;
+		}
+		else if (camera->ortho & (VIEW_LEFT | VIEW_RIGHT))
+		{
+
+			editor->center.y = 0;
+			editor->center.z = 0;
+		}
+		camera->ortho |= VIEW_ORTHOGRAPHIC;
+		if (camera->ortho & VIEW_TOP)
+		{
+			camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+			camera->ortho |= VIEW_BOTTOM;
+			camera->rotation = rot(90, 0, 0);
+		}
+		else
+		{
+			camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+			camera->ortho |= VIEW_TOP;
+			camera->rotation = rot(-90, 0, 0);
+		}
+		Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
+		camera->position = vec3_add(backward, editor->center);
+		camera->zoom = editor->distance;
+		camera_update();
+	}
+
+	if (input_keydown(KEY_F))
+	{
+		Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
+		camera->zoom = editor->distance;
+		editor->center = vec3_zero;
+		camera->position = vec3_add(backward, editor->center);
+		camera_update();
+	}
+
 	if (editor->mode)
 	{
 		editor->mousePos.x += input->delta.x;
 		editor->mousePos.y += input->delta.y;
 	}
+	char buff[20];
+	if (camera->ortho & VIEW_BACK)
+		if (camera->ortho & VIEW_ORTHOGRAPHIC)
+			sprintf_s(buff, 20, "Back (Ortho)");
+		else
+			sprintf_s(buff, 20, "Back");
+	else if (camera->ortho & VIEW_FRONT)
+		if (camera->ortho & VIEW_ORTHOGRAPHIC)
+			sprintf_s(buff, 20, "Front (Ortho)");
+		else
+			sprintf_s(buff, 20, "Front");
+	else if (camera->ortho & VIEW_LEFT)
+		if (camera->ortho & VIEW_ORTHOGRAPHIC)
+			sprintf_s(buff, 20, "Left (Ortho)");
+		else
+			sprintf_s(buff, 20, "Left");
+	else if (camera->ortho & VIEW_RIGHT)
+		if (camera->ortho & VIEW_ORTHOGRAPHIC)
+			sprintf_s(buff, 20, "Right (Ortho)");
+		else
+			sprintf_s(buff, 20, "Right");
+	else if (camera->ortho & VIEW_BOTTOM)
+		if (camera->ortho & VIEW_ORTHOGRAPHIC)
+			sprintf_s(buff, 20, "Bottom (Ortho)");
+		else
+			sprintf_s(buff, 20, "Bottom");
+	else if (camera->ortho & VIEW_TOP)
+		if (camera->ortho & VIEW_ORTHOGRAPHIC)
+			sprintf_s(buff, 20, "Top (Ortho)");
+		else
+			sprintf_s(buff, 20, "Top");
+	else if (camera->ortho & VIEW_ORTHOGRAPHIC)
+		sprintf_s(buff, 20, "Ortho");
+	else
+		sprintf_s(buff, 20, "Perspective");
 
 	draw_axis(vec3_zero, quat_identity, 10);
+	debug_string(buff, vec2(10, 10));
 }

@@ -173,6 +173,7 @@ typedef struct
 {
     Vec2 position;
     Vec2 delta;
+	Vec2 wheel;
 } Input;
 
 Input *input;
