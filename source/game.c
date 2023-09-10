@@ -51,11 +51,11 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 
 void game_init()
 {
-	time = alloc_global(Time);
+	time = alloc_global(Time, sizeof(Time));
 	time->deltaTime = 1 / 60.0f;
 	time->time = 0;
 
-	game = alloc_global(Game);
+	game = alloc_global(Game, sizeof(Game));
 	game->fps = 60;
 	game->width = 1200;
 	game->height = 780;

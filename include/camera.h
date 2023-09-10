@@ -78,12 +78,12 @@ inline void camera_update()
 
 inline void camera_init()
 {
-	camera = alloc_global(Camera);
-	camera->rotation = rot(-atan2d(sqrtf(200), 20), 45, 0);
-	Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -100);
+	camera = alloc_global(Camera, sizeof(Camera));
+	camera->rotation = rot(-atan2d(sqrtf(200), 20), 180, 0);
+	Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -300);
 	camera->position = vec3_add(backward, vec3_zero);
 	camera->fov = 80.0f;
-	camera->zoom = 100.0f;
+	camera->zoom = 300.0f;
 	camera->ortho = VIEW_INITIAL;
 	camera_update();
 }

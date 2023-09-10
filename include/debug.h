@@ -26,11 +26,14 @@
  *****************************************************************************/
 
 #include "mathf.h"
-
+#include <stdarg.h>
 
 void debug_init();
 void debug_render();
 void debug_terminate();
 
-void debug_string(const char *s, Vec2 pos);
-void debug_string3d(const char *s, Vec3 pos);
+void debug_string(Vec3 pos, const char *s, int n);
+void debug_string3d(Transform t, const char *str, int n);
+
+void debug_stringf(Vec3 pos, const char *fmt, ...);
+void debug_string3df(Transform t, const char *fmt, ...);

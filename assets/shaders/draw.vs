@@ -14,5 +14,4 @@ void main(void) {
   gl_Position = projection * view * vec4(v_position, 1);
   float x = max(v_size, 1);
   gl_PointSize = min((x * 200) / gl_Position.z, x);
-  // gl_PointSize = v_size;
 }

@@ -61,7 +61,7 @@ static DrawData *drawData;
 
 void draw_init()
 {
-	drawData = alloc_global(DrawData);
+	drawData = alloc_global(DrawData, sizeof(DrawData));
 	clear(drawData, sizeof(DrawData));
 
 	drawData->sizes[0] = vertices_count;
@@ -101,7 +101,7 @@ void draw_render()
 	shader_mat4(drawData->shader, "projection", &camera->projection);
 	shader_mat4(drawData->shader, "view", &camera->view);
 
-	glLineWidth(2);
+	glLineWidth(1);
 
 	for (int i = 0; i < types_n; i++)
 	{

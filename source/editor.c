@@ -63,7 +63,7 @@ static EditorData *editor;
 
 void editor_init()
 {
-	editor = alloc_global(EditorData);
+	editor = alloc_global(EditorData, sizeof(EditorData));
 	clear(editor, sizeof(EditorData));
 
 	editor->center = vec3_zero;
@@ -300,42 +300,42 @@ void editor_update()
 		editor->mousePos.x += input->delta.x;
 		editor->mousePos.y += input->delta.y;
 	}
-	char buff[20];
+	Vec3 pos = vec3(10, 10, 1.0f);
+
 	if (camera->ortho & VIEW_BACK)
 		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			sprintf_s(buff, 20, "Back (Ortho)");
+			debug_stringf(pos, "Back (Ortho)");
 		else
-			sprintf_s(buff, 20, "Back");
+			debug_stringf(pos, "Back");
 	else if (camera->ortho & VIEW_FRONT)
 		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			sprintf_s(buff, 20, "Front (Ortho)");
+			debug_stringf(pos, "Front (Ortho)");
 		else
-			sprintf_s(buff, 20, "Front");
+			debug_stringf(pos, "Front");
 	else if (camera->ortho & VIEW_LEFT)
 		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			sprintf_s(buff, 20, "Left (Ortho)");
+			debug_stringf(pos, "Left (Ortho)");
 		else
-			sprintf_s(buff, 20, "Left");
+			debug_stringf(pos, "Left");
 	else if (camera->ortho & VIEW_RIGHT)
 		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			sprintf_s(buff, 20, "Right (Ortho)");
+			debug_stringf(pos, "Right (Ortho)");
 		else
-			sprintf_s(buff, 20, "Right");
+			debug_stringf(pos, "Right");
 	else if (camera->ortho & VIEW_BOTTOM)
 		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			sprintf_s(buff, 20, "Bottom (Ortho)");
+			debug_stringf(pos, "Bottom (Ortho)");
 		else
-			sprintf_s(buff, 20, "Bottom");
+			debug_stringf(pos, "Bottom");
 	else if (camera->ortho & VIEW_TOP)
 		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			sprintf_s(buff, 20, "Top (Ortho)");
+			debug_stringf(pos, "Top (Ortho)");
 		else
-			sprintf_s(buff, 20, "Top");
+			debug_stringf(pos, "Top");
 	else if (camera->ortho & VIEW_ORTHOGRAPHIC)
-		sprintf_s(buff, 20, "Ortho");
+		debug_stringf(pos, "Ortho");
 	else
-		sprintf_s(buff, 20, "Perspective");
+		debug_stringf(pos, "Perspective");
 
 	draw_axis(vec3_zero, quat_identity, 10);
-	debug_string(buff, vec2(10, 10));
 }

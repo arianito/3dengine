@@ -32,10 +32,8 @@
 #include "../debug.h"
 #include "../sort.h"
 #include "../camera.h"
-#include "../memory/buddy.h"
 #include "../memory/utils.h"
 
-BuddyMemory *buddy;
 enum
 {
 	npool = 200
@@ -45,50 +43,9 @@ float lastHit = 0;
 
 void memorydebug_create()
 {
-	buddy = make_buddy(9);
 }
 
 void memorydebug_update()
 {
 
-	draw_cubef(vec3_zero, color_blue, 20);
-	draw_cubef(vec3_zero, color_blue, 40);
-
-	if (input_keypress(KEY_SPACE) && (time->time - lastHit > 0.07f))
-	{
-		sort_quick(pools, 0, npool - 1);
-		void *ptr = (void *)pools[0];
-		if (ptr == NULL)
-		{
-			size_t size = (int)powf(2, (int)(randf() * 6 + 3));
-			void *newPtr = buddy_alloc(buddy, size);
-			if (newPtr != NULL)
-			{
-				pools[0] = (size_t)newPtr;
-			}
-		}
-		lastHit = time->time;
-	}
-	if (input_keypress(KEY_M) && (time->time - lastHit > 0.1f))
-	{
-		sort_quick(pools, 0, npool - 1);
-		int a = npool - 1;
-		for (int i = npool - 1; i >= 0; i--)
-		{
-			if (pools[i] != 0 && i < a)
-			{
-				a = i;
-			}
-		}
-		sort_shuffle(pools, a, npool - 1);
-		void *ptr = (void *)pools[npool - 1];
-		if (ptr != NULL)
-		{
-			if (buddy_free(buddy, &ptr))
-			{
-				pools[npool - 1] = 0;
-			}
-		}
-		lastHit = time->time;
-	}
 }

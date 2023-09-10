@@ -69,13 +69,11 @@ void scroll_callback(GLFWwindow *window, double x, double y)
 
 void input_init()
 {
-	globalInput = alloc_global(InputData);
+	globalInput = alloc_global(InputData, sizeof(InputData));
 	clear(globalInput, sizeof(InputData));
 
-	input = alloc_global(Input);
-	input->position = vec2_zero;
-	input->delta = vec2_zero;
-	input->wheel = vec2_zero;
+	input = alloc_global(Input, sizeof(Input));
+	clear(input, sizeof(Input));
 
 	glfwSetScrollCallback(game->window, scroll_callback);
 }

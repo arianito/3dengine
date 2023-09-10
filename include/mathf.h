@@ -74,8 +74,9 @@ typedef struct
 
 typedef struct
 {
-	Quat rotation;
 	Vec3 position;
+	Rot rotation;
+	Vec3 scale;
 } Transform;
 
 typedef struct
@@ -178,9 +179,11 @@ static const Color color_blue = {0, 0, 1, 1};
 static const Color color_yellow = {1, 1, 0, 1};
 static const Color color_gray = {0.5, 0.5, 0.5, 1};
 
-static const Rot rot_zero = {0, 0, 0};
 static const Quat quat_identity = {0, 0, 0, 1};
+static const Rot rot_zero = {0, 0, 0};
 static const Mat4 mat4_identity = {{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
+
+static const Transform transform_identity = {{0, 0, 0}, {0, 0, 0}, {1, 1, 1}};
 
 // math
 inline void seedf(unsigned int seed)
@@ -1114,6 +1117,12 @@ inline Rot rot_snap(Rot a, float size)
 	return a;
 }
 
+inline Rot rot_inv(Rot a)
+{
+	a.pitch *= -1;
+	a.yaw += 180.0f;
+	return a;
+}
 inline Rot rot_clamp(Rot a)
 {
 	a.pitch = clampAxis(a.pitch);
@@ -1965,6 +1974,13 @@ inline Mat4 mat4_view(Vec3 a, Rot b)
 		mat4_origin(vec3_neg(a)),
 		mat4_mul(mat4_invRot(b), ma));
 }
+inline Mat4 mat4_transform(Transform t)
+{
+	Mat4 a = mat4_scale(t.scale);
+	a = mat4_mul(a, rot_matrix(t.rotation, vec3_zero));
+	a = mat4_mul(a, mat4_origin(t.position));
+	return a;
+}
 
 inline Mat4 mat4_inv(Mat4 m)
 {
@@ -2014,4 +2030,14 @@ inline Mat4 mat4_inv(Mat4 m)
 	res.m[3][3] = rdet * (m.m[0][0] * (m.m[1][1] * m.m[2][2] - m.m[1][2] * m.m[2][1]) - m.m[1][0] * (m.m[0][1] * m.m[2][2] - m.m[0][2] * m.m[2][1]) + m.m[2][0] * (m.m[0][1] * m.m[1][2] - m.m[0][2] * m.m[1][1]));
 
 	return res;
+}
+//
+
+inline Transform transform(Vec3 pos, Rot r, Vec3 scale)
+{
+	Transform t;
+	t.position = pos;
+	t.rotation = r;
+	t.scale = scale;
+	return t;
 }

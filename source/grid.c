@@ -58,7 +58,7 @@ static GridData *gridData;
 void grid_init()
 {
 
-	gridData = alloc_global(GridData);
+	gridData = alloc_global(GridData, sizeof(GridData));
 	clear(gridData, sizeof(GridData));
 
 	gridData->shader = shader_load("shaders/grid.vs", "shaders/grid.fs");
@@ -141,29 +141,35 @@ void grid_render()
 	t.x = floorf(camera->position.x / UNIT_SCALE) * UNIT_SCALE;
 	t.y = floorf(camera->position.y / UNIT_SCALE) * UNIT_SCALE;
 	t.z = 0;
+	float flt = (fminf(fabsf(camera->rotation.pitch) / 20.0f, 1));
 
-	if (!(camera->ortho & VIEW_ORTHOGRAPHIC) || rot_nearEq(r2, r))
+	if (rot_nearEq(r2, r))
 	{
-
+		float r = camera->ortho & (VIEW_TOP) ? 1 : -1;
+		t.x *= r;
 		if (camera->ortho & (VIEW_FRONT | VIEW_BACK))
 		{
+			r = camera->ortho & (VIEW_BACK) ? 1 : -1;
 			t.x = floorf(camera->position.z / UNIT_SCALE) * UNIT_SCALE;
-			t.y = floorf(camera->position.y / UNIT_SCALE) * UNIT_SCALE;
+			t.y = floorf(r * camera->position.y / UNIT_SCALE) * UNIT_SCALE;
 			t.z = 0;
 		}
 		else if (camera->ortho & (VIEW_LEFT | VIEW_RIGHT))
 		{
+			r = camera->ortho & (VIEW_RIGHT) ? 1 : -1;
 			t.x = floorf(camera->position.z / UNIT_SCALE) * UNIT_SCALE;
-			t.y = floorf(-camera->position.x / UNIT_SCALE) * UNIT_SCALE;
+			t.y = floorf(r * camera->position.x / UNIT_SCALE) * UNIT_SCALE;
 			t.z = 0;
 		}
+
+		flt = 1.0f;
 	}
 	world = mat4_origin(t);
 	if ((camera->ortho & VIEW_ORTHOGRAPHIC) && rot_nearEq(r2, r))
 		world = mat4_mul(world, rot_matrix(r, vec3_zero));
 
 	shader_mat4(gridData->shader, "world", &world);
-	shader_float(gridData->shader, "alpha", 1.0f);
+	shader_float(gridData->shader, "alpha", flt);
 	glDrawArrays(GL_LINES, 0, sizeof(gridData->vertices));
 
 	for (i = -d; i < d + 1; i++)
@@ -177,7 +183,7 @@ void grid_render()
 			if ((camera->ortho & VIEW_ORTHOGRAPHIC) && rot_nearEq(r2, r))
 				world = mat4_mul(world, rot_matrix(r, vec3_zero));
 			shader_mat4(gridData->shader, "world", &world);
-			shader_float(gridData->shader, "alpha", 0.3f);
+			shader_float(gridData->shader, "alpha", 0.4f * flt);
 			glDrawArrays(GL_LINES, 0, sizeof(gridData->vertices));
 		}
 	}

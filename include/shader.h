@@ -45,11 +45,6 @@ inline void shader_end()
     glUseProgram(0);
 }
 
-inline void shader_uint(Shader p, const char *name, unsigned int a)
-{
-    glUniform1ui(glGetUniformLocation(p, name), a);
-}
-
 inline void shader_int(Shader p, const char *name, int a)
 {
     glUniform1i(glGetUniformLocation(p, name), a);

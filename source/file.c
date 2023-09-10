@@ -39,7 +39,7 @@ void resolve(const char *p, char out[URL_LENGTH])
 
 void file_init(const char *pfx)
 {
-	file = alloc_global(FileData);
+	file = alloc_global(FileData, sizeof(FileData));
 	clear(file, sizeof(FileData));
 	int n = (int)strlen(pfx);
 	if (n > 128)
@@ -66,7 +66,7 @@ File *file_read(const char *p, char endline)
 	size_t file_size = ftell(f);
 	fseek(f, 0, SEEK_SET);
 
-	File *buff = alloc_stack_size(File, sizeof(File) + file_size + 1);
+	File *buff = alloc_stack(File, sizeof(File) + file_size + 1);
 	buff->length = file_size;
 	buff->text = (char *)((size_t)buff + sizeof(File));
 	size_t bytes_read = fread(buff->text, 1, file_size, f);

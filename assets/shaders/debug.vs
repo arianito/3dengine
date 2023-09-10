@@ -1,10 +1,16 @@
 #version 330 core
 
 uniform mat4 projection;
+uniform mat4 view;
+uniform mat4 world;
+uniform vec3 offset;
 
-layout(location = 0) in vec3 v_position;
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec2 aTexCoord;
 
-void main(void) {
+out vec2 TexCoord;
 
-  gl_Position = projection * vec4(v_position, 1);
+void main() {
+  gl_Position = projection * view * world * vec4(aPos + offset, 1.0);
+  TexCoord = vec2(aTexCoord.x, aTexCoord.y);
 }
