@@ -106,8 +106,8 @@ void debug_init()
 	glGenBuffers(2, drawData->eboIds);
 
 	{
-		float w = 10;
-		float h = 32;
+		float w = 8.0f;
+		float h = 24.0f;
 		drawData->bound2d = vec2(w, h);
 		float offset = (h - w) / (h * 2.0f);
 		float offset2 = 2.0f / h;
@@ -133,7 +133,7 @@ void debug_init()
 	}
 
 	{
-		float w = 3.0f;
+		float w = 2.5f;
 		float h = 8.0f;
 		drawData->bound3d = vec2(w, h);
 		float offset = (h - w) / (h * 2.0f);

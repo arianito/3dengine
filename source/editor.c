@@ -105,6 +105,15 @@ void editor_update()
 	{
 		editor->mode = NOT_BUSY;
 	}
+	if (input_mousepress(MOUSE_RIGHT))
+	{
+
+		if (input_keydown(KEY_W) || input_keydown(KEY_S) || input_keydown(KEY_A) || input_keydown(KEY_D))
+		{
+			save_state();
+			editor->mode = FLYING;
+		}
+	}
 
 	if (editor->mode == FLYING)
 	{
@@ -147,12 +156,6 @@ void editor_update()
 
 	if (editor->mode == PANNING)
 	{
-		if (input_keydown(KEY_W) || input_keydown(KEY_S) || input_keydown(KEY_A) || input_keydown(KEY_D))
-		{
-			save_state();
-			editor->mode = FLYING;
-			return;
-		}
 		float d = clamp(editor->distance / 500.0f, 0.001f, 0.75f);
 		float sensitivity = editor->panningSensitivity;
 		if (camera->ortho & VIEW_ORTHOGRAPHIC)

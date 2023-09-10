@@ -138,10 +138,15 @@ void grid_render()
 	glBindBuffer(GL_ARRAY_BUFFER, gridData->vboIds[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(gridData->vertices), gridData->vertices);
 
-	t.x = floorf(camera->position.x / UNIT_SCALE) * UNIT_SCALE;
-	t.y = floorf(camera->position.y / UNIT_SCALE) * UNIT_SCALE;
+	t.x = snap(camera->position.x, UNIT_SCALE);
+	t.y = snap(camera->position.y, UNIT_SCALE);
 	t.z = 0;
-	float flt = (fminf(fabsf(camera->rotation.pitch) / 20.0f, 1));
+	float flt = 1.0f;
+
+	if ((camera->ortho & VIEW_ORTHOGRAPHIC))
+	{
+		flt = fminf(fabsf(camera->rotation.pitch) / 90.0f, 1);
+	}
 
 	if (rot_nearEq(r2, r))
 	{
@@ -150,15 +155,15 @@ void grid_render()
 		if (camera->ortho & (VIEW_FRONT | VIEW_BACK))
 		{
 			r = camera->ortho & (VIEW_BACK) ? 1 : -1;
-			t.x = floorf(camera->position.z / UNIT_SCALE) * UNIT_SCALE;
-			t.y = floorf(r * camera->position.y / UNIT_SCALE) * UNIT_SCALE;
+			t.x = snap(camera->position.z, UNIT_SCALE);
+			t.y = snap(r * camera->position.y, UNIT_SCALE);
 			t.z = 0;
 		}
 		else if (camera->ortho & (VIEW_LEFT | VIEW_RIGHT))
 		{
 			r = camera->ortho & (VIEW_RIGHT) ? 1 : -1;
-			t.x = floorf(camera->position.z / UNIT_SCALE) * UNIT_SCALE;
-			t.y = floorf(r * camera->position.x / UNIT_SCALE) * UNIT_SCALE;
+			t.x = snap(camera->position.z, UNIT_SCALE);
+			t.y = snap(r * camera->position.x, UNIT_SCALE);
 			t.z = 0;
 		}
 

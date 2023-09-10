@@ -34,12 +34,6 @@
 #include "../camera.h"
 #include "../memory/utils.h"
 
-enum
-{
-	npool = 200
-};
-size_t pools[npool];
-float lastHit = 0;
 
 void memorydebug_create()
 {
