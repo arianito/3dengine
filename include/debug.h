@@ -26,12 +26,13 @@
  *****************************************************************************/
 
 #include "mathf.h"
-#include <stdarg.h>
 
 void debug_init();
 void debug_render();
 void debug_terminate();
 
+void debug_color(Color color);
+void debug_origin(Vec2 origin);
 void debug_string(Vec3 pos, const char *s, int n);
 void debug_string3d(Transform t, const char *str, int n);
 

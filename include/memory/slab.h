@@ -4,8 +4,7 @@
 
 typedef struct
 {
-	void *next;
-	char used;
+	size_t next;
 } SlabObject;
 
 typedef struct
@@ -23,7 +22,7 @@ typedef struct
 	unsigned int slabSize;
 	unsigned int objectSize;
 	unsigned int capacity;
-	void* (*allocator)(size_t);
+	void *(*allocator)(size_t);
 } SlabMemory;
 
 SlabMemory *make_slab(unsigned int slabSize, unsigned short objectSize);

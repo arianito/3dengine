@@ -208,6 +208,9 @@ inline float randf()
 inline float sind(float d) { return sinf(d * DEG2RAD); }
 inline float cosd(float d) { return cosf(d * DEG2RAD); }
 inline float tand(float d) { return tanf(d * DEG2RAD); }
+inline float tanhd(float d) { return tanhf(d * DEG2RAD); }
+inline float sinhd(float d) { return sinhf(d * DEG2RAD); }
+inline float coshd(float d) { return coshf(d * DEG2RAD); }
 inline float ramp(float a) { return a < 0 ? 0 : a; }
 inline float asind(float a) { return asinf(a) * RAD2DEG; }
 inline float square(float a) { return a * a; }
@@ -1766,7 +1769,6 @@ inline Mat4 mat4_orthographic(float left, float right, float bottom, float top, 
 
 inline Mat4 mat4_perspective(float fov, float aspect, float near, float far)
 {
-
 	float t = tand(fov * 0.5f);
 	float inv = 1.0f / (far - near);
 

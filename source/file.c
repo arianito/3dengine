@@ -29,31 +29,51 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "memory/alloc.h"
 
-void resolve(const char *p, char out[URL_LENGTH])
+static char *prefix;
+static int prefixLength;
+
+char *resolve(const char *fmt, ...)
 {
-	sprintf_s(out, URL_LENGTH, "%s%s", file->prefix, p);
+	va_list args;
+	va_start(args, fmt);
+	int len = vsnprintf(NULL, 0, fmt, args);
+	char *out = alloc_stack(char, prefixLength + len + 1);
+
+	char *buffer = alloc_stack(char, len + 1);
+	if (prefix != NULL)
+		vsnprintf(buffer, len + 1, fmt, args);
+	va_end(args);
+
+	sprintf(out, "%s%s", prefix, buffer);
+	alloc_free(buffer);
+
+	return out;
 }
 
-void file_init(const char *pfx)
+void file_init(const char *fmt, ...)
 {
-	file = alloc_global(FileData, sizeof(FileData));
-	clear(file, sizeof(FileData));
-	int n = (int)strlen(pfx);
-	if (n > 128)
-		n = 128;
-	memcpy(file->prefix, pfx, n);
+	va_list args;
+	va_start(args, fmt);
+	int len = vsnprintf(NULL, 0, fmt, args);
+	prefixLength = len;
+	prefix = alloc_global(char, len + 1);
+	if (prefix != NULL)
+		vsnprintf(prefix, len + 1, fmt, args);
+	va_end(args);
 }
 
-File *file_read(const char *p, char endline)
+File *file_read(const char *p)
 {
-	char b[URL_LENGTH];
-	resolve(p, b);
+	char *path = resolve(p);
 
 	FILE *f;
-	fopen_s(&f, b, "r");
+	fopen_s(&f, path, "r");
+
+	alloc_free(path);
 
 	if (f == NULL)
 	{
@@ -70,13 +90,13 @@ File *file_read(const char *p, char endline)
 	buff->length = file_size;
 	buff->text = (char *)((size_t)buff + sizeof(File));
 	size_t bytes_read = fread(buff->text, 1, file_size, f);
-	if (endline)
-		buff->text[bytes_read] = '\0';
+	buff->text[bytes_read] = '\0';
 	fclose(f);
 	return buff;
 }
 
-void file_destroy(File *f)
+void file_destroy(File **f)
 {
-	alloc_free(f);
+	alloc_free(*f);
+	*f = NULL;
 }

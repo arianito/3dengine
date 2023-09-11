@@ -58,10 +58,11 @@ int main(int argc, const char *argv[])
 
 	while (game_loop())
 	{
-		memorydebug_update();
 		editor_update();
+		// loop
 
 		director->Update();
+		memorydebug_update();
 
 		input_update();
 		draw_render();

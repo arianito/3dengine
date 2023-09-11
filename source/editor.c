@@ -303,42 +303,30 @@ void editor_update()
 		editor->mousePos.x += input->delta.x;
 		editor->mousePos.y += input->delta.y;
 	}
-	Vec3 pos = vec3(10, 10, 1.0f);
+	Vec3 pos = vec3(12, 0, 1.0f);
+	debug_color(color_white);
+	debug_origin(vec2(0, 0));
 
-	if (camera->ortho & VIEW_BACK)
-		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			debug_stringf(pos, "Back (Ortho)");
-		else
-			debug_stringf(pos, "Back");
-	else if (camera->ortho & VIEW_FRONT)
-		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			debug_stringf(pos, "Front (Ortho)");
-		else
-			debug_stringf(pos, "Front");
-	else if (camera->ortho & VIEW_LEFT)
-		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			debug_stringf(pos, "Left (Ortho)");
-		else
-			debug_stringf(pos, "Left");
-	else if (camera->ortho & VIEW_RIGHT)
-		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			debug_stringf(pos, "Right (Ortho)");
-		else
-			debug_stringf(pos, "Right");
-	else if (camera->ortho & VIEW_BOTTOM)
-		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			debug_stringf(pos, "Bottom (Ortho)");
-		else
-			debug_stringf(pos, "Bottom");
-	else if (camera->ortho & VIEW_TOP)
-		if (camera->ortho & VIEW_ORTHOGRAPHIC)
-			debug_stringf(pos, "Top (Ortho)");
-		else
-			debug_stringf(pos, "Top");
+	if (camera->ortho & VIEW_BACK && (camera->ortho & VIEW_ORTHOGRAPHIC))
+		debug_stringf(pos, "Back");
+	else if (camera->ortho & VIEW_FRONT && (camera->ortho & VIEW_ORTHOGRAPHIC))
+		debug_stringf(pos, "Front");
+	else if (camera->ortho & VIEW_LEFT && (camera->ortho & VIEW_ORTHOGRAPHIC))
+		debug_stringf(pos, "Left");
+	else if (camera->ortho & VIEW_RIGHT && (camera->ortho & VIEW_ORTHOGRAPHIC))
+		debug_stringf(pos, "Right");
+	else if (camera->ortho & VIEW_BOTTOM && (camera->ortho & VIEW_ORTHOGRAPHIC))
+		debug_stringf(pos, "Bottom");
+	else if (camera->ortho & VIEW_TOP && (camera->ortho & VIEW_ORTHOGRAPHIC))
+		debug_stringf(pos, "Top");
 	else if (camera->ortho & VIEW_ORTHOGRAPHIC)
 		debug_stringf(pos, "Ortho");
 	else
 		debug_stringf(pos, "Perspective");
+
+	pos.x = game->width - pos.x;
+	debug_origin(vec2(1, 0));
+	debug_stringf(pos, "%d", game->fps);
 
 	draw_axis(vec3_zero, quat_identity, 10);
 }

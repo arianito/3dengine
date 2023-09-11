@@ -167,7 +167,7 @@ void grid_render()
 			t.z = 0;
 		}
 
-		flt = 1.0f;
+		flt = 0.5f;
 	}
 	world = mat4_origin(t);
 	if ((camera->ortho & VIEW_ORTHOGRAPHIC) && rot_nearEq(r2, r))

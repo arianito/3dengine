@@ -10,8 +10,7 @@
 
 void slab_enqueue(SlabMemory *self, SlabObject *node)
 {
-	node->next = self->objects;
-	node->used = 0;
+	node->next = BYTE71((size_t)self->objects, 0);
 	self->objects = node;
 }
 
@@ -21,10 +20,8 @@ SlabObject *slab_dequeue(SlabMemory *self)
 		return NULL;
 
 	SlabObject *node = self->objects;
-	node->used = 1;
-
-	self->objects = node->next;
-
+	node->next = BYTE71_SET_1(node->next, 1);
+	self->objects = (SlabObject *)(BYTE71_GET_7(node->next));
 	return node;
 }
 
@@ -175,7 +172,7 @@ char slab_free(SlabMemory *self, void **ptr)
 	const unsigned int space = sizeof(SlabObject);
 	SlabObject *node = (SlabObject *)((size_t)(*ptr) - space);
 
-	if (!node->used)
+	if (!BYTE71_GET_1(node->next))
 	{
 		printf("slab: free failed, already freed\n");
 		return 0;
