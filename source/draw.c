@@ -41,36 +41,34 @@
 enum
 {
 	types_n = 3,
-	vertices_count = 1 * 8192,
-	edges_count = 2 * vertices_count,
-	triangles_count = 3 * vertices_count,
+	object_count = 10000,
 };
 
 typedef struct
 {
-	Vertex vertices[types_n][vertices_count];
-	Shader shader;
 	GLuint vaoIds[types_n];
 	GLuint vboIds[types_n];
-	int types[types_n];
-	int sizes[types_n];
-	int counter[types_n];
+	unsigned int types[types_n];
+	unsigned int counter[types_n];
+	Shader shader;
+	Vertex vertices[types_n][object_count];
 } DrawData;
 
 static DrawData *drawData;
 
 void draw_init()
 {
+	printf("--------------------------- %zu \n", sizeof(DrawData));
 	drawData = alloc_global(DrawData, sizeof(DrawData));
 	clear(drawData, sizeof(DrawData));
-
-	drawData->sizes[0] = vertices_count;
-	drawData->sizes[1] = edges_count;
-	drawData->sizes[2] = triangles_count;
 
 	drawData->types[0] = GL_POINTS;
 	drawData->types[1] = GL_LINES;
 	drawData->types[2] = GL_TRIANGLES;
+
+	drawData->counter[0] = 0;
+	drawData->counter[1] = 0;
+	drawData->counter[2] = 0;
 
 	drawData->shader = shader_load("shaders/draw.vs", "shaders/draw.fs");
 	glGenVertexArrays(types_n, drawData->vaoIds);
@@ -132,10 +130,9 @@ void draw_terminate()
 
 inline void add_vertex(int type, Vertex v)
 {
+	if (drawData->counter[type] == object_count)
+		return;
 	int count = drawData->counter[type];
-	if (drawData->counter[type] == drawData->sizes[type])
-		draw_render();
-
 	drawData->vertices[type][count] = v;
 	drawData->counter[type]++;
 }
@@ -258,7 +255,6 @@ inline void fill_face(Vertex *va, const Vec3 *a, const Vec3 *b, const Vec3 *c, c
 	va->pos = *c;
 	add_vertex(2, *va);
 
-
 	va->pos = *a;
 	add_vertex(2, *va);
 	va->pos = *c;
@@ -276,14 +272,12 @@ void fill_bbox(BBox bbox, Color c)
 
 	fill_face(&va, &vertices[1], &vertices[5], &vertices[6], &vertices[2]);
 	fill_face(&va, &vertices[0], &vertices[4], &vertices[7], &vertices[3]);
-	
+
 	fill_face(&va, &vertices[3], &vertices[7], &vertices[6], &vertices[2]);
 	fill_face(&va, &vertices[0], &vertices[4], &vertices[5], &vertices[1]);
 
 	fill_face(&va, &vertices[4], &vertices[5], &vertices[6], &vertices[7]);
 	fill_face(&va, &vertices[0], &vertices[1], &vertices[2], &vertices[3]);
-
-
 }
 
 void draw_cube(Vec3 a, Color c, Vec3 s)

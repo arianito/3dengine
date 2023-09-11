@@ -25,35 +25,84 @@
  *                                                                            *
  *****************************************************************************/
 
+#include <stddef.h>
 #include <type_traits>
-#include <memory>
-#include "data/LinkedList.hpp"
+#include <unordered_map>
+#include "memory/traits.hpp"
 
 extern "C"
 {
 #include "memory/alloc.h"
+#include "memory/pool.h"
 }
 
+class Component;
 class Entity;
 class Director;
 
-enum ConfigEnum
+inline size_t nextComponentId()
 {
-	CAN_TICK = 1 << 0
+	static size_t lastID{0u};
+	return lastID++;
+}
+
+// classes
+
+class Component
+{
+	size_t mEntityId;
+	Component() : mEntityId(0) {}
+
+	virtual void Create() = 0;
+	virtual void Update() = 0;
 };
 
-class Entity;
+class Entity
+{
+private:
+	size_t mEntityId;
+	std::unordered_map<size_t, Component *, PoolTrait<size_t>> mComponents;
+
+public:
+	Entity(size_t id) : mEntityId(id) {}
+
+	size_t GetId()
+	{
+		return mEntityId;
+	}
+};
+
+template <class T>
+inline size_t GetComponentTypeId() noexcept
+{
+	static_assert(std::is_base_of<Component, T>::value, "T must be a base class of Component");
+	static size_t id{nextComponentId()};
+	return id;
+}
+
+// director
 
 class Director
 {
 private:
-public:
-	inline Director() {}
+	std::unordered_map<size_t, Entity *, std::hash<size_t>, std::equal_to<size_t>, PoolTrait<std::pair<const size_t, Entity *>>> mEntities;
+	PoolMemory *mEntityMemory;
+	size_t mEntityCouter;
 
-	template <class E>
-	inline typename std::enable_if<std::is_base_of<Entity, E>::value>::type AddEntity()
+public:
+	inline Director(size_t capacity)
 	{
-		auto i = new E(this);
+		mEntityMemory = pool_create(alloc_global(void, capacity), capacity, sizeof(Entity));
+		mEntityCouter = 0;
+	}
+
+	inline size_t CreateEntity()
+	{
+		void *ptr = pool_alloc(mEntityMemory);
+		auto a = new (ptr) Entity(mEntityCouter++);
+		mEntities.emplace(a->GetId(), a);
+		printf("after emplace: %d \n", mEntityMemory->capacity);
+		return a->GetId();
 	}
 
 	inline void Create()
@@ -71,41 +120,10 @@ public:
 	}
 
 private:
-	SinglyLinkedList<Entity> *m_entities;
-	ArenaMemory *m_entityMemory;
 };
 
 inline Director *MakeDirector()
 {
-	Director *director = new Director();
+	Director *director = new Director(2 * MEGABYTES);
 	return director;
 }
-
-class Entity
-{
-private:
-	Director *director;
-
-public:
-	ConfigEnum config = CAN_TICK;
-	bool IsAlive = true;
-	bool IsCreated = false;
-
-	inline Entity(Director *director)
-	{
-		this->director = director;
-	}
-
-public:
-	virtual void Create() = 0;
-	virtual void Update() = 0;
-	virtual void Destroy() = 0;
-
-public:
-	inline void *
-	operator new(size_t size)
-	{
-		printf("entity: %zu bytes\n", size);
-		return arena_alloc(alloc->global, size, sizeof(size_t));
-	}
-};

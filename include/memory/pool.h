@@ -29,16 +29,16 @@
 
 typedef struct
 {
-	void *head;
+	size_t data; // 7bytes offset 1byte used
+} PoolMemoryNode;
+
+typedef struct
+{
+	PoolMemoryNode *head;
 	unsigned int size;
 	unsigned short padding;
 	unsigned short capacity;
 } PoolMemory;
-
-typedef struct
-{
-	size_t data; // 7bytes offset 1byte used
-} PoolMemoryNode;
 
 void *pool_alloc(PoolMemory *self);
 unsigned char pool_free(PoolMemory *self, void **ptr);

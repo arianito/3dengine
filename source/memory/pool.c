@@ -68,7 +68,6 @@ void *pool_alloc(PoolMemory *self)
 	if (self == NULL)
 	{
 		printf("pool: alloc failed, invalid instance\n");
-		exit(EXIT_FAILURE);
 		return NULL;
 	}
 	if (self->head == NULL)
@@ -174,7 +173,6 @@ PoolMemory *make_pool_exact(size_t size, unsigned int chunkSize)
 {
 	if (size % chunkSize != 0)
 	{
-
 		printf("pool: make failed, invalid chunk size\n");
 		exit(EXIT_FAILURE);
 		return NULL;

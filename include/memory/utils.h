@@ -27,13 +27,13 @@
 
 #include <stddef.h>
 
-#define MODULO(address, alignment) (address & (alignment - 1ULL))
-#define ISPOW2(alignment) (!(alignment & (alignment - 1ULL)))
-#define MEMORY_PADDING(address, alignment) ((alignment - (address & (alignment - 1ULL))) & (alignment - 1ULL))
+#define MODULO(address, alignment) (address & (alignment - 1UL))
+#define ISPOW2(alignment) (!(alignment & (alignment - 1UL)))
+#define MEMORY_PADDING(address, alignment) ((alignment - (address & (alignment - 1UL))) & (alignment - 1UL))
 #define MEMORY_PADDING_STD(address) (MEMORY_PADDING(address, sizeof(size_t)))
-#define MEMORY_SPACE(space, alignment) ((space + alignment - 1ULL) & ~(alignment - 1ULL))
+#define MEMORY_SPACE(space, alignment) ((space + alignment - 1UL) & ~(alignment - 1UL))
 #define MEMORY_SPACE_STD(type) (MEMORY_SPACE(sizeof(type), sizeof(size_t)))
-#define MEMORY_ALIGNMENT(address, space, alignment) (MEMORY_PADDING(address, alignment) + ((MEMORY_PADDING(address, alignment) >= space) ? 0ULL : MEMORY_SPACE(space, alignment)))
+#define MEMORY_ALIGNMENT(address, space, alignment) (MEMORY_PADDING(address, alignment) + ((MEMORY_PADDING(address, alignment) >= space) ? 0UL : MEMORY_SPACE(space, alignment)))
 #define MEMORY_ALIGNMENT_STD(address, type) (MEMORY_ALIGNMENT(address, sizeof(type), sizeof(size_t)))
 
 #define BYTE_BE(offset) ((sizeof(1ULL) - (size_t)(offset + 1ULL)) << 3ULL)

@@ -32,20 +32,19 @@
 #include "memory/memory.h"
 #include "memory/arena.h"
 #include "memory/stack.h"
+#include "memory/freelist.h"
 
 typedef struct
 {
-    size_t global;
-    size_t stack;
-    size_t components;
+	size_t global;
+	size_t stack;
 } MemoryMetadata;
 
 typedef struct
 {
-    MemoryMetadata metadata;
-    ArenaMemory *global;
-    StackMemory *stack;
-
+	MemoryMetadata metadata;
+	ArenaMemory *global;
+	StackMemory *stack;
 } MemoryLayout;
 
 extern MemoryLayout *alloc;

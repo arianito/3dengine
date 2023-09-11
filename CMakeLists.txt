@@ -19,6 +19,7 @@ add_executable(
     source/memory/rbt.c
     source/memory/memory.c
     source/memory/buddy.c
+    source/memory/slab.c
     source/memory/std.c
     source/memory/arena.c
     source/memory/stack.c

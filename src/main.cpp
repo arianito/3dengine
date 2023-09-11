@@ -18,34 +18,21 @@ extern "C"
 #include "debug/linkedlist_debug.h"
 }
 
-#include "engine/Component.hpp"
+#include "engine/Manager.hpp"
 
-class Box : public Entity
+class Box : public Component
 {
-	using Entity::Entity;
+};
 
-	void Create() override
-	{
-		printf("create box\n");
-	}
-
-	void Update() override
-	{
-		printf("update box\n");
-	}
-
-	void Destroy() override
-	{
-		printf("destroy box\n");
-	}
+class Sphere : public Component
+{
 };
 
 int main(int argc, const char *argv[])
 {
 	MemoryMetadata meta;
-	meta.components = 100 * KILOBYTES;
-	meta.stack = 2 * MEGABYTES;
-	meta.global = 8 * MEGABYTES;
+	meta.stack = 1 * MEGABYTES;
+	meta.global = 64 * MEGABYTES;
 
 	alloc_create(meta);
 
@@ -58,8 +45,11 @@ int main(int argc, const char *argv[])
 	debug_init();
 	editor_init();
 
+	MakeDirector();
 	auto director = MakeDirector();
-	director->AddEntity<Box>();
+
+	size_t e = director->CreateEntity();
+
 	director->Create();
 
 	alloc_debug();
@@ -68,9 +58,8 @@ int main(int argc, const char *argv[])
 
 	while (game_loop())
 	{
-		editor_update();
-
 		memorydebug_update();
+		editor_update();
 
 		director->Update();
 
