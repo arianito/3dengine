@@ -35,11 +35,12 @@ void alloc_create(MemoryMetadata meta)
 	alloc = std_alloc(sizeof(MemoryLayout), sizeof(size_t));
 	alloc->metadata = meta;
 	alloc->global = make_arena(meta.global);
-	alloc->stack = make_stack(meta.stack);
+	alloc->stack = stack_create(arena_alloc(alloc->global, meta.stack, sizeof(size_t)), meta.stack);
 }
 
 void alloc_terminate()
 {
+	arena_destroy(&alloc->global);
 	std_free(&alloc);
 }
 

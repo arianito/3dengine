@@ -30,8 +30,8 @@
 typedef struct
 {
 	size_t size;
-	unsigned int offset;
-	unsigned int padding;
+	size_t offset;
+	size_t padding;
 } ArenaMemory;
 
 void *arena_alloc(ArenaMemory *self, size_t size, unsigned int alignment);

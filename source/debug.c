@@ -229,7 +229,6 @@ void debug_render()
 	if (debugData->count2d == 0 && debugData->count3d == 0)
 		return;
 
-	glDisable(GL_DEPTH_TEST);
 	shader_begin(debugData->shader);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, debugData->fontTexture[0]);
@@ -315,7 +314,6 @@ void debug_render()
 	}
 
 	shader_end();
-	glEnable(GL_DEPTH_TEST);
 
 	debugData->count2d = 0;
 	debugData->count3d = 0;

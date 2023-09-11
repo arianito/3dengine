@@ -31,8 +31,8 @@ class Sphere : public Component
 int main(int argc, const char *argv[])
 {
 	MemoryMetadata meta;
+	meta.global = 32 * MEGABYTES;
 	meta.stack = 1 * MEGABYTES;
-	meta.global = 64 * MEGABYTES;
 
 	alloc_create(meta);
 

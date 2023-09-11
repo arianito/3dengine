@@ -44,9 +44,15 @@ size_t pools[npool];
 int capacity = 0;
 float lastHit = 0;
 
+void *custom_alloc(size_t size)
+{
+	return alloc_global(void, size);
+}
+
 void memorydebug_create()
 {
 	slab = make_slab(1024, 32);
+	slab->allocator = custom_alloc;
 	clear(pools, sizeof(pools));
 }
 
@@ -56,7 +62,13 @@ void memorydebug_update()
 	debug_color(color_yellow);
 	debug_origin(vec2(0.5, 0.5));
 	Transform t = transform_identity;
-	debug_string3df(t, "hello world, this is a multiline test\nfeel free to like and subscribe\nmy fps is %d", game->fps);
+
+	char bf1[50];
+	format_bytes((double)alloc->global->offset, bf1, 50);
+	char bf2[50];
+	format_bytes((double)alloc->global->size, bf2, 50);
+
+	debug_string3df(t, "hello world, this is a multiline test\nfeel free to like and subscribe\nmy fps is %d\n arena: %s / %s", game->fps, bf1, bf2);
 
 	int i = 0;
 	SlabPage *it = slab->pages;
