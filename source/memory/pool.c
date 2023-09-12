@@ -35,13 +35,7 @@
 
 void pool_enqueue(PoolMemory *self, PoolMemoryNode *node)
 {
-	size_t start = (size_t)self - self->padding;
-
-	if (self->head == NULL)
-		node->data = 0;
-	else
-		node->data = BYTE71((size_t)self->head - start, 0);
-
+	node->next = BYTE71((size_t)self->head, 0);
 	self->head = node;
 }
 
@@ -49,17 +43,10 @@ PoolMemoryNode *pool_dequeue(PoolMemory *self)
 {
 	if (self->head == NULL)
 		return NULL;
-	PoolMemoryNode *node = self->head;
-	node->data = BYTE71_SET_1(node->data, 1);
 
-	size_t offset = BYTE71_GET_7(node->data);
-	size_t start = (size_t)self - self->padding;
-	//
-	if (offset == 0)
-		self->head = NULL;
-	else
-		self->head = (PoolMemoryNode *)(start + offset);
-	//
+	PoolMemoryNode *node = self->head;
+	node->next = BYTE71_SET_1(node->next, 1);
+	self->head = (PoolMemoryNode *)(BYTE71_GET_7(node->next));
 	return node;
 }
 
@@ -106,7 +93,7 @@ unsigned char pool_free(PoolMemory *self, void **p)
 	const unsigned int space = MEMORY_SPACE_STD(PoolMemoryNode);
 	PoolMemoryNode *node = (PoolMemoryNode *)(address - space);
 
-	unsigned char used = BYTE71_GET_1(node->data);
+	unsigned char used = BYTE71_GET_1(node->next);
 	if (!used)
 	{
 		printf("pool: free failed, already freed\n");

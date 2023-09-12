@@ -82,8 +82,7 @@ void memorydebug_update()
 		float data = (float)(address + space);
 		float next = (float)(data + chunk_size);
 
-		unsigned char used = BYTE71_GET_1(node->data);
-		Color c = used ? color_red : color_green;
+		Color c = BYTE71_GET_1(node->next) ? color_red : color_green;
 		if (pool->head == node)
 			c = color_yellow;
 
@@ -145,7 +144,7 @@ void memorydebug_update()
 			capacity = pool->capacity;
 		}
 	}
-	
+
 	if (input_keypress(KEY_ENTER))
 	{
 		// Vec3 forward = vec3(-300, sind(flyTime) * 512 + 512, 120);
@@ -153,7 +152,7 @@ void memorydebug_update()
 		// camera->position = forward;
 		// camera_update();
 		// flyTime += time->deltaTime * 10.0f;
-		
+
 		Vec3 forward = vec3(0, sind(flyTime) * 512 + 400, 15);
 		camera->rotation = rot(0, 90, 0);
 		camera->position = forward;

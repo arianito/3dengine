@@ -29,7 +29,7 @@
 
 typedef struct
 {
-	size_t data; // 7bytes offset 1byte used
+	size_t next; // 7bytes offset 1byte used
 } PoolMemoryNode;
 
 typedef struct
