@@ -309,7 +309,7 @@ static inline int isFinite(float a) {
 }
 
 static inline float snap(float a, float size) {
-    return floorf((a + size / 2.0f) / size) * size;
+    return floorf((a + size * 0.5f) / size) * size;
 }
 
 static inline float moveTowards(float current, float target, float maxDelta) {
@@ -1127,20 +1127,46 @@ static inline Quat rot_quat(Rot a) {
     float yaw = fmodf(a.yaw, 360.0f);
     float roll = fmodf(a.roll, 360.0f);
 
-    float cp = cosd(pitch);
-    float sp = sind(pitch);
-    float cy = cosd(yaw);
-    float sy = sind(yaw);
-    float cr = cosd(roll);
-    float sr = sind(roll);
+    float cp = cosd(pitch * 0.5f);
+    float sp = sind(pitch * 0.5f);
+    float cy = cosd(yaw * 0.5f);
+    float sy = sind(yaw * 0.5f);
+    float cr = cosd(roll * 0.5f);
+    float sr = sind(roll * 0.5f);
 
     Quat q;
-    q.x = cr * sp * sy - sr * cp * cy;
-    q.y = -cr * sp * cy - sr * cp * sy;
-    q.z = cr * cp * sy - sr * sp * cy;
+    q.x = sr * cp * cy - cr * sp * sy;
+    q.y = cr * sp * cy + sr * cp * sy;
+    q.z = -cr * cp * sy + sr * sp * cy;
     q.w = cr * cp * cy + sr * sp * sy;
 
     return q;
+}
+
+static inline Rot rot_lookAt(Vec3 a, Vec3 b, Vec3 up) {
+
+    Vec3 forward = vec3_norm(vec3_sub(b, a));
+    Vec3 right = vec3_norm(vec3_cross(up, forward));
+    up = vec3_cross(forward, right);
+
+    Rot r;
+    r.pitch = 0;
+    r.yaw = 0;
+    r.roll = 0;
+
+    float dot = vec3_dot(forward, vec3_forward);
+
+    if(nearEq(dot, 1))
+        return r;
+
+    if(nearEq(dot, -1)) {
+        r.yaw = 180;
+        return r;
+    }
+
+    float rotAngle = acosd(-dot);
+    r.yaw = rotAngle;
+    return  r;
 }
 
 // quat
@@ -1662,7 +1688,7 @@ static inline Mat4 mat4_perspective(float fov, float aspect, float nr, float fr)
     return m;
 }
 
-static inline Mat4 mat4_lookat(Vec3 eye, Vec3 center, Vec3 up) {
+static inline Mat4 mat4_lookAt(Vec3 eye, Vec3 center, Vec3 up) {
     Mat4 m;
     Vec3 zaxis = vec3_norm(vec3_sub(center, eye));
     Vec3 xaxis = vec3_norm(vec3_cross(up, zaxis));

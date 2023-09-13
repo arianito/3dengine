@@ -113,7 +113,7 @@ void editor_update() {
         camera->rotation.yaw = editor->lastCamRot.yaw + dx;
 
         if (!(camera->ortho & VIEW_ORTHOGRAPHIC)) {
-            editor->flyingSpeed = fmaxf(editor->flyingSpeed + input->wheel.y * 25.0f, 50.0f);
+            editor->flyingSpeed = fmaxf(editor->flyingSpeed + input->wheel.y * 5.0f, 10.0f);
 
             float axisY = input_axis(AXIS_VERTICAL) * gameTime->deltaTime * editor->flyingSpeed;
             float axisX = input_axis(AXIS_HORIZONTAL) * gameTime->deltaTime * editor->flyingSpeed;

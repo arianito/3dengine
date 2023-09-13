@@ -49,6 +49,7 @@ int main(int argc, const char *argv[]) {
         }
     }
 
+    alloc_debug();
     debug_terminate();
     grid_terminate();
     draw_terminate();

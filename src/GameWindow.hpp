@@ -16,29 +16,23 @@ extern "C"
 #include "engine/Memory.hpp"
 
 struct GameWindow : public Object<GameWindow> {
+
+    Array<int> arr{GlobalFreelistAllocator::instance()};
+
     inline void Create() {
+        arr.push(23);
     }
 
     inline void Update() {
 
-        draw_arrow(vec3_zero,
-                   vec3(100.0f, 0, 0),
-                   vec3(1,0,1),
-                   color_red,
-                   20);
-        draw_arrow(vec3_zero,
-                   vec3(0, 0, 100.0f),
-                   vec3(0,1,1),
-                   color_blue,
-                   20);
+        debug_string3df(transform_identity, "array: %d / %d\nfreelist: %zu / %zu", arr.size(), arr.capacity(),
+                        freelist_capacity(alloc->freelist), alloc->freelist->size);
 
-        draw_arrow(vec3_zero,
-                   vec3(0, 100.0f, 0),
-                   vec3(1,1,0),
-                   color_green,
-                   20);
-
-
-        draw_axis(vec3(100, 100, 0), quat(gameTime->time * 50.0f, 0, 0), 100);
+        if(input_keydown(KEY_SPACE)) {
+            arr.push((int)(randf() * 10000));
+        }
+        if(input_keydown(KEY_N)) {
+            arr.clear();
+        }
     }
 };

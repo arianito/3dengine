@@ -397,7 +397,7 @@ void draw_sphere(Vec3 a, Color c, float r, int s) {
 void draw_arrow(Vec3 a, Vec3 b, Vec3 up, Color c, float p) {
     float d = vec3_dist(a, b);
     Vec3 dirX = vec3_norm(vec3_sub(b, a));
-    Vec3 dirY = vec3_cross( up, dirX);
+    Vec3 dirY = vec3_cross( vec3_norm(up), dirX);
     Vec3 dirZ = vec3_cross(dirX, dirY);
     Vec3 forward = vec3_add(a, vec3_mulf(dirX, d));
     Vec3 end;
@@ -419,65 +419,44 @@ void draw_axis(Vec3 a, Quat q, float s) {
     Vec3 right = vec3_add(a, vec3_mulf(dirY, s));
     Vec3 up = vec3_add(a, vec3_mulf(dirZ, s));
 
-    Vec3 end;
-    Color c;
-    Tetrahedron t;
-
-    float p = 0.2f;
-
-    end = vec3_add(a, vec3_mulf(dirX, (1 - p) * s));
-    c = color_red;
-    draw_line(a, forward, c);
-    t = tetrahedron(forward, end, end, end);
-    t.c = vec3_add(t.c, vec3_mulf(dirZ, s * p * 0.2f));
-    t.d = vec3_add(t.d, vec3_mulf(dirY, s * p * 0.2f));
-    fill_tetrahedron(t, c);
-
-
-    end = vec3_add(a, vec3_mulf(dirY, (1 - p) * s));
-    c = color_green;
-    draw_line(a, right, c);
-    t = tetrahedron(right, end, end, end);
-    t.c = vec3_add(t.c, vec3_mulf(dirZ, s * p * 0.2f));
-    t.d = vec3_add(t.d, vec3_mulf(dirX, s * p * 0.2f));
-    fill_tetrahedron(t, c);
-
-
-    end = vec3_add(a, vec3_mulf(dirZ, (1 - p) * s));
-    c = color_blue;
-    draw_line(a, up, c);
-    t = tetrahedron(up, end, end, end);
-    t.c = vec3_add(t.c, vec3_mulf(dirX, s * p * 0.2f));
-    t.d = vec3_add(t.d, vec3_mulf(dirY, s * p * 0.2f));
-    fill_tetrahedron(t, c);
+    draw_arrow(a,
+               forward,
+               vec3_add(dirX, dirZ),
+               color_red,
+               s * 0.2f);
+    draw_arrow(a,
+               right,
+               vec3_add(dirY, dirX),
+               color_green,
+               s * 0.2f);
+    draw_arrow(a,
+               up,
+               vec3_add(dirZ, dirY),
+               color_blue,
+               s * 0.2f);
 }
 
 void draw_axisRot(Vec3 a, Rot r, float s) {
-    Vec3 forward = vec3_add(a, vec3_mulf(rot_forward(r), s));
-    Vec3 right = vec3_add(a, vec3_mulf(rot_right(r), s));
-    Vec3 up = vec3_add(a, vec3_mulf(rot_up(r), s));
+    Vec3 dirX = rot_forward(r);
+    Vec3 dirY = rot_right(r);
+    Vec3 dirZ = rot_up(r);
+    Vec3 forward = vec3_add(a, vec3_mulf(dirX, s));
+    Vec3 right = vec3_add(a, vec3_mulf(dirY, s));
+    Vec3 up = vec3_add(a, vec3_mulf(dirZ, s));
 
-    Vertex va;
-    va.size = VERTEX_SIZE;
-
-    va.pos = a;
-    va.color = color_red;
-    add_vertex(1, va);
-    va.pos = forward;
-    add_vertex(1, va);
-    add_vertex(0, va);
-
-    va.pos = a;
-    va.color = color_green;
-    add_vertex(1, va);
-    va.pos = right;
-    add_vertex(1, va);
-    add_vertex(0, va);
-
-    va.pos = a;
-    va.color = color_blue;
-    add_vertex(1, va);
-    va.pos = up;
-    add_vertex(1, va);
-    add_vertex(0, va);
+    draw_arrow(a,
+               forward,
+               vec3_add(dirX, dirZ),
+               color_red,
+               s * 0.2f);
+    draw_arrow(a,
+               right,
+               vec3_add(dirY, dirX),
+               color_green,
+               s * 0.2f);
+    draw_arrow(a,
+               up,
+               vec3_add(dirZ, dirY),
+               color_blue,
+               s * 0.2f);
 }

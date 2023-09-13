@@ -58,10 +58,10 @@ typedef struct {
 extern Camera *camera;
 
 static inline void camera_update() {
-    float farPlane = 10000.0f;
+    float farPlane = 5000.0f;
     if (!(camera->ortho & VIEW_ORTHOGRAPHIC)) {
         camera->view = mat4_view(camera->position, camera->rotation);
-        camera->projection = mat4_perspective(camera->fov, game->ratio, 0.0001f, farPlane);
+        camera->projection = mat4_perspective(camera->fov, game->ratio, 1.0f, farPlane);
     } else {
         Rot r = camera->rotation;
         r.pitch += 180;

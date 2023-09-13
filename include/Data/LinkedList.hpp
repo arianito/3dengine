@@ -1,4 +1,5 @@
 #pragma once
+
 /******************************************************************************
  *                                                                            *
  *  Copyright (c) 2023 Aryan Alikhani                                      *
@@ -25,39 +26,35 @@
  *                                                                            *
  *****************************************************************************/
 
-template <typename T>
-class SinglyLinkedList
-{
+template<typename T>
+class SinglyLinkedList {
 private:
-	struct Node
-	{
-		Node *next;
-		T value;
-	};
+    struct Node {
+        Node *next;
+        T value;
+    };
 
 public:
-	void push(T value)
-	{
-	}
-	void remove(T value)
-	{
-	}
+    void push(T value) {
+    }
+
+    void remove(T value) {
+    }
 };
 
-template <typename T>
-class Queue
-{
+template<typename T>
+class Queue {
 private:
-	struct Node
-	{
-		Node *next;
-		T value;
-	};
+    struct Node {
+        Node *next;
+        T value;
+    };
 
-	Node *head;
-	Node *tail;
+    Node *head;
+    Node *tail;
 
 public:
-	void enquque(T value);
-	T dequeue();
+    void enquque(T value);
+
+    T dequeue();
 };
