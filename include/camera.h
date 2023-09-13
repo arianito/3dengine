@@ -42,9 +42,9 @@ typedef enum
 	VIEW_TOP = 1 << 6
 
 } OrthoMode;
+
 typedef struct
 {
-
 	Vec3 position;
 	Rot rotation;
 	Mat4 view;
@@ -55,9 +55,9 @@ typedef struct
 	int ortho;
 } Camera;
 
-Camera *camera;
+extern Camera *camera;
 
-inline void camera_update()
+static inline void camera_update()
 {
 	if (!(camera->ortho & VIEW_ORTHOGRAPHIC))
 	{
@@ -76,7 +76,7 @@ inline void camera_update()
 	camera->viewProjection = mat4_mul(camera->view, camera->projection);
 }
 
-inline void camera_init()
+static inline void camera_init()
 {
 	camera = alloc_global(Camera, sizeof(Camera));
 	camera->rotation = rot(-15, 180, 0);
@@ -88,11 +88,7 @@ inline void camera_init()
 	camera_update();
 }
 
-inline void camera_terminate()
-{
-}
-
-inline char camera_worldToScreen(Vec3 p, Vec2 *out_screen)
+static inline char camera_worldToScreen(Vec3 p, Vec2 *out_screen)
 {
 	Vec4 r = mat4_mulv4(camera->viewProjection, vec4(p.x, p.y, p.z, 1));
 	if (r.w > 0)
@@ -109,7 +105,7 @@ inline char camera_worldToScreen(Vec3 p, Vec2 *out_screen)
 	return 0;
 }
 
-inline void camera_screenToWorld(Vec2 s, Vec3 *out_origin, Vec3 *out_dir)
+static inline void camera_screenToWorld(Vec2 s, Vec3 *out_origin, Vec3 *out_dir)
 {
 	Mat4 inv = mat4_inv(camera->viewProjection);
 	float nx = s.x / game->width;

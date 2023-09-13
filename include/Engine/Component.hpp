@@ -25,10 +25,9 @@
  *                                                                            *
  *****************************************************************************/
 
-#include <stddef.h>
+#include <cstddef>
 #include <type_traits>
 #include <unordered_map>
-#include "mem/traits.hpp"
 
 extern "C"
 {
@@ -40,7 +39,7 @@ class Component;
 class Entity;
 class Director;
 
-inline size_t nextComponentId()
+static inline size_t nextComponentId()
 {
 	static size_t lastID{0u};
 	return lastID++;
@@ -61,19 +60,19 @@ class Entity
 {
 private:
 	size_t mEntityId;
-	std::unordered_map<size_t, Component *, PoolTrait<size_t>> mComponents;
+	std::unordered_map<size_t, Component *> mComponents;
 
 public:
-	Entity(size_t id) : mEntityId(id) {}
+	explicit Entity(size_t id) : mEntityId(id) {}
 
-	size_t GetId()
+	size_t GetId() const
 	{
 		return mEntityId;
 	}
 };
 
 template <class T>
-inline size_t GetComponentTypeId() noexcept
+static inline size_t GetComponentTypeId() noexcept
 {
 	static_assert(std::is_base_of<Component, T>::value, "T must be a base class of Component");
 	static size_t id{nextComponentId()};
@@ -85,7 +84,7 @@ inline size_t GetComponentTypeId() noexcept
 class Director
 {
 private:
-	std::unordered_map<size_t, Entity *, std::hash<size_t>, std::equal_to<size_t>, PoolTrait<std::pair<const size_t, Entity *>>> mEntities;
+	std::unordered_map<size_t, Entity *> mEntities;
 	PoolMemory *mEntityMemory;
 	size_t mEntityCouter;
 
@@ -119,11 +118,15 @@ public:
 		return arena_alloc(alloc->global, size, sizeof(size_t));
 	}
 
+    inline void operator delete(void *ptr) {
+        // Do nothing
+    }
+
 private:
 };
 
-inline Director *MakeDirector()
+static inline Director *MakeDirector()
 {
-	Director *director = new Director(2 * MEGABYTES);
+	auto director = new Director(2 * MEGABYTES);
 	return director;
 }

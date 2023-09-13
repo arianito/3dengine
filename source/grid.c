@@ -23,17 +23,11 @@
  *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
  *                                                                            *
  *****************************************************************************/
-#include "draw.h"
-
 #define BUFFER_OFFSET(x) ((const void *)(x))
 #define UNIT_SCALE 10
 
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
 #include <glad/glad.h>
-
 #include "shader.h"
-#include "game.h"
 #include "camera.h"
 #include "mathf.h"
 
@@ -86,11 +80,11 @@ void grid_init()
 	for (i = -n; i < n + 1; i++)
 	{
 		a.color = c;
-		a.pos.x = i * gap;
+		a.pos.x = (float)i * gap;
 		a.pos.y = -size;
 		a.pos.z = 0;
 		gridData->vertices[k++] = a;
-		a.pos.x = i * gap;
+		a.pos.x = (float)i * gap;
 		a.pos.y = size;
 		a.pos.z = 0;
 		gridData->vertices[k++] = a;
@@ -99,11 +93,11 @@ void grid_init()
 	{
 		a.color = c;
 		a.pos.x = -size;
-		a.pos.y = i * gap;
+		a.pos.y = (float)i * gap;
 		a.pos.z = 0;
 		gridData->vertices[k++] = a;
 		a.pos.x = size;
-		a.pos.y = i * gap;
+		a.pos.y = (float)i * gap;
 		a.pos.z = 0;
 		gridData->vertices[k++] = a;
 	}
@@ -138,7 +132,7 @@ void grid_render()
 	glBindVertexArray(gridData->vaoIds[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, gridData->vboIds[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(gridData->vertices), gridData->vertices);
-	char isOrtho = (camera->ortho & VIEW_ORTHOGRAPHIC);
+	char isOrtho = (char)(camera->ortho & VIEW_ORTHOGRAPHIC);
 
 	t.x = camera->position.x;
 	t.y = camera->position.y;

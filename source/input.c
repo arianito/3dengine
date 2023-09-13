@@ -53,6 +53,7 @@ typedef struct
 } InputData;
 
 static InputData *globalInput;
+Input* input;
 
 void update_axis(int ax, char low, char high)
 {

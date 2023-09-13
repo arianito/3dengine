@@ -81,13 +81,13 @@ Shader shader_create(const char *vs, const char *fs)
 
 Shader shader_load(const char *vs, const char *fs)
 {
-	File *vsf = file_read(vs, 1);
-	File *fsf = file_read(fs, 1);
+	File *vsf = file_read(vs);
+	File *fsf = file_read(fs);
 
 	Shader sh = shader_create(vsf->text, fsf->text);
 
-	alloc_free(&fsf);
-	alloc_free(&vsf);
+	alloc_free((void **) &fsf);
+	alloc_free((void **) &vsf);
 	return sh;
 }
 

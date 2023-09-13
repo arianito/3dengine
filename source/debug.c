@@ -25,8 +25,6 @@
  *****************************************************************************/
 #include "debug.h"
 
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
 #include "game.h"
@@ -34,7 +32,6 @@
 #include "mathf.h"
 #include "camera.h"
 #include "file.h"
-#include "draw.h"
 
 #include <stdarg.h>
 

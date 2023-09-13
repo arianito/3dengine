@@ -176,7 +176,7 @@ typedef struct
 	Vec2 wheel;
 } Input;
 
-Input *input;
+extern Input *input;
 
 void input_init();
 void input_update();

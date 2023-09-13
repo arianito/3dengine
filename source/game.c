@@ -112,7 +112,7 @@ void game_init()
 static int frames = 0;
 static int lastCheck = 0;
 
-inline void calculate_fps()
+void calculate_fps()
 {
 	gameTime->deltaTime = (float)glfwGetTime() - gameTime->time;
 	gameTime->time = (float)glfwGetTime();

@@ -49,12 +49,12 @@ typedef struct
 	int *indices;
 } Mesh;
 
-inline void mesh_obj(const char *p)
+static inline void mesh_obj(const char *p)
 {
 	char *path = resolve("%s", p);
 	FILE *f;
 	fopen_s(&f, path, "r");
-	alloc_free(&path);
+	alloc_free((void **) &path);
 
 	if (f == NULL)
 	{

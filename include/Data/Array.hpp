@@ -1,9 +1,9 @@
 #pragma once
 
 #include <type_traits>
-#include <stddef.h>
-#include <string.h>
-#include <assert.h>
+#include <cstddef>
+#include <cstring>
+#include <cassert>
 #include <memory>
 #include <type_traits>
 #include "engine/Memory.hpp"
@@ -14,9 +14,9 @@ class Array : public Object<Array<T>>
 {
 private:
 	T *mList;
-	Allocator *mAllocator;
-	unsigned int mCapacity;
-	unsigned int mLength;
+	Allocator *mAllocator{nullptr};
+	int mCapacity{2};
+	int mLength{0};
 
 	inline void expand()
 	{
@@ -25,7 +25,7 @@ private:
 
 		size_t size = mCapacity * sizeof(T);
 		T *newList = (T *)mAllocator->Alloc(size * 2);
-		assert(newList != NULL && "Array: Insufficient memory.\n");
+		assert(newList != nullptr && "Array: Insufficient memory.\n");
 		memset(newList, 0, size * 2);
 		memcpy(newList, mList, size);
 		mAllocator->Free((void **)(&mList));
@@ -39,42 +39,66 @@ private:
 
 		size_t size = mCapacity * sizeof(T);
 		T *newList = (T *)mAllocator->Alloc(size / 2);
-		assert(newList != NULL && "Array: Insufficient memory.\n");
+		assert(newList != nullptr && "Array: Insufficient memory.\n");
 		memcpy(newList, mList, size / 2);
 		mAllocator->Free((void **)(&mList));
 		mList = newList;
 		mCapacity = mCapacity / 2;
 	}
 
-	inline void destroy(unsigned int index)
+	inline void destroy(int index)
 	{
 		if constexpr (std::is_pointer_v<T>)
 		{
 			delete mList[index];
-			mList[index] = NULL;
-		} else if constexpr (is_shared_ptr<std::shared_ptr<T>>::value) {
-			
-			mList[index].~shared_ptr();
-		} else if constexpr(is_unique_ptr<std::unique_ptr<T>>::value) {
-			mList[index].~unique_ptr();
+			mList[index] = nullptr;
+		}
+		else if constexpr (is_shared_ptr<std::shared_ptr<T>>::value || is_unique_ptr<std::unique_ptr<T>>::value)
+		{
+			mList[index] = nullptr;
 		}
 	}
 
 public:
-	Array(Allocator *alloc, unsigned int capacity) : mCapacity(capacity), mAllocator(alloc), mLength(0)
+	Array(Allocator *a, int capacity) : mCapacity(capacity), mAllocator(a), mLength(0)
 	{
 		size_t size = mCapacity * sizeof(T);
 		mList = (T *)mAllocator->Alloc(size);
 		memset(mList, 0, size);
 	}
-	Array(Allocator *alloc) : Array(alloc, 2) {}
-	Array(const Array &) = delete;
+	explicit Array(Allocator *a) : Array(a, 2) {}
+    explicit Array(const Array &) = delete;
 
 	inline ~Array()
 	{
-		for (unsigned int i = 0; i < mLength; i++)
-			destroy(i);
+        for (int i = 0; i < mLength; i++)
+            destroy(i);
 		mAllocator->Free((void **)(&mList));
+	}
+
+	inline void removeAt(int index)
+	{
+		assert(index >= 0 && index < mLength && "Array: Index out of range.\n");
+		shrink();
+		for (int i = index; i < mLength - 1; i++)
+            mList[i] = mList[i + 1];
+        destroy(mLength - 1);
+		mLength--;
+	}
+
+	inline void remove(const T& item)
+	{
+		int j = 0;
+		for (int i = 0; i < mLength; i++)
+		{
+			if (mList[i + j] == item) {
+                destroy(i + j);
+                j++;
+            }
+			if (j > 0)
+				mList[i] = mList[i + j];
+		}
+		mLength -= j;
 	}
 
 	inline void push(const T &element)
@@ -82,59 +106,24 @@ public:
 		insert(element, mLength);
 	}
 
-	inline const T &pop() const
-	{
-		assert(mLength > 0 && "Array: is empty.\n");
-		T item = mList[mLength - 1];
-		remove(mLength - 1);
-		return item;
-	}
-
 	inline void prepend(const T &element)
 	{
 		insert(element, 0);
 	}
 
-	inline void insert(const T &element, unsigned int index)
+	inline void insert(const T &element, int index)
 	{
 		assert(index >= 0 && index <= mLength && "Array: Index out of range.\n");
 		expand();
 
-		for (unsigned int i = mLength; i > index; i--)
+		for (int i = mLength; i > index; i--)
 			mList[i] = mList[i - 1];
 
 		mList[index] = element;
 		mLength++;
 	}
 
-	inline void remove(unsigned int index)
-	{
-		assert(index >= 0 && index < mLength && "Array: Index out of range.\n");
-		shrink();
-		destroy(index);
-		for (unsigned int i = index; i < mLength - 1; i++)
-			mList[i] = mList[i + 1];
-		mList[mLength - 1] = NULL;
-		mLength--;
-	}
-
-	inline void remove(T item)
-	{
-		unsigned int j = 0;
-		for (unsigned int i = 0; i < mLength; i++)
-		{
-			if (mList[i + j] == item)
-			{
-				destroy(i + j);
-				j++;
-			}
-			if (j > 0)
-				mList[i] = mList[i + j];
-		}
-		mLength -= j;
-	}
-
-	inline T &operator[](unsigned int index)
+	inline T &operator[](int index)
 	{
 		assert(index >= 0 && index < mLength && "Array: Index out of range.\n");
 		return mList[index];
@@ -142,8 +131,7 @@ public:
 
 	inline int find(const T &obj)
 	{
-
-		for (unsigned int i = 0; i < mLength; i++)
+		for (int i = 0; i < mLength; i++)
 		{
 			if (mList[i] == obj)
 				return i;
@@ -151,22 +139,17 @@ public:
 		return -1;
 	}
 
-	inline T &at(unsigned int index)
-	{
-		return this[index];
-	}
-
 	inline bool isEmpty()
 	{
 		return mLength == 0;
 	}
 
-	inline const unsigned int &size()
+	inline const int &size()
 	{
 		return mLength;
 	}
 
-	inline const unsigned int &capacity()
+	inline const int &capacity()
 	{
 		return mCapacity;
 	}

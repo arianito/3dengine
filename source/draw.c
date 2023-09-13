@@ -127,7 +127,7 @@ void draw_terminate()
 	shader_destroy(drawData->shader);
 }
 
-inline void add_vertex(int type, Vertex v)
+void add_vertex(int type, Vertex v)
 {
 	if (drawData->counter[type] == object_count)
 		return;
@@ -182,7 +182,7 @@ void draw_bbox(BBox bbox, Color c)
 	}
 }
 
-inline void fill_face(Vertex *va, const Vec3 *a, const Vec3 *b, const Vec3 *c, const Vec3 *d)
+void fill_face(Vertex *va, const Vec3 *a, const Vec3 *b, const Vec3 *c, const Vec3 *d)
 {
 
 	va->pos = *a;

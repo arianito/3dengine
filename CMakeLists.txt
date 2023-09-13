@@ -11,35 +11,36 @@ include_directories(third-parties/glad/include)
 include_directories(third-parties/stb/include)
 
 add_executable(
-    app
-    
-    third-parties/glad/src/glad.c
+        app
 
-    source/mem/alloc.c
-    source/mem/rbt.c
-    source/mem/memory.c
-    source/mem/buddy.c
-    source/mem/slab.c
-    source/mem/std.c
-    source/mem/arena.c
-    source/mem/stack.c
-    source/mem/pool.c
-    source/mem/freelist.c
+        third-parties/glad/src/glad.c
 
-    source/draw.c
-    source/game.c
-    source/grid.c
-    source/shader.c
-    source/editor.c
-    source/input.c
-    source/debug.c
-    source/file.c
-    source/mesh.c
-    source/sort.c
-    source/benchmark.c
+        source/mem/alloc.c
+        source/mem/rbt.c
+        source/mem/memory.c
+        source/mem/slab.c
+        source/mem/std.c
+        source/mem/arena.c
+        source/mem/stack.c
+        source/mem/pool.c
+        source/mem/freelist.c
 
-    source/engine/Component.cpp
-    src/internal/main.cpp
+        source/shader.c
+        source/draw.c
+        source/game.c
+        source/grid.c
+        source/editor.c
+        source/camera.c
+        source/input.c
+        source/debug.c
+        source/file.c
+        source/mesh.c
+        source/sort.c
+        source/benchmark.c
+
+        source/engine/Component.cpp
+        src/internal/main.cpp
 )
+
 target_link_libraries(app glfw)
 
