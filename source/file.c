@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "memory/alloc.h"
+#include "mem/alloc.h"
 
 static char *prefix;
 static int prefixLength;
@@ -49,7 +49,7 @@ char *resolve(const char *fmt, ...)
 	va_end(args);
 
 	sprintf(out, "%s%s", prefix, buffer);
-	alloc_free(buffer);
+	alloc_free(&buffer);
 
 	return out;
 }
@@ -73,7 +73,7 @@ File *file_read(const char *p)
 	FILE *f;
 	fopen_s(&f, path, "r");
 
-	alloc_free(path);
+	alloc_free(&path);
 
 	if (f == NULL)
 	{
@@ -97,6 +97,6 @@ File *file_read(const char *p)
 
 void file_destroy(File **f)
 {
-	alloc_free(*f);
+	alloc_free(f);
 	*f = NULL;
 }

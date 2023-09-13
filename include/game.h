@@ -44,7 +44,7 @@ typedef struct
 } Time;
 
 extern Game *game;
-extern Time *time;
+extern Time *gameTime;
 
 void game_init();
 char game_loop();

@@ -1,4 +1,4 @@
-#include "memory/slab.h"
+#include "mem/slab.h"
 
 #include <malloc.h>
 #include <stdlib.h>
@@ -6,7 +6,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "memory/utils.h"
+#include "mem/utils.h"
 
 void slab_enqueue(SlabMemory *self, SlabObject *node)
 {

@@ -33,7 +33,7 @@
 #include <glad/glad.h>
 
 #include "file.h"
-#include "memory/alloc.h"
+#include "mem/alloc.h"
 
 Shader shader_create(const char *vs, const char *fs)
 {
@@ -86,8 +86,8 @@ Shader shader_load(const char *vs, const char *fs)
 
 	Shader sh = shader_create(vsf->text, fsf->text);
 
-	alloc_free(fsf);
-	alloc_free(vsf);
+	alloc_free(&fsf);
+	alloc_free(&vsf);
 	return sh;
 }
 

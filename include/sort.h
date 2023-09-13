@@ -26,7 +26,7 @@
  *****************************************************************************/
 
 #include <stddef.h>
-#include "memory/stack.h"
+#include "mem/stack.h"
 
 void sort_insert(size_t arr[], int a, int b);
 void sort_quick(size_t arr[], int a, int b);

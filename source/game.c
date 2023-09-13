@@ -26,7 +26,7 @@
 #include "game.h"
 
 #include <stdio.h>
-#include "memory/alloc.h"
+#include "mem/alloc.h"
 #include "mathf.h"
 
 #define GLFW_INCLUDE_NONE
@@ -34,7 +34,7 @@
 #include <glad/glad.h>
 
 Game *game = NULL;
-Time *time = NULL;
+Time *gameTime = NULL;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
@@ -51,9 +51,9 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 
 void game_init()
 {
-	time = alloc_global(Time, sizeof(Time));
-	time->deltaTime = 1 / 60.0f;
-	time->time = 0;
+	gameTime = alloc_global(Time, sizeof(Time));
+	gameTime->deltaTime = 1 / 60.0f;
+	gameTime->time = 0;
 
 	game = alloc_global(Game, sizeof(Game));
 	game->fps = 60;
@@ -114,10 +114,10 @@ static int lastCheck = 0;
 
 inline void calculate_fps()
 {
-	time->deltaTime = (float)glfwGetTime() - time->time;
-	time->time = (float)glfwGetTime();
+	gameTime->deltaTime = (float)glfwGetTime() - gameTime->time;
+	gameTime->time = (float)glfwGetTime();
 	frames++;
-	int f = (int)(floorf(time->time));
+	int f = (int)(floorf(gameTime->time));
 	if (f != lastCheck)
 	{
 		game->fps = frames;
@@ -132,7 +132,7 @@ char game_loop()
 	glfwPollEvents();
 	calculate_fps();
 
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClearColor(0.15f, 0.15f, 0.2f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);

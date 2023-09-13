@@ -1,3 +1,4 @@
+#pragma once
 /******************************************************************************
  *                                                                            *
  *  Copyright (c) 2023 Aryan Alikhani                                      *
@@ -23,29 +24,21 @@
  *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
  *                                                                            *
  *****************************************************************************/
-#include "memory/alloc.h"
 
-#include <malloc.h>
-#include "memory/std.h"
+#include <stddef.h>
 
-MemoryLayout *alloc = NULL;
-
-void alloc_create(MemoryMetadata meta)
+typedef struct
 {
-	alloc = std_alloc(sizeof(MemoryLayout), sizeof(size_t));
-	alloc->metadata = meta;
-	alloc->global = make_arena(meta.global);
-	alloc->stack = stack_create(arena_alloc(alloc->global, meta.stack, sizeof(size_t)), meta.stack);
-}
+	void *next;
+	size_t size;
+	unsigned int padding;
+} FreeListMemory;
 
-void alloc_terminate()
-{
-	arena_destroy(&alloc->global);
-	std_free(&alloc);
-}
-
-void alloc_debug()
-{
-	printf("global: %zu/%zu \n", alloc->global->offset, alloc->global->size);
-	printf("stack: %zu/%zu \n", alloc->stack->offset, alloc->stack->size);
-}
+void *freelist_alloc(FreeListMemory *self, size_t size, unsigned int alignment);
+unsigned char freelist_free(FreeListMemory *self, void **ptr);
+void freelist_reset(FreeListMemory *self);
+size_t freelist_capacity(FreeListMemory *self);
+void freelist_destroy(FreeListMemory **self);
+FreeListMemory *freelist_create(void *m, size_t size);
+FreeListMemory *make_freelist(size_t size);
+FreeListMemory *make_freelist_exact(size_t size);

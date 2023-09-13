@@ -15,16 +15,16 @@ add_executable(
     
     third-parties/glad/src/glad.c
 
-    source/memory/alloc.c
-    source/memory/rbt.c
-    source/memory/memory.c
-    source/memory/buddy.c
-    source/memory/slab.c
-    source/memory/std.c
-    source/memory/arena.c
-    source/memory/stack.c
-    source/memory/pool.c
-    source/memory/freelist.c
+    source/mem/alloc.c
+    source/mem/rbt.c
+    source/mem/memory.c
+    source/mem/buddy.c
+    source/mem/slab.c
+    source/mem/std.c
+    source/mem/arena.c
+    source/mem/stack.c
+    source/mem/pool.c
+    source/mem/freelist.c
 
     source/draw.c
     source/game.c
@@ -38,9 +38,8 @@ add_executable(
     source/sort.c
     source/benchmark.c
 
-
     source/engine/Component.cpp
-    src/main.cpp
+    src/internal/main.cpp
 )
 target_link_libraries(app glfw)
 

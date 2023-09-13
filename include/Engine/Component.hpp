@@ -28,12 +28,12 @@
 #include <stddef.h>
 #include <type_traits>
 #include <unordered_map>
-#include "memory/traits.hpp"
+#include "mem/traits.hpp"
 
 extern "C"
 {
-#include "memory/alloc.h"
-#include "memory/pool.h"
+#include "mem/alloc.h"
+#include "mem/pool.h"
 }
 
 class Component;

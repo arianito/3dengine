@@ -23,14 +23,14 @@
  *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
  *                                                                            *
  *****************************************************************************/
-#include "memory/freelist.h"
+#include "mem/freelist.h"
 
 #include <malloc.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
-#include "memory/utils.h"
+#include "mem/utils.h"
 
 #define NODE_LOWER(node) ((size_t)(node) + MEMORY_SPACE_STD(FreeListMemory) - (node)->padding)
 #define NODE_HIGHER(node) ((size_t)(node) + MEMORY_SPACE_STD(FreeListMemory))
@@ -64,7 +64,7 @@ void freelist_best(FreeListMemory *self, size_t size, unsigned int alignment, un
 		*prev = NULL,
 		*bestPrev = NULL;
 	unsigned int padding, bestPad = 0;
-	size_t min = (~(0LL) - 1);
+	size_t min = (~(0ULL) - 1);
 	while (node != NULL)
 	{
 		padding = MEMORY_ALIGNMENT(NODE_LOWER(node), sizeof(FreeListMemory), alignment);
@@ -253,6 +253,18 @@ void freelist_reset(FreeListMemory *self)
 	node->size = self->size - (self->padding);
 	node->next = NULL;
 	freelist_insert(self, NULL, node);
+}
+
+size_t freelist_capacity(FreeListMemory *self)
+{
+	size_t sum = 0;
+	FreeListMemory *node = self->next;
+	while (node != NULL)
+	{
+		sum += node->size;
+		node = node->next;
+	}
+	return self->size - sum;
 }
 
 FreeListMemory *freelist_create(void *m, size_t size)

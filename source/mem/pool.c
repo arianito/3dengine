@@ -23,7 +23,7 @@
  *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
  *                                                                            *
  *****************************************************************************/
-#include "memory/pool.h"
+#include "mem/pool.h"
 
 #include <malloc.h>
 #include <stdlib.h>
@@ -31,7 +31,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "memory/utils.h"
+#include "mem/utils.h"
 
 void pool_enqueue(PoolMemory *self, PoolMemoryNode *node)
 {

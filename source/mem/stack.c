@@ -23,14 +23,14 @@
  *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
  *                                                                            *
  *****************************************************************************/
-#include "memory/stack.h"
+#include "mem/stack.h"
 
 #include <malloc.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
-#include "memory/utils.h"
+#include "mem/utils.h"
 
 void *stack_alloc(StackMemory *self, size_t size, unsigned int alignment)
 {

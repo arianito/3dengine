@@ -25,15 +25,15 @@
  *                                                                            *
  *****************************************************************************/
 
-#include "../input.h"
-#include "../mathf.h"
-#include "../draw.h"
-#include "../game.h"
-#include "../debug.h"
-#include "../sort.h"
-#include "../camera.h"
-#include "../memory/utils.h"
-#include "../memory/slab.h"
+#include "input.h"
+#include "mathf.h"
+#include "draw.h"
+#include "game.h"
+#include "debug.h"
+#include "sort.h"
+#include "camera.h"
+#include "mem/utils.h"
+#include "mem/slab.h"
 
 SlabMemory *slab = NULL;
 enum
@@ -118,7 +118,7 @@ void memorydebug_update()
 		i++;
 	}
 
-	if (input_keypress(KEY_SPACE) && (time->time - lastHit > 0.01f))
+	if (input_keypress(KEY_SPACE) && (gameTime->time - lastHit > 0.01f))
 	{
 		sort_quick(pools, 0, npool - 1);
 		void *ptr = (void *)pools[0];
@@ -130,9 +130,9 @@ void memorydebug_update()
 				pools[0] = (size_t)newPtr;
 			}
 		}
-		lastHit = time->time;
+		lastHit = gameTime->time;
 	}
-	if (input_keypress(KEY_M) && (time->time - lastHit > 0.01f))
+	if (input_keypress(KEY_M) && (gameTime->time - lastHit > 0.01f))
 	{
 		sort_quick(pools, 0, npool - 1);
 		int a = npool - 1;
@@ -148,7 +148,7 @@ void memorydebug_update()
 			{
 				pools[npool - 1] = 0;
 			}
-		lastHit = time->time;
+		lastHit = gameTime->time;
 	}
 	if (input_keydown(KEY_N))
 	{

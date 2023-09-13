@@ -369,6 +369,19 @@ inline float smoothDamp(float current, float target, float *currentVelocity, flo
 	return output;
 }
 
+// tetra
+
+inline Tetrahedron tetrahedron(Vec3 a, Vec3 b, Vec3 c, Vec3 d)
+{
+	Tetrahedron t;
+	t.a = a;
+	t.b = b;
+	t.c = c;
+	t.d = d;
+	return t;
+}
+
+
 // color
 
 inline Color color(float r, float g, float b, float a)

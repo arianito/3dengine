@@ -23,14 +23,14 @@
  *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
  *                                                                            *
  *****************************************************************************/
-#include "memory/std.h"
+#include "mem/std.h"
 
 #include <malloc.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
-#include "memory/utils.h"
+#include "mem/utils.h"
 
 void *std_alloc(size_t size, unsigned int alignment)
 {

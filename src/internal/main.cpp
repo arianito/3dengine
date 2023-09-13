@@ -3,7 +3,7 @@
 
 extern "C"
 {
-#include "memory/alloc.h"
+#include "mem/alloc.h"
 #include "game.h"
 #include "draw.h"
 #include "mathf.h"
@@ -13,27 +13,19 @@ extern "C"
 #include "debug.h"
 #include "input.h"
 #include "file.h"
-#include "memory/pool.h"
-#include "memory/utils.h"
-#include "debug/linkedlist_debug.h"
+#include "mem/pool.h"
+#include "mem/utils.h"
 }
 
-#include "engine/Manager.hpp"
-
-class Box : public Component
-{
-};
-
-class Sphere : public Component
-{
-};
+#include <memory>
+#include "../GameWindow.hpp"
 
 int main(int argc, const char *argv[])
 {
 	MemoryMetadata meta;
 	meta.global = 32 * MEGABYTES;
 	meta.stack = 1 * MEGABYTES;
-
+	meta.freelist = 16 * MEGABYTES;
 	alloc_create(meta);
 
 	file_init("../../assets/");
@@ -44,30 +36,24 @@ int main(int argc, const char *argv[])
 	grid_init();
 	debug_init();
 	editor_init();
-
-	MakeDirector();
-	auto director = MakeDirector();
-
-	size_t e = director->CreateEntity();
-
-	director->Create();
-
 	alloc_debug();
 
-	memorydebug_create();
-
-	while (game_loop())
 	{
-		editor_update();
-		// loop
+		auto game = std::make_unique<GameWindow>();
 
-		director->Update();
-		memorydebug_update();
+		game->Create();
 
-		input_update();
-		draw_render();
-		grid_render();
-		debug_render();
+		while (game_loop())
+		{
+			editor_update();
+
+			game->Update();
+
+			input_update();
+			draw_render();
+			grid_render();
+			debug_render();
+		}
 	}
 
 	debug_terminate();

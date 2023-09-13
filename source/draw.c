@@ -36,7 +36,7 @@
 #include "input.h"
 
 #define BUFFER_OFFSET(x) ((const void *)(x))
-#define VERTEX_SIZE 4
+#define VERTEX_SIZE 8
 
 enum
 {
@@ -58,7 +58,6 @@ static DrawData *drawData;
 
 void draw_init()
 {
-	printf("--------------------------- %zu \n", sizeof(DrawData));
 	drawData = alloc_global(DrawData, sizeof(DrawData));
 	clear(drawData, sizeof(DrawData));
 
@@ -154,68 +153,6 @@ void draw_line(Vec3 a, Vec3 b, Color c)
 	add_vertex(1, va);
 	va.pos = b;
 	add_vertex(1, va);
-}
-
-void draw_axis(Vec3 a, Quat q, float s)
-{
-	Vec3 forward = vec3_add(a, vec3_mulf(quat_forward(q), s));
-	Vec3 right = vec3_add(a, vec3_mulf(quat_right(q), s));
-	Vec3 up = vec3_add(a, vec3_mulf(quat_up(q), s));
-
-	Vertex va;
-	va.size = VERTEX_SIZE;
-
-	va.pos = a;
-	va.color = color_red;
-	add_vertex(1, va);
-	va.pos = forward;
-	add_vertex(1, va);
-	add_vertex(0, va);
-
-	va.pos = a;
-	va.color = color_green;
-	add_vertex(1, va);
-	va.pos = right;
-	add_vertex(1, va);
-	add_vertex(0, va);
-
-	va.pos = a;
-	va.color = color_blue;
-	add_vertex(1, va);
-	va.pos = up;
-	add_vertex(1, va);
-	add_vertex(0, va);
-}
-
-void draw_axisRot(Vec3 a, Rot r, float s)
-{
-	Vec3 forward = vec3_add(a, vec3_mulf(rot_forward(r), s));
-	Vec3 right = vec3_add(a, vec3_mulf(rot_right(r), s));
-	Vec3 up = vec3_add(a, vec3_mulf(rot_up(r), s));
-
-	Vertex va;
-	va.size = VERTEX_SIZE;
-
-	va.pos = a;
-	va.color = color_red;
-	add_vertex(1, va);
-	va.pos = forward;
-	add_vertex(1, va);
-	add_vertex(0, va);
-
-	va.pos = a;
-	va.color = color_green;
-	add_vertex(1, va);
-	va.pos = right;
-	add_vertex(1, va);
-	add_vertex(0, va);
-
-	va.pos = a;
-	va.color = color_blue;
-	add_vertex(1, va);
-	va.pos = up;
-	add_vertex(1, va);
-	add_vertex(0, va);
 }
 
 void draw_bbox(BBox bbox, Color c)
@@ -356,6 +293,40 @@ void draw_tetrahedron(Tetrahedron t, Color c)
 	add_vertex(1, va);
 }
 
+void fill_tetrahedron(Tetrahedron t, Color c)
+{
+	Vertex va;
+	va.color = c;
+
+	va.pos = t.a;
+	add_vertex(2, va);
+	va.pos = t.b;
+	add_vertex(2, va);
+	va.pos = t.c;
+	add_vertex(2, va);
+
+	va.pos = t.a;
+	add_vertex(2, va);
+	va.pos = t.c;
+	add_vertex(2, va);
+	va.pos = t.d;
+	add_vertex(2, va);
+
+	va.pos = t.b;
+	add_vertex(2, va);
+	va.pos = t.c;
+	add_vertex(2, va);
+	va.pos = t.d;
+	add_vertex(2, va);
+
+	va.pos = t.a;
+	add_vertex(2, va);
+	va.pos = t.b;
+	add_vertex(2, va);
+	va.pos = t.d;
+	add_vertex(2, va);
+}
+
 void draw_circleXY(Vec3 a, Color c, float r, int s)
 {
 	float p = 360.0f / s;
@@ -444,4 +415,74 @@ void draw_sphere(Vec3 a, Color c, float r, int s)
 	draw_circleXZ(a, c, r, s);
 	draw_circleXY(a, c, r, s);
 	draw_circleYZ(a, c, r, s);
+}
+
+void draw_axis(Vec3 a, Quat q, float s)
+{
+	Vec3 forward = vec3_add(a, vec3_mulf(quat_forward(q), s));
+	Vec3 right = vec3_add(a, vec3_mulf(quat_right(q), s));
+	Vec3 up = vec3_add(a, vec3_mulf(quat_up(q), s));
+	Vec3 end;
+	Color c;
+	Tetrahedron t;
+
+	float p = 0.2f;
+
+	end = vec3_mulf(forward, 1 - p);
+	c = color_red;
+	draw_line(a, forward, c);
+	t = tetrahedron(forward, end, end, end);
+	t.c.z += s * p * 0.2f;
+	t.d.y += s * p * 0.2f;
+	fill_tetrahedron(t, c);
+
+
+	
+	end = vec3_mulf(right, 1 - p);
+	c = color_green;
+	draw_line(a, right, c);
+	t = tetrahedron(right, end, end, end);
+	t.c.z += s * p * 0.2f;
+	t.d.x += s * p * 0.2f;
+	fill_tetrahedron(t, c);
+
+	
+	end = vec3_mulf(up, 1 - p);
+	c = color_blue;
+	draw_line(a, up, c);
+	t = tetrahedron(up, end, end, end);
+	t.c.x += s * p * 0.2f;
+	t.d.y += s * p * 0.2f;
+	fill_tetrahedron(t, c);
+}
+
+void draw_axisRot(Vec3 a, Rot r, float s)
+{
+	Vec3 forward = vec3_add(a, vec3_mulf(rot_forward(r), s));
+	Vec3 right = vec3_add(a, vec3_mulf(rot_right(r), s));
+	Vec3 up = vec3_add(a, vec3_mulf(rot_up(r), s));
+
+	Vertex va;
+	va.size = VERTEX_SIZE;
+
+	va.pos = a;
+	va.color = color_red;
+	add_vertex(1, va);
+	va.pos = forward;
+	add_vertex(1, va);
+	add_vertex(0, va);
+
+	va.pos = a;
+	va.color = color_green;
+	add_vertex(1, va);
+	va.pos = right;
+	add_vertex(1, va);
+	add_vertex(0, va);
+
+	va.pos = a;
+	va.color = color_blue;
+	add_vertex(1, va);
+	va.pos = up;
+	add_vertex(1, va);
+	add_vertex(0, va);
 }

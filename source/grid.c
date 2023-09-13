@@ -26,7 +26,7 @@
 #include "draw.h"
 
 #define BUFFER_OFFSET(x) ((const void *)(x))
-#define UNIT_SCALE 100
+#define UNIT_SCALE 10
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -39,7 +39,7 @@
 
 enum
 {
-	n = 10,
+	n = 100,
 	d = 10,
 	size = n * UNIT_SCALE,
 	ne = (8 * n + 4),
@@ -121,78 +121,72 @@ void grid_render()
 
 	Rot r2 = camera->rotation;
 	r2.pitch += 90.0f;
-	Rot r = camera->rotation;
-	r.pitch += 90.0f;
-	r = rot_snap(r, 90);
+	Rot r3 = camera->rotation;
+	r3.pitch += 90.0f;
+	r3 = rot_snap(r3, 90);
 
-	Mat4 world;
-	Vec3 t;
-	int i, j;
+	Mat4 world1;
+	Mat4 world2;
+	Vec3 t = vec3_zero;
 
 	shader_begin(gridData->shader);
 	shader_mat4(gridData->shader, "projection", &camera->projection);
 	shader_mat4(gridData->shader, "view", &camera->view);
 
+	glDisable(GL_DEPTH_TEST);
 	glLineWidth(1);
 	glBindVertexArray(gridData->vaoIds[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, gridData->vboIds[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(gridData->vertices), gridData->vertices);
+	char isOrtho = (camera->ortho & VIEW_ORTHOGRAPHIC);
 
-	t.x = snap(camera->position.x, UNIT_SCALE);
-	t.y = snap(camera->position.y, UNIT_SCALE);
+	t.x = camera->position.x;
+	t.y = camera->position.y;
 	t.z = 0;
-	float flt = 1.0f;
 
-	if ((camera->ortho & VIEW_ORTHOGRAPHIC))
+	float flt = 0.4f;
+	flt = sind(fabsf(camera->rotation.pitch)) * flt + (!isOrtho ? 0.2f : 0);
+	if (isOrtho && rot_nearEq(r2, r3))
 	{
-		flt = fminf(fabsf(camera->rotation.pitch) / 90.0f, 1);
-	}
 
-	if (rot_nearEq(r2, r))
-	{
-		float r = camera->ortho & (VIEW_TOP) ? 1 : -1;
+		float r = camera->ortho & (VIEW_TOP) ? 1.0f : -1.0f;
 		t.x *= r;
 		if (camera->ortho & (VIEW_FRONT | VIEW_BACK))
 		{
-			r = camera->ortho & (VIEW_BACK) ? 1 : -1;
-			t.x = snap(camera->position.z, UNIT_SCALE);
-			t.y = snap(r * camera->position.y, UNIT_SCALE);
+			r = camera->ortho & (VIEW_BACK) ? 1.0f : -1.0f;
+			t.x = camera->position.z;
+			t.y = r * camera->position.y;
 			t.z = 0;
 		}
 		else if (camera->ortho & (VIEW_LEFT | VIEW_RIGHT))
 		{
-			r = camera->ortho & (VIEW_RIGHT) ? 1 : -1;
-			t.x = snap(camera->position.z, UNIT_SCALE);
-			t.y = snap(r * camera->position.x, UNIT_SCALE);
+			r = camera->ortho & (VIEW_RIGHT) ? 1.0f : -1.0f;
+			t.x = camera->position.z;
+			t.y = r * camera->position.x;
 			t.z = 0;
 		}
 
-		flt = 0.5f;
-	}
-	world = mat4_origin(t);
-	if ((camera->ortho & VIEW_ORTHOGRAPHIC) && rot_nearEq(r2, r))
-		world = mat4_mul(world, rot_matrix(r, vec3_zero));
+		flt = 0.2f;
 
-	shader_mat4(gridData->shader, "world", &world);
+		world1 = mat4_mul(mat4_origin(vec3_snap(t, UNIT_SCALE)), rot_matrix(r3, vec3_zero));
+		world2 = mat4_mul(mat4_scalef(d), mat4_mul(mat4_origin(vec3_snap(t, UNIT_SCALE * d)), rot_matrix(r3, vec3_zero)));
+	}
+	else
+	{
+		world1 = mat4_origin(vec3_snap(t, UNIT_SCALE));
+		world2 = mat4_mul(mat4_scalef(d), mat4_origin(vec3_snap(t, UNIT_SCALE * d)));
+	}
+
+	shader_mat4(gridData->shader, "world", &world1);
 	shader_float(gridData->shader, "alpha", flt);
 	glDrawArrays(GL_LINES, 0, sizeof(gridData->vertices));
 
-	for (i = -d; i < d + 1; i++)
-	{
-		for (j = -d; j < d + 1; j++)
-		{
-			Vec3 t2 = t;
-			t2.x += i * (UNIT_SCALE);
-			t2.y += j * (UNIT_SCALE);
-			world = mat4_mul(mat4_scalef(1.0f / d), mat4_origin(t2));
-			if ((camera->ortho & VIEW_ORTHOGRAPHIC) && rot_nearEq(r2, r))
-				world = mat4_mul(world, rot_matrix(r, vec3_zero));
-			shader_mat4(gridData->shader, "world", &world);
-			shader_float(gridData->shader, "alpha", 0.4f * flt);
-			glDrawArrays(GL_LINES, 0, sizeof(gridData->vertices));
-		}
-	}
+	glLineWidth(2);
+	shader_mat4(gridData->shader, "world", &world2);
+	shader_float(gridData->shader, "alpha", flt * 2);
+	glDrawArrays(GL_LINES, 0, sizeof(gridData->vertices));
 
+	glEnable(GL_DEPTH_TEST);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 

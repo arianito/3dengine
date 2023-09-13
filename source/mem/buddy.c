@@ -1,4 +1,3 @@
-#pragma once
 /******************************************************************************
  *                                                                            *
  *  Copyright (c) 2023 Aryan Alikhani                                      *
@@ -25,34 +24,72 @@
  *                                                                            *
  *****************************************************************************/
 
-#include <stdio.h>
+#include "mem/buddy.h"
+
+#include <malloc.h>
 #include <stdlib.h>
-#include <stddef.h>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
-#include "memory/memory.h"
-#include "memory/arena.h"
-#include "memory/stack.h"
-#include "memory/freelist.h"
+#include "mem/utils.h"
 
-typedef struct
+BuddyMemory *buddy_create(void *m, unsigned char level)
 {
-	size_t global;
-	size_t stack;
-} MemoryMetadata;
+	size_t start = (size_t)m;
+	const unsigned char padding = MEMORY_ALIGNMENT(start, 1, sizeof(size_t));
+	unsigned int size = 1 << level;
 
-typedef struct
+	((char*)(start + padding - 1))[0] = padding;
+	
+	BuddyMemory *self = (BuddyMemory *)(start + padding);
+	self->next = NULL;
+	self->order = level;
+	self->status = 0;
+
+	return self;
+}
+
+BuddyMemory *make_buddy(unsigned char level)
 {
-	MemoryMetadata metadata;
-	ArenaMemory *global;
-	StackMemory *stack;
-} MemoryLayout;
+	unsigned int size = 1 << level;
+	size += MEMORY_SPACE_STD(BuddyMemory) + sizeof(size_t);
+	void *m = malloc(size);
+	if (m == NULL)
+	{
+		printf("buddy: make failed, system can't provide free memory\n");
+		exit(EXIT_FAILURE);
+		return NULL;
+	}
+	memset(m, 0, size);
+	return buddy_create(m, level);
+}
 
-extern MemoryLayout *alloc;
-
-void alloc_create(MemoryMetadata meta);
-void alloc_terminate();
-void alloc_debug();
-
-#define alloc_global(Type, size) ((Type *)arena_alloc(alloc->global, size, sizeof(size_t)))
-#define alloc_stack(Type, size) ((Type *)stack_alloc(alloc->stack, size, sizeof(size_t)))
-#define alloc_free(p) (stack_free(alloc->stack, &p))
+void *buddy_alloc(BuddyMemory *self, size_t size)
+{
+	if (!ISPOW2(size))
+	{
+		printf("buddy: alloc failed, invalid alignment\n");
+		return NULL;
+	}
+	if (self == NULL)
+	{
+		printf("buddy: alloc failed, invalid instance\n");
+		return NULL;
+	}
+	return NULL;
+}
+unsigned char buddy_free(BuddyMemory *self, void **ptr)
+{
+	if (self == NULL)
+	{
+		printf("buddy: free failed, invalid instance\n");
+		return 0;
+	}
+	if (ptr == NULL || (*ptr) == NULL)
+	{
+		printf("buddy: free failed, invalid pointer\n");
+		return 0;
+	}
+	return 0;
+}

@@ -25,13 +25,13 @@
  *                                                                            *
  *****************************************************************************/
 
-#include "../input.h"
-#include "../mathf.h"
-#include "../draw.h"
-#include "../game.h"
-#include "../camera.h"
-#include "../memory/stack.h"
-#include "../memory/utils.h"
+#include "input.h"
+#include "mathf.h"
+#include "draw.h"
+#include "game.h"
+#include "camera.h"
+#include "mem/stack.h"
+#include "mem/utils.h"
 
 StackMemory *stack = NULL;
 int j = 0;
@@ -95,7 +95,7 @@ void memorydebug_update()
 		end = block;
 	}
 
-	if (input_keypress(KEY_SPACE) && (time->time - lastHit > 0.1f))
+	if (input_keypress(KEY_SPACE) && (gameTime->time - lastHit > 0.1f))
 	{
 		if (j < 200)
 		{
@@ -108,9 +108,9 @@ void memorydebug_update()
 				j++;
 			}
 		}
-		lastHit = time->time;
+		lastHit = gameTime->time;
 	}
-	if (input_keypress(KEY_M) && (time->time - lastHit > 0.1f))
+	if (input_keypress(KEY_M) && (gameTime->time - lastHit > 0.1f))
 	{
 		if (j > 0)
 		{
@@ -120,7 +120,7 @@ void memorydebug_update()
 				printf("free %d -> %d \n", j, stack->offset);
 			}
 		}
-		lastHit = time->time;
+		lastHit = gameTime->time;
 	}
 
 	if (input_keypress(KEY_ENTER))
@@ -129,12 +129,12 @@ void memorydebug_update()
 		// camera->rotation = rot(-15, 0, 0);
 		// camera->position = forward;
 		// camera_update();
-		// flyTime += time->deltaTime * 10.0f;
+		// flyTime += gameTime->deltaTime * 10.0f;
 
 		Vec3 forward = vec3(0, sind(flyTime) * 512 + 400, 15);
 		camera->rotation = rot(0, 90, 0);
 		camera->position = forward;
 		camera_update();
-		flyTime += time->deltaTime * 10.0f;
+		flyTime += gameTime->deltaTime * 10.0f;
 	}
 }

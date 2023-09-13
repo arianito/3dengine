@@ -1,3 +1,4 @@
+#pragma once
 /******************************************************************************
  *                                                                            *
  *  Copyright (c) 2023 Aryan Alikhani                                      *
@@ -23,26 +24,50 @@
  *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
  *                                                                            *
  *****************************************************************************/
-#include "memory/memory.h"
 
-#include <stdio.h>
-#include <string.h>
+#include "input.h"
+#include "mathf.h"
+#include "draw.h"
+#include "game.h"
+#include "camera.h"
+#include "mem/arena.h"
+#include "mem/utils.h"
 
-void format_bytes(double bytes, char *buff, unsigned int n)
+ArenaMemory *arena = NULL;
+float flyTime = -90;
+float lastHit = 0;
+
+void memorydebug_create()
 {
-	const char suffix[5][3] = {"B\0", "KB\0", "MB\0", "GB\0", "TB\0"};
-	int i = 0;
-
-	while (bytes >= 1024 && i < 5)
-	{
-		bytes /= 1024;
-		i++;
-	}
-
-	sprintf_s(buff, n, "%.2f %s", bytes, suffix[i]);
+	arena = make_arena(KILOBYTES);
 }
 
-void clear(void *p, size_t s)
+void memorydebug_update()
 {
-	memset(p, 0, s);
+
+	fill_bbox(BBox{{-15, 0, -10}, {15, (float)arena->size, -1}}, color_gray);
+
+	int space = MEMORY_SPACE_STD(ArenaMemory);
+	float end = (float)(space + arena->padding);
+
+	draw_bbox(BBox{{-10, 0, 0}, {10, end, 40}}, color_darkred);
+	draw_bbox(BBox{{-10, end, 0}, {10, (float)arena->offset, 6}}, color_yellow);
+
+	fill_bbox(BBox{{-10, end, 0}, {10, (float)arena->offset, 25.0f}}, color_red);
+	draw_bbox(BBox{{-10, end, 0}, {10, (float)arena->offset, 25.0f}}, color_black);
+
+	if (space + arena->padding != arena->offset)
+	{
+		draw_bbox(BBox{{-10, (float)arena->offset, 0}, {10, (float)arena->size, 40}}, color_darkred);
+	}
+
+	if (input_keydown(KEY_SPACE))
+	{
+		size_t newSize = (size_t)(randf() * 20) + 3;
+		void *ptr = arena_alloc(arena, newSize, 8);
+		if (ptr != NULL)
+		{
+			printf("alloc %zu \n", arena->offset);
+		}
+	}
 }

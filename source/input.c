@@ -28,7 +28,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "memory/alloc.h"
+#include "mem/alloc.h"
 #include "game.h"
 
 #define AXIS_SPEED 8
@@ -58,7 +58,7 @@ void update_axis(int ax, char low, char high)
 {
 	float to = 0.0f + (low ? -1.0f : 0.0f) + (high ? 1.0f : 0.0f);
 	InputAxis *axis = &(globalInput->axes[ax]);
-	axis->value = moveTowards(axis->value, to, AXIS_SPEED * time->deltaTime);
+	axis->value = moveTowards(axis->value, to, AXIS_SPEED * gameTime->deltaTime);
 }
 
 void scroll_callback(GLFWwindow *window, double x, double y)
@@ -87,8 +87,8 @@ void input_update()
 	input->position.x = (float)x;
 	input->position.y = (float)y;
 
-	input->wheel.x = moveTowards(input->wheel.x, 0, AXIS_SPEED * time->deltaTime);
-	input->wheel.y = moveTowards(input->wheel.y, 0, AXIS_SPEED * time->deltaTime);
+	input->wheel.x = moveTowards(input->wheel.x, 0, 0.2f);
+	input->wheel.y = moveTowards(input->wheel.y, 0, 0.2f);
 
 	for (int i = 0; i < KEY_COUNT; i++)
 	{

@@ -31,7 +31,7 @@
 #include "debug.h"
 #include "input.h"
 #include "mathf.h"
-#include "memory/alloc.h"
+#include "mem/alloc.h"
 
 typedef enum
 {

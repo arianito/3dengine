@@ -28,7 +28,7 @@
 #include "mathf.h"
 #include "game.h"
 
-#include "memory/alloc.h"
+#include "mem/alloc.h"
 
 typedef enum
 {

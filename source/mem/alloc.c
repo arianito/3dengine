@@ -1,4 +1,3 @@
-#pragma once
 /******************************************************************************
  *                                                                            *
  *  Copyright (c) 2023 Aryan Alikhani                                      *
@@ -24,50 +23,31 @@
  *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
  *                                                                            *
  *****************************************************************************/
+#include "mem/alloc.h"
 
-#include "../input.h"
-#include "../mathf.h"
-#include "../draw.h"
-#include "../game.h"
-#include "../camera.h"
-#include "../memory/arena.h"
-#include "../memory/utils.h"
+#include <malloc.h>
+#include "mem/std.h"
 
-ArenaMemory *arena = NULL;
-float flyTime = -90;
-float lastHit = 0;
+MemoryLayout *alloc = NULL;
 
-void memorydebug_create()
+void alloc_create(MemoryMetadata meta)
 {
-	arena = make_arena(KILOBYTES);
+	alloc = std_alloc(sizeof(MemoryLayout), sizeof(size_t));
+	alloc->metadata = meta;
+	alloc->global = make_arena(meta.global);
+	alloc->stack = stack_create(arena_alloc(alloc->global, meta.stack, sizeof(size_t)), meta.stack);
+	alloc->freelist = freelist_create(arena_alloc(alloc->global, meta.freelist, sizeof(size_t)), meta.freelist);
 }
 
-void memorydebug_update()
+void alloc_terminate()
 {
+	arena_destroy(&alloc->global);
+	std_free(&alloc);
+}
 
-	fill_bbox(BBox{{-15, 0, -10}, {15, (float)arena->size, -1}}, color_gray);
-
-	int space = MEMORY_SPACE_STD(ArenaMemory);
-	float end = (float)(space + arena->padding);
-
-	draw_bbox(BBox{{-10, 0, 0}, {10, end, 40}}, color_darkred);
-	draw_bbox(BBox{{-10, end, 0}, {10, (float)arena->offset, 6}}, color_yellow);
-
-	fill_bbox(BBox{{-10, end, 0}, {10, (float)arena->offset, 25.0f}}, color_red);
-	draw_bbox(BBox{{-10, end, 0}, {10, (float)arena->offset, 25.0f}}, color_black);
-
-	if (space + arena->padding != arena->offset)
-	{
-		draw_bbox(BBox{{-10, (float)arena->offset, 0}, {10, (float)arena->size, 40}}, color_darkred);
-	}
-
-	if (input_keydown(KEY_SPACE))
-	{
-		size_t newSize = (size_t)(randf() * 20) + 3;
-		void *ptr = arena_alloc(arena, newSize, 8);
-		if (ptr != NULL)
-		{
-			printf("alloc %zu \n", arena->offset);
-		}
-	}
+void alloc_debug()
+{
+	printf("global: %zu/%zu \n", alloc->global->offset, alloc->global->size);
+	printf("stack: %zu/%zu \n", alloc->stack->offset, alloc->stack->size);
+	printf("freelist: %zu/%zu \n", freelist_capacity(alloc->freelist), alloc->freelist->size);
 }

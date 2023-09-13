@@ -174,7 +174,7 @@ void debug_init()
 	int width, height, nrChannels;
 	char *path = resolve("fonts/consolas.png");
 	unsigned char *data = stbi_load(path, &width, &height, &nrChannels, 0);
-	alloc_free(path);
+	alloc_free(&path);
 	if (data == NULL)
 	{
 		printf("debug: failed to load font \n");
@@ -384,7 +384,7 @@ void debug_stringf(Vec3 pos, const char *fmt, ...)
 		debug_string(pos, buffer, len + 1);
 	}
 
-	alloc_free(buffer);
+	alloc_free(&buffer);
 	va_end(args);
 }
 
@@ -401,6 +401,6 @@ void debug_string3df(Transform t, const char *fmt, ...)
 		debug_string3d(t, buffer, len + 1);
 	}
 
-	alloc_free(buffer);
+	alloc_free(&buffer);
 	va_end(args);
 }

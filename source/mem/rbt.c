@@ -23,7 +23,7 @@
  *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
  *                                                                            *
  *****************************************************************************/
-#include "memory/rbt.h"
+#include "mem/rbt.h"
 
 #include <stdio.h>
 #include <stdlib.h>
