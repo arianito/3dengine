@@ -2,31 +2,31 @@
 
 #include <stddef.h>
 
-typedef struct
-{
-	size_t next;
+typedef struct {
+    size_t next;
 } SlabObject;
 
-typedef struct
-{
-	void *next;
-	unsigned int size;
-	unsigned int padding;
+typedef struct {
+    void *next;
+    unsigned int size;
+    unsigned int padding;
 } SlabPage;
 
-typedef struct
-{
-	SlabObject *objects;
-	SlabPage *pages;
-	unsigned int padding;
-	unsigned int slabSize;
-	unsigned int objectSize;
-	unsigned int capacity;
-	void *(*allocator)(size_t);
+typedef struct {
+    SlabObject *objects;
+    SlabPage *pages;
+    unsigned int padding;
+    unsigned int slabSize;
+    unsigned int objectSize;
+    unsigned int capacity;
+
+    void *(*allocator)(size_t);
 } SlabMemory;
 
 SlabMemory *make_slab(unsigned int slabSize, unsigned short objectSize);
+
 void slab_destroy(SlabMemory **self);
 
 void *slab_alloc(SlabMemory *self);
+
 char slab_free(SlabMemory *self, void **ptr);

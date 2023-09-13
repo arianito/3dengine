@@ -1,4 +1,5 @@
 #pragma once
+
 /******************************************************************************
  *                                                                            *
  *  Copyright (c) 2023 Aryan Alikhani                                      *
@@ -27,8 +28,7 @@
 
 typedef void (*FunctionPtr)();
 
-typedef struct
-{
+typedef struct {
     FunctionPtr load;
     FunctionPtr update;
     FunctionPtr unload;

@@ -34,62 +34,54 @@
 
 #include "mem/utils.h"
 
-BuddyMemory *buddy_create(void *m, unsigned char level)
-{
-	size_t start = (size_t)m;
-	const unsigned char padding = MEMORY_ALIGNMENT(start, 1, sizeof(size_t));
-	unsigned int size = 1 << level;
+BuddyMemory *buddy_create(void *m, unsigned char level) {
+    size_t start = (size_t) m;
+    const unsigned char padding = MEMORY_ALIGNMENT(start, 1, sizeof(size_t));
+    unsigned int size = 1 << level;
 
-	((char*)(start + padding - 1))[0] = padding;
-	
-	BuddyMemory *self = (BuddyMemory *)(start + padding);
-	self->next = NULL;
-	self->order = level;
-	self->status = 0;
+    ((char *) (start + padding - 1))[0] = padding;
 
-	return self;
+    BuddyMemory *self = (BuddyMemory *) (start + padding);
+    self->next = NULL;
+    self->order = level;
+    self->status = 0;
+
+    return self;
 }
 
-BuddyMemory *make_buddy(unsigned char level)
-{
-	unsigned int size = 1 << level;
-	size += MEMORY_SPACE_STD(BuddyMemory) + sizeof(size_t);
-	void *m = malloc(size);
-	if (m == NULL)
-	{
-		printf("buddy: make failed, system can't provide free memory\n");
-		exit(EXIT_FAILURE);
-		return NULL;
-	}
-	memset(m, 0, size);
-	return buddy_create(m, level);
+BuddyMemory *make_buddy(unsigned char level) {
+    unsigned int size = 1 << level;
+    size += MEMORY_SPACE_STD(BuddyMemory) + sizeof(size_t);
+    void *m = malloc(size);
+    if (m == NULL) {
+        printf("buddy: make failed, system can't provide free memory\n");
+        exit(EXIT_FAILURE);
+        return NULL;
+    }
+    memset(m, 0, size);
+    return buddy_create(m, level);
 }
 
-void *buddy_alloc(BuddyMemory *self, size_t size)
-{
-	if (!ISPOW2(size))
-	{
-		printf("buddy: alloc failed, invalid alignment\n");
-		return NULL;
-	}
-	if (self == NULL)
-	{
-		printf("buddy: alloc failed, invalid instance\n");
-		return NULL;
-	}
-	return NULL;
+void *buddy_alloc(BuddyMemory *self, size_t size) {
+    if (!ISPOW2(size)) {
+        printf("buddy: alloc failed, invalid alignment\n");
+        return NULL;
+    }
+    if (self == NULL) {
+        printf("buddy: alloc failed, invalid instance\n");
+        return NULL;
+    }
+    return NULL;
 }
-unsigned char buddy_free(BuddyMemory *self, void **ptr)
-{
-	if (self == NULL)
-	{
-		printf("buddy: free failed, invalid instance\n");
-		return 0;
-	}
-	if (ptr == NULL || (*ptr) == NULL)
-	{
-		printf("buddy: free failed, invalid pointer\n");
-		return 0;
-	}
-	return 0;
+
+unsigned char buddy_free(BuddyMemory *self, void **ptr) {
+    if (self == NULL) {
+        printf("buddy: free failed, invalid instance\n");
+        return 0;
+    }
+    if (ptr == NULL || (*ptr) == NULL) {
+        printf("buddy: free failed, invalid pointer\n");
+        return 0;
+    }
+    return 0;
 }

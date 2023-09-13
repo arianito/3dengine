@@ -1,4 +1,5 @@
 #pragma once
+
 /******************************************************************************
  *                                                                            *
  *  Copyright (c) 2023 Aryan Alikhani                                      *
@@ -27,4 +28,5 @@
 
 
 void editor_init();
+
 void editor_update();

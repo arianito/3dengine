@@ -34,25 +34,25 @@
 #include "mem/stack.h"
 #include "mem/freelist.h"
 
-typedef struct
-{
-	size_t global;
-	size_t stack;
-	size_t freelist;
+typedef struct {
+    size_t global;
+    size_t stack;
+    size_t freelist;
 } MemoryMetadata;
 
-typedef struct
-{
-	MemoryMetadata metadata;
-	ArenaMemory *global;
-	StackMemory *stack;
-	FreeListMemory *freelist;
+typedef struct {
+    MemoryMetadata metadata;
+    ArenaMemory *global;
+    StackMemory *stack;
+    FreeListMemory *freelist;
 } MemoryLayout;
 
 extern MemoryLayout *alloc;
 
 void alloc_create(MemoryMetadata meta);
+
 void alloc_terminate();
+
 void alloc_debug();
 
 #define alloc_global(Type, size) ((Type *)arena_alloc(alloc->global, size, sizeof(size_t)))

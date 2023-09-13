@@ -27,15 +27,13 @@
 
 #include "mathf.h"
 
-typedef enum
-{
+typedef enum {
     AXIS_COUNT = 2,
     AXIS_HORIZONTAL = 0,
     AXIS_VERTICAL = 1,
 } AxisEnum;
 
-typedef enum
-{
+typedef enum {
     MOUSE_COUNT = 3,
     MOUSE_LEFT = 0,
     MOUSE_RIGHT = 1,
@@ -43,8 +41,7 @@ typedef enum
 
 } MouseEnum;
 
-typedef enum
-{
+typedef enum {
     KEY_COUNT = 350,
     KEY_SPACE = 32,
     KEY_APOSTROPHE = 39,
@@ -169,25 +166,32 @@ typedef enum
 
 } KeyEnum;
 
-typedef struct
-{
+typedef struct {
     Vec2 position;
     Vec2 delta;
-	Vec2 wheel;
+    Vec2 wheel;
 } Input;
 
 extern Input *input;
 
 void input_init();
+
 void input_update();
+
 void input_terminate();
+
 void input_infinite();
 
 int input_keypress(KeyEnum key);
+
 int input_keyup(KeyEnum key);
+
 int input_keydown(KeyEnum key);
+
 int input_mousepress(MouseEnum key);
+
 int input_mouseup(MouseEnum key);
+
 int input_mousedown(MouseEnum key);
 
 float input_axis(AxisEnum axis);

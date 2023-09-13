@@ -33,4 +33,5 @@
 #define MEGABYTES (KILOBYTES * 1024)
 
 void format_bytes(double bytes, char *buff, unsigned int n);
+
 void clear(void *p, size_t s);

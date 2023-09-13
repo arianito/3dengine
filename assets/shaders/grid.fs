@@ -8,5 +8,5 @@ out vec4 FragColor;
 
 void main(void) {
     FragColor = m_color;
-    FragColor.a = alpha * (0.3 - min(m_color.a * m_depth * 0.05, 0.3));
+    FragColor.a = alpha * (0.3 - min(m_color.a * (m_depth * m_depth) * 0.0001, 0.3));
 }

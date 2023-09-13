@@ -28,13 +28,19 @@
 #include "mathf.h"
 
 void debug_init();
+
 void debug_render();
+
 void debug_terminate();
 
 void debug_color(Color color);
+
 void debug_origin(Vec2 origin);
+
 void debug_string(Vec3 pos, const char *s, int n);
+
 void debug_string3d(Transform t, const char *str, int n);
 
 void debug_stringf(Vec3 pos, const char *fmt, ...);
+
 void debug_string3df(Transform t, const char *fmt, ...);

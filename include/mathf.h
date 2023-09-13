@@ -238,7 +238,7 @@ static inline float lerp01(float a, float b, float t) { return a + (b - a) * cla
 
 static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
-static inline char nearEq(float a, float b) { return (char)(fabsf(b - a) <= EPSILON); }
+static inline char nearEq(float a, float b) { return (char) (fabsf(b - a) <= EPSILON); }
 
 static inline char near0(float a) { return nearEq(a, 0); }
 
@@ -332,7 +332,7 @@ static inline float smoothStep(float from, float to, float t) {
 }
 
 static inline float smoothDamp(float current, float target, float *currentVelocity, float smoothTime,
-                        float maxSpeed, float deltaTime) {
+                               float maxSpeed, float deltaTime) {
     float smoothTime0 = fmaxf(0.0001F, smoothTime);
     float omega = 2.0F / smoothTime0;
     float x = omega * deltaTime;
@@ -452,15 +452,15 @@ static inline float vec2_dist(Vec2 a, Vec2 b) {
 }
 
 static inline char vec2_eq(Vec2 a, Vec2 b) {
-    return (char)(a.x == b.x && a.y == b.y);
+    return (char) (a.x == b.x && a.y == b.y);
 }
 
 static inline char vec2_eq0(Vec2 a) {
-    return (char)(a.x == 0.0f && a.y == 0.0f);
+    return (char) (a.x == 0.0f && a.y == 0.0f);
 }
 
 static inline char vec2_nearEq(Vec2 a, Vec2 b) {
-    return (char)(vec2_dist(a, b) < EPSILON);
+    return (char) (vec2_dist(a, b) < EPSILON);
 }
 
 static inline char vec2_near0(Vec2 a) {
@@ -693,15 +693,15 @@ static inline float vec3_dist2d(Vec3 a, Vec3 b) {
 }
 
 static inline char vec3_eq(Vec3 a, Vec3 b) {
-    return (char)(a.x == b.x && a.y == b.y && a.z == b.z);
+    return (char) (a.x == b.x && a.y == b.y && a.z == b.z);
 }
 
 static inline char vec3_eq0(Vec3 a) {
-    return (char)(a.x == 0 && a.y == 0 && a.z == 0);
+    return (char) (a.x == 0 && a.y == 0 && a.z == 0);
 }
 
 static inline char vec3_nearEq(Vec3 a, Vec3 b) {
-    return (char)(vec3_dist(a, b) < EPSILON);
+    return (char) (vec3_dist(a, b) < EPSILON);
 }
 
 static inline char vec3_near0(Vec3 a) {
@@ -951,15 +951,15 @@ static inline Rot rot(float pitch, float yaw, float roll) {
 }
 
 static inline char rot_eq(Rot a, Rot b) {
-    return (char)(a.pitch == b.pitch && a.yaw == b.yaw && a.roll == b.roll);
+    return (char) (a.pitch == b.pitch && a.yaw == b.yaw && a.roll == b.roll);
 }
 
 static inline char rot_eq0(Rot a) {
-    return (char)(a.pitch == 0 && a.yaw == 0 && a.roll == 0);
+    return (char) (a.pitch == 0 && a.yaw == 0 && a.roll == 0);
 }
 
 static inline char rot_nearEq(Rot a, Rot b) {
-    return (char)(nearEq(a.pitch, b.pitch) && nearEq(a.yaw, b.yaw) & nearEq(a.roll, b.roll));
+    return (char) (nearEq(a.pitch, b.pitch) && nearEq(a.yaw, b.yaw) & nearEq(a.roll, b.roll));
 }
 
 static inline char rot_near0(Rot a) {
@@ -1029,7 +1029,7 @@ static inline Rot rot_clamp(Rot a) {
 }
 
 static inline char rot_nan(Rot a) {
-    return (char)(!isFinite(a.pitch) || !isFinite(a.yaw) || !isFinite(a.roll));
+    return (char) (!isFinite(a.pitch) || !isFinite(a.yaw) || !isFinite(a.roll));
 }
 
 static inline Rot rot_norm(Rot a) {
@@ -1627,7 +1627,7 @@ static inline Mat4 mat4_orthographic(float left, float right, float bottom, floa
     m.m[2][3] = 0.0f;
 
     m.m[3][0] = -rpl / rml;
-    m.m[3][1] = -tpb/ tmb;
+    m.m[3][1] = -tpb / tmb;
     m.m[3][2] = -fpd / fmd;
     m.m[3][3] = 1.0f;
 
@@ -1773,19 +1773,19 @@ static inline Mat4 mat4_invRot(Rot a) {
     float sp = sind(a.pitch);
     float cr = cosd(a.roll);
     float sr = sind(a.roll);
-    Mat4 ma = {{
+    Mat4 ma = {{ // z
                        {+cy, -sy, 0.f, 0.f},
                        {+sy, +cy, 0.f, 0.f},
                        {0.f, 0.f, 1.f, 0.f},
                        {0.f, 0.f, 0.f, 1.f},
                }};
-    Mat4 mb = {{
+    Mat4 mb = {{ // y
                        {+cp, 0.f, -sp, 0.f},
                        {0.f, 1.f, 0.f, 0.f},
                        {+sp, 0.f, +cp, 0.f},
                        {0.f, 0.f, 0.f, 1.f},
                }};
-    Mat4 mc = {{
+    Mat4 mc = {{ // x
                        {1.f, 0.f, 0.f, 0.f},
                        {0.f, +cr, -sr, 0.f},
                        {0.f, +sr, +cr, 0.f},

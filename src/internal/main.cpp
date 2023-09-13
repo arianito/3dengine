@@ -4,14 +4,12 @@ extern "C"
 #include "mem/alloc.h"
 #include "game.h"
 #include "draw.h"
-#include "mathf.h"
 #include "grid.h"
 #include "camera.h"
 #include "editor.h"
 #include "debug.h"
 #include "input.h"
 #include "file.h"
-#include "mem/pool.h"
 }
 
 #include <memory>
