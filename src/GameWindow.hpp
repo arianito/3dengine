@@ -20,10 +20,11 @@ extern "C"
 #include "data/Queue.hpp"
 #include "data/Stack.hpp"
 #include "data/Deque.hpp"
+#include "data/CircularQueue.hpp"
 
 struct GameWindow : public Object<GameWindow> {
 
-    Deque<int> arr{GlobalFreelistAllocator::instance()};
+    CircularQueue<int> arr{GlobalFreelistAllocator::instance(), 10};
 
     inline void Create() {
     }
@@ -39,27 +40,27 @@ struct GameWindow : public Object<GameWindow> {
                 alloc->freelist->size
         );
 
-
-        Deque<int>::Node *it = arr.head();
-        int i = 0;
-        while (it != arr.tail()) {
-
+        for (int i = 0; i < arr.mCapacity; i++) {
+            if(i == arr.mHead)
+                debug_color(color_blue);
+            else if(i == arr.mTail)
+                debug_color(color_red);
+            else
+                debug_color(color_white);
             debug_stringf(
                     vec3(10.0f, 40.0f + (float) i * 24.0f, 1.0f),
                     "%d: %d",
                     i,
-                    it->value
+                    arr.mQueue[i]
             );
-            i++;
-            it = it->next;
         }
 
         if (input_keydown(KEY_SPACE)) {
-            arr.pushFront((int) (randf() * 10000));
+            arr.enqueue((int) (randf() * 10000));
         }
         if (input_keydown(KEY_M)) {
             if (arr.size() > 0)
-                printf("removed! %d\n", arr.popFront());
+                printf("removed! %d\n", arr.dequeue());
         }
         if (input_keydown(KEY_N)) {
             arr.clear();
