@@ -406,8 +406,8 @@ void draw_arrow(Vec3 a, Vec3 b, Vec3 up, Color c, float p) {
     end = vec3_add(a, vec3_mulf(dirX, d - p));
     draw_line(a, forward, c);
     t = tetrahedron(forward, end, end, end);
-    t.c = vec3_add(t.c, vec3_mulf(dirZ, p * 0.2f));
-    t.d = vec3_add(t.d, vec3_mulf(dirY, p * 0.2f));
+    t.c = vec3_add(t.c, vec3_mulf(dirZ, p * 0.25f));
+    t.d = vec3_add(t.d, vec3_mulf(dirY, p * 0.25f));
     fill_tetrahedron(t, c);
 }
 

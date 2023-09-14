@@ -17,7 +17,7 @@ private:
     int mCapacity{2};
     int mDefaultCapacity{2};
     int mLength{0};
-
+private:
     inline void expand() {
         if (mLength < mCapacity)
             return;
@@ -53,7 +53,7 @@ private:
     }
 
 public:
-    Array(Allocator *a, int capacity) :
+    inline Array(Allocator *a, int capacity) :
             mCapacity(capacity),
             mAllocator(a),
             mLength(0),
@@ -63,9 +63,9 @@ public:
         memset(mList, 0, size);
     }
 
-    explicit Array(Allocator *a) : Array(a, 2) {}
+    explicit inline Array(Allocator *a) : Array(a, 2) {}
 
-    explicit Array(const Array &) = delete;
+    explicit inline Array(const Array &) = delete;
 
     inline ~Array() {
         for (int i = 0; i < mLength; i++)
