@@ -19,10 +19,11 @@ extern "C"
 #include "data/DoublyLinkedList.hpp"
 #include "data/Queue.hpp"
 #include "data/Stack.hpp"
+#include "data/Deque.hpp"
 
 struct GameWindow : public Object<GameWindow> {
 
-    Stack<int> arr{GlobalFreelistAllocator::instance()};
+    Deque<int> arr{GlobalFreelistAllocator::instance()};
 
     inline void Create() {
     }
@@ -39,7 +40,7 @@ struct GameWindow : public Object<GameWindow> {
         );
 
 
-        Stack<int>::Node *it = arr.head();
+        Deque<int>::Node *it = arr.head();
         int i = 0;
         while (it != arr.tail()) {
 
@@ -54,11 +55,11 @@ struct GameWindow : public Object<GameWindow> {
         }
 
         if (input_keydown(KEY_SPACE)) {
-            arr.push((int) (randf() * 10000));
+            arr.pushFront((int) (randf() * 10000));
         }
         if (input_keydown(KEY_M)) {
             if (arr.size() > 0)
-                printf("removed! %d\n", arr.pop());
+                printf("removed! %d\n", arr.popFront());
         }
         if (input_keydown(KEY_N)) {
             arr.clear();
