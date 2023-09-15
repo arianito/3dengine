@@ -46,11 +46,14 @@ struct GameWindow : public Object<GameWindow> {
         if (input_keypress(KEY_M)) {
             j = 100;
         }
-        if (input_keypress(KEY_N) && j < 130) {
+        if (input_keypress(KEY_N)) {
             hash.remove(j++);
         }
-        if (input_keypress(KEY_SPACE) && j < 130) {
+        if (input_keypress(KEY_SPACE)) {
             hash.set(j++, (int) (randf() * 100));
+        }
+        if (input_keypress(KEY_B)) {
+            hash[121] = (int) (randf() * 100);
         }
         debug_origin(vec2(0, 0));
 
@@ -62,13 +65,14 @@ struct GameWindow : public Object<GameWindow> {
             auto it = hash.mBuckets[i];
             if (it != nullptr) {
                 while (it != nullptr) {
-                    debug_stringf(pos, "%d :: %d", it->key, it->value);
+//                    debug_stringf(pos, "%d :: %d", it->key, it->value);
+                    draw_line(pos, vec3(pos.x + 5, pos.y, pos.z), color_red);
                     it = it->next;
-                    pos.x += 100.0f;
+                    pos.x += 5.0f;
                 }
-                pos.y += 30.0f;
+                pos.y += 0.5f;
+                pos.x = 10.0f;
             }
-            pos.x = 10.0f;
         }
 
         debug_origin(vec2_zero);
