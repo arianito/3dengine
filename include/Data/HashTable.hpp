@@ -22,6 +22,7 @@ public:
     Node **mBuckets;
     Allocator *mAllocator{nullptr};
     unsigned int mLength = 0;
+    Node dummy;
 public:
     explicit inline HashTable(Allocator *a) : mAllocator(a) {
         unsigned int nBytes = mBucketCount * sizeof(Node *);
@@ -46,19 +47,23 @@ public:
 
     inline void expand() {
         float ratio = (float) mLength / mBucketCount;
-        if (ratio < 0.75)return;
+        if (ratio < 0.75)
+            return;
 
         unsigned int newSize = mBucketCount << 1;
 
         unsigned int nBytes = newSize * sizeof(Node *);
         Node **newList = (Node **) mAllocator->Alloc(nBytes);
         memset(newList, 0, nBytes);
-
-
         for (int i = 0; i < mBucketCount; i++) {
             auto it = mBuckets[i];
-            if (it != nullptr)
-                newList[hash(it->key, newSize)] = it;
+            while (it != nullptr) {
+                unsigned int hsh = hash(it->key, newSize);
+                Node* tmp = it;
+                it = it->next;
+                tmp->next = newList[hsh];
+                newList[hsh] = tmp;
+            }
         }
 
         mAllocator->Free((void **) &mBuckets);
@@ -69,7 +74,7 @@ public:
     inline void set(const K &key, const V &value) {
         expand();
         unsigned int hsh = hash(key, mBucketCount);
-        Node *node = (Node *) (mBuckets[hsh]);
+        Node *node = mBuckets[hsh];
 
         while (node != nullptr) {
             if (node->key == key)
@@ -86,10 +91,10 @@ public:
         newNode->next = nullptr;
         newNode->key = key;
         newNode->value = value;
-        mLength++;
 
-        newNode->next = (Node *) (mBuckets[hsh]);
+        newNode->next = mBuckets[hsh];
         mBuckets[hsh] = newNode;
+        mLength++;
     }
 
     inline void remove(const K &key) {
@@ -110,20 +115,19 @@ public:
 
 
         if (prev == nullptr) {
-            Node *tmp = mBuckets[hsh];
+            Node* tmp = mBuckets[hsh];
             mBuckets[hsh] = tmp->next;
             mAllocator->Free((void **) &tmp);
             mLength--;
             return;
         }
-
         prev->next = node->next;
         mAllocator->Free((void **) &node);
         mLength--;
     }
 
     inline unsigned int hash(const K &key, unsigned int size) {
-        size_t hsh = 0;
+        unsigned int hsh = 0;
         if constexpr (std::is_pointer_v<K>) {
             unsigned int sz = sizeof(*key);
             if constexpr (sizeof(*key) == 1) {
@@ -145,6 +149,20 @@ public:
             }
         }
         return ((mPrimeA * hsh + mPrimeB) % mPrimeC) & (size - 1);
+    }
+
+    inline V &operator[](const K &key) {
+        unsigned int hsh = hash(key, mBucketCount);
+        Node *node = mBuckets[hsh];
+        while (node != nullptr) {
+            if (node->key == key)
+                break;
+            node = node->next;
+        }
+        if (node == nullptr) {
+            return dummy.value;
+        }
+        return node->value;
     }
 
     inline const unsigned int &size() {
