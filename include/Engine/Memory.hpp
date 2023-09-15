@@ -1,24 +1,8 @@
 #pragma once
 
-#include <stddef.h>
-
 #include "mem/freelist.h"
 #include "mem/alloc.h"
 #include "engine/Object.hpp"
-
-template<class T>
-struct is_shared_ptr : std::false_type {
-};
-template<class T>
-struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {
-};
-
-template<class T>
-struct is_unique_ptr : std::false_type {
-};
-template<class T>
-struct is_unique_ptr<std::unique_ptr<T>> : std::true_type {
-};
 
 class Allocator : public Object<Allocator> {
 public:
@@ -43,8 +27,8 @@ public:
     }
 
     static Allocator *instance() {
-        static Allocator *mInstance = NULL;
-        if (mInstance == NULL)
+        static Allocator *mInstance = nullptr;
+        if (mInstance == nullptr)
             mInstance = new GlobalArenaAllocator();
         return mInstance;
     }
@@ -64,8 +48,8 @@ public:
     }
 
     static Allocator *instance() {
-        static Allocator *mInstance = NULL;
-        if (mInstance == NULL)
+        static Allocator *mInstance = nullptr;
+        if (mInstance == nullptr)
             mInstance = new GlobalStackAllocator();
         return mInstance;
     }
@@ -85,8 +69,8 @@ public:
     }
 
     static Allocator *instance() {
-        static Allocator *mInstance = NULL;
-        if (mInstance == NULL)
+        static Allocator *mInstance = nullptr;
+        if (mInstance == nullptr)
             mInstance = new GlobalFreelistAllocator();
         return mInstance;
     }

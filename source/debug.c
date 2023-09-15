@@ -353,6 +353,7 @@ void debug_stringf(Vec3 pos, const char *fmt, ...) {
 
     if (buffer != NULL) {
         vsnprintf(buffer, len + 1, fmt, args);
+        buffer[len] = '\0';
         debug_string(pos, buffer, len + 1);
     }
 
@@ -368,6 +369,7 @@ void debug_string3df(Transform t, const char *fmt, ...) {
 
     if (buffer != NULL) {
         vsnprintf(buffer, len + 1, fmt, args);
+        buffer[len] = '\0';
         debug_string3d(t, buffer, len + 1);
     }
 

@@ -45,13 +45,6 @@ private:
         mCapacity = mCapacity / 2;
     }
 
-    inline void destroy(int index) {
-        if constexpr (std::is_pointer_v<T>) {
-            delete mList[index];
-            mList[index] = nullptr;
-        }
-    }
-
 public:
     inline Array(Allocator *a, int capacity) :
             mCapacity(capacity),
@@ -68,14 +61,10 @@ public:
     explicit inline Array(const Array &) = delete;
 
     inline ~Array() {
-        for (int i = 0; i < mLength; i++)
-            destroy(i);
         mAllocator->Free((void **) (&mList));
     }
 
     inline void clear() {
-        for (int i = 0; i < mLength; i++)
-            destroy(i);
         mLength = 0;
         mCapacity = mDefaultCapacity;
         size_t size = mCapacity * sizeof(T);
@@ -91,17 +80,14 @@ public:
         shrink();
         for (int i = index; i < mLength - 1; i++)
             mList[i] = mList[i + 1];
-        destroy(mLength - 1);
         mLength--;
     }
 
     inline void remove(const T &item) {
         int j = 0;
         for (int i = 0; i < mLength; i++) {
-            if (mList[i + j] == item) {
-                destroy(i + j);
+            if (mList[i + j] == item)
                 j++;
-            }
             if (j > 0)
                 mList[i] = mList[i + j];
         }
