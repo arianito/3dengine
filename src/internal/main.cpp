@@ -19,7 +19,7 @@ int main(int argc, const char *argv[]) {
     MemoryMetadata meta;
     meta.global = 64 * MEGABYTES;
     meta.stack = 1 * MEGABYTES;
-    meta.freelist = 16 * MEGABYTES;
+    meta.freelist = 32 * MEGABYTES;
     alloc_create(meta);
 
     file_init("../assets/");

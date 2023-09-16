@@ -18,7 +18,8 @@ public:
     static constexpr size_t mPrimeA{492366587};
     static constexpr size_t mPrimeB{1645333507};
     static constexpr size_t mPrimeC{6692367337};
-    unsigned int mBucketCount{8};
+    unsigned int mDefaultStart{8};
+    unsigned int mBucketCount{mDefaultStart};
     Node **mBuckets;
     Allocator *mAllocator{nullptr};
     unsigned int mLength = 0;
@@ -178,9 +179,11 @@ public:
                 mAllocator->Free((void **) &tmp);
             }
         }
+        mAllocator->Free((void **) &mBuckets);
+        mBucketCount = mDefaultStart;
         int nBytes = mBucketCount * sizeof(Node *);
+        mBuckets = (Node **) mAllocator->Alloc(nBytes);
         memset(mBuckets, 0, nBytes);
         mLength = 0;
     }
-
 };
