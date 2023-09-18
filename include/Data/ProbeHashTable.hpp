@@ -36,12 +36,7 @@ public:
         mAllocator->Free((void **) &mProbes);
     }
 
-    inline void expand() {
-        float ratio = (float) mLength / mCapacity;
-        if (ratio < 1.0f)
-            return;
-
-        unsigned int newCapacity = mCapacity << 1;
+    inline void reserve(int newCapacity) {
         unsigned int nBytes = newCapacity * sizeof(Node);
 
         Node *newList = (Node *) mAllocator->Alloc(nBytes);
@@ -62,7 +57,13 @@ public:
         mAllocator->Free((void **) &mProbes);
         mProbes = newList;
         mCapacity = newCapacity;
+    }
 
+    inline void expand() {
+        float ratio = (float) mLength / mCapacity;
+        if (ratio < 0.75f)
+            return;
+        reserve(mCapacity << 1);
     }
 
     inline unsigned int hash(const K &key, unsigned int size) {

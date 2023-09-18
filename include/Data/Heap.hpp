@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include "engine/Object.hpp"
 #include "engine/Memory.hpp"
 
@@ -28,18 +29,21 @@ public:
         mAllocator->Free((void **) &mHeap);
     }
 
+    inline void reserve(int newCapacity) {
+        int newBytes = newCapacity * sizeof(T);
+        int oldBytes = mCapacity * sizeof(T);
+        T *newList = (T *) mAllocator->Alloc(newBytes);
+        assert(newList != nullptr && "Heap: Insufficient memory.\n");
+        memcpy(newList, mHeap, oldBytes);
+        mAllocator->Free((void **) (&mHeap));
+        mHeap = newList;
+        mCapacity = newCapacity;
+    }
+
     inline void expand() {
         if (mLength < mCapacity - 1)
             return;
-
-        int nBytes = mCapacity * sizeof(T);
-        T *newList = (T *) mAllocator->Alloc(nBytes * 2);
-        assert(newList != nullptr && "Array: Insufficient memory.\n");
-        memset(newList, 0, nBytes * 2);
-        memcpy(newList, mHeap, nBytes);
-        mAllocator->Free((void **) (&mHeap));
-        mHeap = newList;
-        mCapacity = mCapacity * 2;
+        reserve(mCapacity << 1);
     }
 
     inline void swap(int i, int j) {
@@ -58,32 +62,34 @@ public:
     }
 
 
-    void push(T item) {
-        expand();
-        mHeap[mLength++] = item;
+    inline int nextPowerOfTwo(int num) {
+        if (num <= 0)
+            return 0;
 
-        int index = mLength;
-        while (index > 1) {
-            int parentIndex = index / 2;
+        num |= (num >> 1);
+        num |= (num >> 2);
+        num |= (num >> 4);
+        num |= (num >> 8);
+        num |= (num >> 16);
 
-            if ((mPolicy == MAX_HEAP) ?
-                (mHeap[parentIndex - 1] > mHeap[index - 1]) :
-                (mHeap[parentIndex - 1] < mHeap[index - 1]))
-                return;
-
-            swap(parentIndex, index);
-            index = parentIndex;
-        }
-
+        return num + 1;
     }
 
-    T pop() {
-        assert(mLength > 0 && "Heap: is empty");
+    inline void sortUp(int index) {
+        while (index > 0) {
+            int parent = index / 2;
 
-        T root = mHeap[0];
-        mHeap[0] = mHeap[--mLength];
+            if ((mPolicy == MAX_HEAP) ?
+                (mHeap[parent - 1] > mHeap[index - 1]) :
+                (mHeap[parent - 1] < mHeap[index - 1]))
+                return;
 
-        int index = 1;
+            swap(index, parent);
+            index = parent;
+        }
+    }
+
+    inline void sortDown(int index) {
         while (index <= mLength) {
 
             int leftIndex = index * 2;
@@ -91,7 +97,7 @@ public:
 
             // leaf node
             if (leftIndex > mLength)
-                return root;
+                return;
 
             // assume left node is greater
             int next = leftIndex;
@@ -107,12 +113,47 @@ public:
             if ((mPolicy == MAX_HEAP) ?
                 (mHeap[index - 1] > mHeap[next - 1]) :
                 (mHeap[index - 1] < mHeap[next - 1]))
-                return root;
+                return;
 
 
             swap(index, next);
             index = next;
         }
+    }
+
+    inline void heapify(const T buff[], int n) {
+        if (n > mCapacity) {
+            int newCapacity = nextPowerOfTwo(n);
+            int newBytes = newCapacity * sizeof(T);
+            T *newList = (T *) mAllocator->Alloc(newBytes);
+            assert(newList != nullptr && "Heap: Insufficient memory.\n");
+            mAllocator->Free((void **) (&mHeap));
+            mCapacity = newCapacity;
+            mHeap = newList;
+        }
+        mLength = n;
+        int nBytes = mLength * sizeof(T);
+        memcpy(mHeap, buff, nBytes);
+        for (int i = mLength; i > 0; i--) {
+            sortDown(i);
+        }
+    }
+
+
+    void push(const T &item) {
+        expand();
+        mHeap[mLength++] = item;
+
+        sortUp(mLength);
+    }
+
+    T pop() {
+        assert(mLength > 0 && "Heap: is empty");
+
+        T root = mHeap[0];
+        mHeap[0] = mHeap[--mLength];
+
+        sortDown(1);
         return root;
     }
 

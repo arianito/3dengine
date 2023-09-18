@@ -11,33 +11,34 @@ extern "C"
 #include "mem/utils.h"
 }
 
-#include <ctime>
-
 #include "engine/Object.hpp"
-#include "engine/Memory.hpp"
-
-#include "data/Array.hpp"
-#include "data/SinglyLinkedList.hpp"
-#include "data/DoublyLinkedList.hpp"
-#include "data/Queue.hpp"
-#include "data/Stack.hpp"
-#include "data/Deque.hpp"
-#include "data/CircularQueue.hpp"
-#include "data/HashTable.hpp"
-#include "data/ProbeHashTable.hpp"
-#include "data/BinarySearch.hpp"
-#include "data/BinarySearchTree.hpp"
-#include "data/FixedStack.hpp"
 #include "data/Heap.hpp"
+#include "data/ProbeHashTable.hpp"
 #include "data/DrawUtils.hpp"
 
 struct GameWindow : public Object<GameWindow> {
-    Heap<float> heap{GlobalFreelistAllocator::instance(), MIN_HEAP};
+    Heap<float> h{GlobalFreelistAllocator::instance(), MIN_HEAP};
 
     inline void Create() {
     }
 
     inline void Update() {
         debug_rotation(rot_inv(camera->rotation));
+
+        if (input_keydown(KEY_B)) {
+            const float buff[] = {2, 4, 5, 6, 3, 42, 8, 124, 22, 566};
+            h.heapify(buff, 10);
+        }
+        if (input_keydown(KEY_SPACE)) {
+            h.push(randf() * 100.0f);
+        }
+        if (input_keydown(KEY_M)) {
+            h.pop();
+        }
+
+        DrawUtils::drawHeap(h, vec3(0, 0, 50), 1);
+
+        debug_origin(vec2(0,0));
+        debug_stringf(vec2(10, 50), "%d / %d",h.mLength, h.mCapacity);
     }
 };

@@ -12,10 +12,9 @@ public:
     int mLength{0};
     int mCapacity{8};
 
-    explicit inline FixedStack(Allocator *a, int capacity) : mAllocator(a),
-                                                             mCapacity(
-                                                                     capacity) {
-
+    explicit inline FixedStack(Allocator *a, int capacity) :
+            mAllocator(a),
+            mCapacity(capacity) {
         mStack = (T *) mAllocator->Alloc(mCapacity * sizeof(T));
     }
 

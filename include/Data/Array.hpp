@@ -18,31 +18,31 @@ private:
     int mDefaultCapacity{2};
     int mLength{0};
 private:
+
+    inline void reserve(int newCapacity) {
+        int newBytes = newCapacity * sizeof(T);
+        int nBytes = mLength * sizeof(T);
+
+        T *newList = (T *) mAllocator->Alloc(newBytes);
+        assert(newList != nullptr && "Array: Insufficient memory.\n");
+        memcpy(newList, mList, nBytes);
+        mAllocator->Free((void **) (&mList));
+        mList = newList;
+        mCapacity = newCapacity;
+    }
+
     inline void expand() {
         if (mLength < mCapacity)
             return;
 
-        size_t size = mCapacity * sizeof(T);
-        T *newList = (T *) mAllocator->Alloc(size * 2);
-        assert(newList != nullptr && "Array: Insufficient memory.\n");
-        memset(newList, 0, size * 2);
-        memcpy(newList, mList, size);
-        mAllocator->Free((void **) (&mList));
-        mList = newList;
-        mCapacity = mCapacity * 2;
+        reserve(mCapacity << 1);
+
     }
 
     inline void shrink() {
         if (mLength * 4 > mCapacity)
             return;
-
-        size_t size = mCapacity * sizeof(T);
-        T *newList = (T *) mAllocator->Alloc(size / 2);
-        assert(newList != nullptr && "Array: Insufficient memory.\n");
-        memcpy(newList, mList, size / 2);
-        mAllocator->Free((void **) (&mList));
-        mList = newList;
-        mCapacity = mCapacity / 2;
+        reserve(mCapacity >> 1);
     }
 
 public:
@@ -66,13 +66,7 @@ public:
 
     inline void clear() {
         mLength = 0;
-        mCapacity = mDefaultCapacity;
-        size_t size = mCapacity * sizeof(T);
-        T *newList = (T *) mAllocator->Alloc(size);
-        assert(newList != nullptr && "Array: Insufficient memory.\n");
-        memset(newList, 0, size);
-        mAllocator->Free((void **) (&mList));
-        mList = newList;
+        reserve(mDefaultCapacity);
     }
 
     inline void removeAt(int index) {

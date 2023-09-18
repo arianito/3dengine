@@ -45,21 +45,14 @@ public:
         mAllocator->Free((void **) &mBuckets);
     }
 
-
-    inline void expand() {
-        float ratio = (float) mLength / mBucketCount;
-        if (ratio < 0.75)
-            return;
-
-        unsigned int newSize = mBucketCount << 1;
-
-        unsigned int nBytes = newSize * sizeof(Node *);
+    inline void reserve(int newCapacity) {
+        unsigned int nBytes = newCapacity * sizeof(Node *);
         Node **newList = (Node **) mAllocator->Alloc(nBytes);
         memset(newList, 0, nBytes);
         for (int i = 0; i < mBucketCount; i++) {
             auto it = mBuckets[i];
             while (it != nullptr) {
-                unsigned int hsh = hash(it->key, newSize);
+                unsigned int hsh = hash(it->key, newCapacity);
                 Node *tmp = it;
                 it = it->next;
                 tmp->next = newList[hsh];
@@ -69,7 +62,16 @@ public:
 
         mAllocator->Free((void **) &mBuckets);
         mBuckets = newList;
-        mBucketCount = newSize;
+        mBucketCount = newCapacity;
+    }
+
+
+    inline void expand() {
+        float ratio = (float) mLength / mBucketCount;
+        if (ratio < 0.75)
+            return;
+
+        reserve(mBucketCount << 1);
     }
 
     inline void set(const K &key, const V &value) {
