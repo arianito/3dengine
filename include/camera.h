@@ -84,7 +84,7 @@ static inline void camera_init() {
     camera_update();
 }
 
-static inline char camera_worldToScreen(Vec3 p, Vec2 *out_screen) {
+static inline Vec2 camera_worldToScreen(Vec3 p) {
     Vec4 r = mat4_mulv4(camera->viewProjection, vec4(p.x, p.y, p.z, 1));
     if (r.w > 0) {
         float rhw = 1.0f / r.w;
@@ -92,14 +92,12 @@ static inline char camera_worldToScreen(Vec3 p, Vec2 *out_screen) {
         float ry = r.y * rhw;
         float nx = (rx / 2.f) + 0.5f;
         float ny = 1.f - (ry / 2.f) - 0.5f;
-
-        *out_screen = vec2(nx * game->width, ny * game->height);
-        return 1;
+        return vec2(nx * game->width, ny * game->height);
     }
-    return 0;
+    return vec2(MAX, MAX);
 }
 
-static inline void camera_screenToWorld(Vec2 s, Vec3 *out_origin, Vec3 *out_dir) {
+static inline Ray camera_screenToWorld(Vec2 s) {
     Mat4 inv = mat4_inv(camera->viewProjection);
     float nx = s.x / game->width;
     float ny = s.y / game->height;
@@ -124,6 +122,8 @@ static inline void camera_screenToWorld(Vec2 s, Vec3 *out_origin, Vec3 *out_dir)
         rew.z /= hre.w;
     }
 
-    *out_origin = rsw;
-    *out_dir = vec3_norm(vec3_sub(rew, rsw));
+    Ray r;
+    r.origin = rsw;
+    r.direction = vec3_norm(vec3_sub(rew, rsw));
+    return r;
 }

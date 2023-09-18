@@ -52,6 +52,11 @@ typedef struct __attribute__((aligned(16), packed)) {
     float w;
 } Vec4;
 
+typedef struct __attribute__((aligned(64), packed)) {
+    Vec3 origin;
+    Vec3 direction;
+} Ray;
+
 typedef struct __attribute__((aligned(16), packed)) {
     float pitch;
     float yaw;
@@ -163,7 +168,8 @@ static const Color color_gray = {0.5f, 0.5f, 0.5f, 1};
 
 static const Quat quat_identity = {0, 0, 0, 1};
 static const Rot rot_zero = {0, 0, 0};
-static const Mat4 mat4_identity = {{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
+static const Mat4 mat4_identity = {
+        {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
 
 static const Transform transform_identity = {{0, 0, 0},
                                              {0, 0, 0},
@@ -212,7 +218,9 @@ static inline float atan2d(float a, float b) { return atan2f(a, b) * RAD2DEG; }
 
 static inline float sign(float a) { return a >= 0 ? 1.0f : -1.0f; }
 
-static inline float selectf(float a, float b, float c) { return a >= 0 ? b : c; }
+static inline float selectf(float a, float b, float c) {
+    return a >= 0 ? b : c;
+}
 
 static inline float invSqrt(float a) { return 1.0f / sqrtf(a); }
 
@@ -234,19 +242,29 @@ static inline float clamp01(float a) {
     return z;
 }
 
-static inline float lerp01(float a, float b, float t) { return a + (b - a) * clamp01(t); }
+static inline float lerp01(float a, float b, float t) {
+    return a + (b - a) * clamp01(t);
+}
 
 static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
-static inline char nearEq(float a, float b) { return (char) (fabsf(b - a) <= EPSILON); }
+static inline char nearEq(float a, float b) {
+    return (char) (fabsf(b - a) <= EPSILON);
+}
 
 static inline char near0(float a) { return nearEq(a, 0); }
 
-static inline float repeat(float t, float length) { return clamp(t - floorf(t / length) * length, 0.0f, length); }
+static inline float repeat(float t, float length) {
+    return clamp(t - floorf(t / length) * length, 0.0f, length);
+}
 
-static inline float pingPong(float t, float length) { return length - fabsf(repeat(t, length * 2.0f) - length); }
+static inline float pingPong(float t, float length) {
+    return length - fabsf(repeat(t, length * 2.0f) - length);
+}
 
-static inline float invLerp(float a, float b, float value) { return a != b ? clamp01((value - a) / (b - a)) : 0.0f; }
+static inline float invLerp(float a, float b, float value) {
+    return a != b ? clamp01((value - a) / (b - a)) : 0.0f;
+}
 
 static inline float slerp(float from, float to, float t) {
     float t0 = clamp01(t);
@@ -318,7 +336,8 @@ static inline float moveTowards(float current, float target, float maxDelta) {
     return current + sign(target - current) * maxDelta;
 }
 
-static inline float moveTowardsAngle(float current, float target, float maxDelta) {
+static inline float
+moveTowardsAngle(float current, float target, float maxDelta) {
     float da = deltaAngle(current, target);
     if (-maxDelta < da && da < maxDelta)
         return target;
@@ -331,8 +350,10 @@ static inline float smoothStep(float from, float to, float t) {
     return to * t0 + from * (1.0F - t0);
 }
 
-static inline float smoothDamp(float current, float target, float *currentVelocity, float smoothTime,
-                               float maxSpeed, float deltaTime) {
+static inline float
+smoothDamp(float current, float target, float *currentVelocity,
+           float smoothTime,
+           float maxSpeed, float deltaTime) {
     float smoothTime0 = fmaxf(0.0001F, smoothTime);
     float omega = 2.0F / smoothTime0;
     float x = omega * deltaTime;
@@ -895,7 +916,8 @@ static inline float vec3_cosAngle2d(Vec3 a, Vec3 b) {
 
 static inline Vec3 vec3_intersectPlane(Vec3 a, Vec3 b, Vec3 o, Vec3 n) {
     b = vec3_sub(b, a);
-    return vec3_add(a, vec3_mulf(b, vec3_dot(vec3_sub(o, a), n) / vec3_dot(b, n)));
+    return vec3_add(a,
+                    vec3_mulf(b, vec3_dot(vec3_sub(o, a), n) / vec3_dot(b, n)));
 }
 
 // plane
@@ -959,7 +981,8 @@ static inline char rot_eq0(Rot a) {
 }
 
 static inline char rot_nearEq(Rot a, Rot b) {
-    return (char) (nearEq(a.pitch, b.pitch) && nearEq(a.yaw, b.yaw) & nearEq(a.roll, b.roll));
+    return (char) (nearEq(a.pitch, b.pitch) &&
+                   nearEq(a.yaw, b.yaw) & nearEq(a.roll, b.roll));
 }
 
 static inline char rot_near0(Rot a) {
@@ -1047,7 +1070,8 @@ static inline Rot rot_deNorm(Rot a) {
 }
 
 static inline float rot_dist(Rot a, Rot b) {
-    return fabsf(a.pitch - b.pitch) + fabsf(a.yaw - b.yaw) + fabsf(a.roll - b.roll);
+    return fabsf(a.pitch - b.pitch) + fabsf(a.yaw - b.yaw) +
+           fabsf(a.roll - b.roll);
 }
 
 static inline Rot rot_eqv(Rot a) {
@@ -1156,17 +1180,17 @@ static inline Rot rot_lookAt(Vec3 a, Vec3 b, Vec3 up) {
 
     float dot = vec3_dot(forward, vec3_forward);
 
-    if(nearEq(dot, 1))
+    if (nearEq(dot, 1))
         return r;
 
-    if(nearEq(dot, -1)) {
+    if (nearEq(dot, -1)) {
         r.yaw = 180;
         return r;
     }
 
     float rotAngle = acosd(-dot);
     r.yaw = rotAngle;
-    return  r;
+    return r;
 }
 
 // quat
@@ -1197,11 +1221,15 @@ static inline Quat quat_mulf(Quat a, float b) {
     return a;
 }
 
-static inline float quat_dot(Quat a, Quat b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
+static inline float quat_dot(Quat a, Quat b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
 
 static inline float quat_sqrmagnitude(Quat a) { return quat_dot(a, a); }
 
-static inline float quat_magnitude(Quat a) { return sqrtf(quat_sqrmagnitude(a)); }
+static inline float quat_magnitude(Quat a) {
+    return sqrtf(quat_sqrmagnitude(a));
+}
 
 static inline Quat quat_normalize(Quat a) {
     float b = quat_sqrmagnitude(a);
@@ -1627,7 +1655,9 @@ static inline void mat4_axes(const Mat4 *a, Vec3 *ax, Vec3 *ay, Vec3 *az) {
     az->z = a->m[2][2];
 }
 
-static inline Mat4 mat4_orthographic(float left, float right, float bottom, float top, float nr, float far) {
+static inline Mat4
+mat4_orthographic(float left, float right, float bottom, float top, float nr,
+                  float far) {
     Mat4 m;
 
     float fmd = far - nr;
@@ -1660,7 +1690,8 @@ static inline Mat4 mat4_orthographic(float left, float right, float bottom, floa
     return m;
 }
 
-static inline Mat4 mat4_perspective(float fov, float aspect, float nr, float fr) {
+static inline Mat4
+mat4_perspective(float fov, float aspect, float nr, float fr) {
     float t = tand(fov * 0.5f);
     float inv = 1.0f / (fr - nr);
 
@@ -1823,7 +1854,8 @@ static inline Mat4 mat4_invRot(Rot a) {
 
 static inline Mat4 mat4_fromX(Vec3 x) {
     x = vec3_norm(x);
-    Vec3 up = (fabsf(x.z) < (1.f - EPSILON)) ? vec3(0, 0, 1.0f) : vec3(1.0f, 0, 0);
+    Vec3 up = (fabsf(x.z) < (1.f - EPSILON)) ? vec3(0, 0, 1.0f) : vec3(1.0f, 0,
+                                                                       0);
     Vec3 y = vec3_norm(vec3_cross(up, x));
     Vec3 z = vec3_cross(x, y);
     return mat4_vec3(x, y, z, vec3_zero);
@@ -1831,7 +1863,8 @@ static inline Mat4 mat4_fromX(Vec3 x) {
 
 static inline Mat4 mat4_fromY(Vec3 y) {
     y = vec3_norm(y);
-    Vec3 up = (fabsf(y.z) < (1.f - EPSILON)) ? vec3(0, 0, 1.0f) : vec3(1.0f, 0, 0);
+    Vec3 up = (fabsf(y.z) < (1.f - EPSILON)) ? vec3(0, 0, 1.0f) : vec3(1.0f, 0,
+                                                                       0);
     Vec3 z = vec3_norm(vec3_cross(up, y));
     Vec3 x = vec3_cross(y, z);
     return mat4_vec3(x, y, z, vec3_zero);
@@ -1839,7 +1872,8 @@ static inline Mat4 mat4_fromY(Vec3 y) {
 
 static inline Mat4 mat4_fromZ(Vec3 z) {
     z = vec3_norm(z);
-    Vec3 up = (fabsf(z.z) < (1.f - EPSILON)) ? vec3(0, 0, 1.0f) : vec3(1.0f, 0, 0);
+    Vec3 up = (fabsf(z.z) < (1.f - EPSILON)) ? vec3(0, 0, 1.0f) : vec3(1.0f, 0,
+                                                                       0);
     Vec3 x = vec3_norm(vec3_cross(up, z));
     Vec3 y = vec3_cross(z, x);
     return mat4_vec3(x, y, z, vec3_zero);
@@ -1884,46 +1918,64 @@ static inline Mat4 mat4_inv(Mat4 m) {
     tmp.m[3][1] = m.m[0][2] * m.m[2][3] - m.m[0][3] * m.m[2][2];
     tmp.m[3][2] = m.m[0][2] * m.m[1][3] - m.m[0][3] * m.m[1][2];
 
-    da[0] = m.m[1][1] * tmp.m[0][0] - m.m[2][1] * tmp.m[0][1] + m.m[3][1] * tmp.m[0][2];
-    da[1] = m.m[0][1] * tmp.m[1][0] - m.m[2][1] * tmp.m[1][1] + m.m[3][1] * tmp.m[1][2];
-    da[2] = m.m[0][1] * tmp.m[2][0] - m.m[1][1] * tmp.m[2][1] + m.m[3][1] * tmp.m[2][2];
-    da[3] = m.m[0][1] * tmp.m[3][0] - m.m[1][1] * tmp.m[3][1] + m.m[2][1] * tmp.m[3][2];
+    da[0] = m.m[1][1] * tmp.m[0][0] - m.m[2][1] * tmp.m[0][1] +
+            m.m[3][1] * tmp.m[0][2];
+    da[1] = m.m[0][1] * tmp.m[1][0] - m.m[2][1] * tmp.m[1][1] +
+            m.m[3][1] * tmp.m[1][2];
+    da[2] = m.m[0][1] * tmp.m[2][0] - m.m[1][1] * tmp.m[2][1] +
+            m.m[3][1] * tmp.m[2][2];
+    da[3] = m.m[0][1] * tmp.m[3][0] - m.m[1][1] * tmp.m[3][1] +
+            m.m[2][1] * tmp.m[3][2];
 
-    const float det = m.m[0][0] * da[0] - m.m[1][0] * da[1] + m.m[2][0] * da[2] - m.m[3][0] * da[3];
+    const float det =
+            m.m[0][0] * da[0] - m.m[1][0] * da[1] + m.m[2][0] * da[2] -
+            m.m[3][0] * da[3];
     const float rdet = 1.0f / det;
 
     res.m[0][0] = rdet * da[0];
     res.m[0][1] = -rdet * da[1];
     res.m[0][2] = rdet * da[2];
     res.m[0][3] = -rdet * da[3];
-    res.m[1][0] = -rdet * (m.m[1][0] * tmp.m[0][0] - m.m[2][0] * tmp.m[0][1] + m.m[3][0] * tmp.m[0][2]);
-    res.m[1][1] = rdet * (m.m[0][0] * tmp.m[1][0] - m.m[2][0] * tmp.m[1][1] + m.m[3][0] * tmp.m[1][2]);
-    res.m[1][2] = -rdet * (m.m[0][0] * tmp.m[2][0] - m.m[1][0] * tmp.m[2][1] + m.m[3][0] * tmp.m[2][2]);
-    res.m[1][3] = rdet * (m.m[0][0] * tmp.m[3][0] - m.m[1][0] * tmp.m[3][1] + m.m[2][0] * tmp.m[3][2]);
-    res.m[2][0] = rdet * (m.m[1][0] * (m.m[2][1] * m.m[3][3] - m.m[2][3] * m.m[3][1]) -
-                          m.m[2][0] * (m.m[1][1] * m.m[3][3] - m.m[1][3] * m.m[3][1]) +
-                          m.m[3][0] * (m.m[1][1] * m.m[2][3] - m.m[1][3] * m.m[2][1]));
-    res.m[2][1] = -rdet * (m.m[0][0] * (m.m[2][1] * m.m[3][3] - m.m[2][3] * m.m[3][1]) -
-                           m.m[2][0] * (m.m[0][1] * m.m[3][3] - m.m[0][3] * m.m[3][1]) +
-                           m.m[3][0] * (m.m[0][1] * m.m[2][3] - m.m[0][3] * m.m[2][1]));
-    res.m[2][2] = rdet * (m.m[0][0] * (m.m[1][1] * m.m[3][3] - m.m[1][3] * m.m[3][1]) -
-                          m.m[1][0] * (m.m[0][1] * m.m[3][3] - m.m[0][3] * m.m[3][1]) +
-                          m.m[3][0] * (m.m[0][1] * m.m[1][3] - m.m[0][3] * m.m[1][1]));
-    res.m[2][3] = -rdet * (m.m[0][0] * (m.m[1][1] * m.m[2][3] - m.m[1][3] * m.m[2][1]) -
-                           m.m[1][0] * (m.m[0][1] * m.m[2][3] - m.m[0][3] * m.m[2][1]) +
-                           m.m[2][0] * (m.m[0][1] * m.m[1][3] - m.m[0][3] * m.m[1][1]));
-    res.m[3][0] = -rdet * (m.m[1][0] * (m.m[2][1] * m.m[3][2] - m.m[2][2] * m.m[3][1]) -
-                           m.m[2][0] * (m.m[1][1] * m.m[3][2] - m.m[1][2] * m.m[3][1]) +
-                           m.m[3][0] * (m.m[1][1] * m.m[2][2] - m.m[1][2] * m.m[2][1]));
-    res.m[3][1] = rdet * (m.m[0][0] * (m.m[2][1] * m.m[3][2] - m.m[2][2] * m.m[3][1]) -
-                          m.m[2][0] * (m.m[0][1] * m.m[3][2] - m.m[0][2] * m.m[3][1]) +
-                          m.m[3][0] * (m.m[0][1] * m.m[2][2] - m.m[0][2] * m.m[2][1]));
-    res.m[3][2] = -rdet * (m.m[0][0] * (m.m[1][1] * m.m[3][2] - m.m[1][2] * m.m[3][1]) -
-                           m.m[1][0] * (m.m[0][1] * m.m[3][2] - m.m[0][2] * m.m[3][1]) +
-                           m.m[3][0] * (m.m[0][1] * m.m[1][2] - m.m[0][2] * m.m[1][1]));
-    res.m[3][3] = rdet * (m.m[0][0] * (m.m[1][1] * m.m[2][2] - m.m[1][2] * m.m[2][1]) -
-                          m.m[1][0] * (m.m[0][1] * m.m[2][2] - m.m[0][2] * m.m[2][1]) +
-                          m.m[2][0] * (m.m[0][1] * m.m[1][2] - m.m[0][2] * m.m[1][1]));
+    res.m[1][0] = -rdet * (m.m[1][0] * tmp.m[0][0] - m.m[2][0] * tmp.m[0][1] +
+                           m.m[3][0] * tmp.m[0][2]);
+    res.m[1][1] = rdet * (m.m[0][0] * tmp.m[1][0] - m.m[2][0] * tmp.m[1][1] +
+                          m.m[3][0] * tmp.m[1][2]);
+    res.m[1][2] = -rdet * (m.m[0][0] * tmp.m[2][0] - m.m[1][0] * tmp.m[2][1] +
+                           m.m[3][0] * tmp.m[2][2]);
+    res.m[1][3] = rdet * (m.m[0][0] * tmp.m[3][0] - m.m[1][0] * tmp.m[3][1] +
+                          m.m[2][0] * tmp.m[3][2]);
+    res.m[2][0] = rdet *
+                  (m.m[1][0] * (m.m[2][1] * m.m[3][3] - m.m[2][3] * m.m[3][1]) -
+                   m.m[2][0] * (m.m[1][1] * m.m[3][3] - m.m[1][3] * m.m[3][1]) +
+                   m.m[3][0] * (m.m[1][1] * m.m[2][3] - m.m[1][3] * m.m[2][1]));
+    res.m[2][1] = -rdet *
+                  (m.m[0][0] * (m.m[2][1] * m.m[3][3] - m.m[2][3] * m.m[3][1]) -
+                   m.m[2][0] * (m.m[0][1] * m.m[3][3] - m.m[0][3] * m.m[3][1]) +
+                   m.m[3][0] * (m.m[0][1] * m.m[2][3] - m.m[0][3] * m.m[2][1]));
+    res.m[2][2] = rdet *
+                  (m.m[0][0] * (m.m[1][1] * m.m[3][3] - m.m[1][3] * m.m[3][1]) -
+                   m.m[1][0] * (m.m[0][1] * m.m[3][3] - m.m[0][3] * m.m[3][1]) +
+                   m.m[3][0] * (m.m[0][1] * m.m[1][3] - m.m[0][3] * m.m[1][1]));
+    res.m[2][3] = -rdet *
+                  (m.m[0][0] * (m.m[1][1] * m.m[2][3] - m.m[1][3] * m.m[2][1]) -
+                   m.m[1][0] * (m.m[0][1] * m.m[2][3] - m.m[0][3] * m.m[2][1]) +
+                   m.m[2][0] * (m.m[0][1] * m.m[1][3] - m.m[0][3] * m.m[1][1]));
+    res.m[3][0] = -rdet *
+                  (m.m[1][0] * (m.m[2][1] * m.m[3][2] - m.m[2][2] * m.m[3][1]) -
+                   m.m[2][0] * (m.m[1][1] * m.m[3][2] - m.m[1][2] * m.m[3][1]) +
+                   m.m[3][0] * (m.m[1][1] * m.m[2][2] - m.m[1][2] * m.m[2][1]));
+    res.m[3][1] = rdet *
+                  (m.m[0][0] * (m.m[2][1] * m.m[3][2] - m.m[2][2] * m.m[3][1]) -
+                   m.m[2][0] * (m.m[0][1] * m.m[3][2] - m.m[0][2] * m.m[3][1]) +
+                   m.m[3][0] * (m.m[0][1] * m.m[2][2] - m.m[0][2] * m.m[2][1]));
+    res.m[3][2] = -rdet *
+                  (m.m[0][0] * (m.m[1][1] * m.m[3][2] - m.m[1][2] * m.m[3][1]) -
+                   m.m[1][0] * (m.m[0][1] * m.m[3][2] - m.m[0][2] * m.m[3][1]) +
+                   m.m[3][0] * (m.m[0][1] * m.m[1][2] - m.m[0][2] * m.m[1][1]));
+    res.m[3][3] = rdet *
+                  (m.m[0][0] * (m.m[1][1] * m.m[2][2] - m.m[1][2] * m.m[2][1]) -
+                   m.m[1][0] * (m.m[0][1] * m.m[2][2] - m.m[0][2] * m.m[2][1]) +
+                   m.m[2][0] * (m.m[0][1] * m.m[1][2] - m.m[0][2] * m.m[1][1]));
 
     return res;
 }
@@ -1935,4 +1987,96 @@ static inline Transform transform(Vec3 pos, Rot r, Vec3 scale) {
     t.rotation = r;
     t.scale = scale;
     return t;
+}
+
+//
+static inline Ray ray(Vec3 origin, Vec3 direction) {
+    Ray r;
+    r.origin = origin;
+    r.direction = direction;
+    return r;
+}
+
+static inline Ray ray_fromTo(Vec3 a, Vec3 b) {
+    Ray r;
+    r.origin = a;
+    r.direction = vec3_sub(b, a);
+    return r;
+}
+
+static inline Ray ray_scale(Ray r, float scale) {
+    r.direction = vec3_mulf(r.direction, scale);
+    return r;
+}
+
+static inline Ray ray_move(Ray r, float distance) {
+    r.origin = vec3_add(r.origin, vec3_mulf(r.direction, distance));
+    return r;
+}
+
+
+static inline char ray_hitSphere(Ray r, Vec3 pos, float rad, Vec3 *hit) {
+    Vec3 oc = vec3_sub(pos, r.origin);
+    float a = vec3_sqrMag(r.direction);
+    float b = 2.0f * (oc.x * r.direction.x +
+                      oc.y * r.direction.y +
+                      oc.z * r.direction.z);
+    float c = vec3_sqrMag(oc) - square(rad);
+    float dis = square(b) - (4 * a * c);
+    if (dis < 0)
+        return 0;
+    if (hit != NULL) {
+        float t = -fminf((-b - sqrtf(dis)) / (2.0f * a),
+                         (-b + sqrtf(dis)) / (2.0f * a));
+        *hit = vec3_add(r.origin, vec3_mulf(r.direction, t));
+    }
+    return 1;
+}
+
+static inline char
+ray_hitCircle(Ray r, Vec3 pos, float rad, Vec3 normal, Vec3 *hit) {
+    Vec3 v = vec3_sub(pos, r.origin);
+    float de = vec3_dot(r.direction, normal);
+    if (de > EPSILON) {
+
+        float t = vec3_dot(v, normal) / de;
+        Vec3 itp = vec3_add(r.origin, vec3_mulf(r.direction,
+                                                t));//ray_origin + t * ray_direction
+        float dist = vec3_mag(vec3_sub(itp, pos));
+
+        if (hit != NULL)
+            *hit = vec3_add(r.origin, vec3_mulf(r.direction, t));
+        return (char) (dist <= rad);
+    }
+    return 0;
+}
+
+static inline char ray_hitBBox(Ray r, BBox b, Vec3 *hit) {
+    Vec3 re;
+    re.x = 1.0f / r.direction.x;
+    re.y = 1.0f / r.direction.y;
+    re.z = 1.0f / r.direction.z;
+
+    float t1 = (b.a.x - r.origin.x) * re.x;
+    float t2 = (b.b.x - r.origin.x) * re.x;
+
+    float t3 = (b.a.y - r.origin.y) * re.y;
+    float t4 = (b.b.y - r.origin.y) * re.y;
+
+    float t5 = (b.a.z - r.origin.z) * re.z;
+    float t6 = (b.b.z - r.origin.z) * re.z;
+
+    float int_min = fmaxf(fmaxf(fminf(t1, t2), fminf(t3, t4)), fminf(t5, t6));
+    float int_max = fminf(fminf(fmaxf(t1, t2), fmaxf(t3, t4)), fmaxf(t5, t6));
+
+    if (int_max < 0)
+        return 0;
+
+    if (int_min > int_max)
+        return 0;
+
+    if (hit != NULL)
+        *hit = vec3_add(r.origin, vec3_mulf(r.direction, int_max));
+
+    return 1;
 }

@@ -47,6 +47,7 @@ typedef struct {
     Vec2 lastMousePos;
     Vec2 mousePos;
     Vec3 center;
+    Vec3 focusPoint;
     float distance;
     float lastDistance;
     //
@@ -69,6 +70,7 @@ void editor_init() {
     editor->orbitingSensitivity = 0.25f;
     editor->panningSensitivity = 0.5f;
     editor->zoomingSensitivity = 0.5f;
+    editor->focusPoint = vec3_zero;
 }
 
 void save_state() {
@@ -80,6 +82,16 @@ void save_state() {
     editor->lastCamPos = camera->position;
     editor->lastCamRot = camera->rotation;
     editor->flyingSpeed = 100.0f;
+
+}
+
+void editor_focus(Vec3 pos) {
+    editor->focusPoint = pos;
+    Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
+    camera->zoom = editor->distance;
+    editor->center = editor->focusPoint;
+    camera->position = vec3_add(backward, editor->center);
+    camera_update();
 }
 
 void editor_update() {
@@ -95,15 +107,16 @@ void editor_update() {
         save_state();
         editor->mode = ORBITING;
     }
-    if (editor->mode && (input_mouseup(MOUSE_MIDDLE) || input_mouseup(MOUSE_RIGHT) || input_mouseup(MOUSE_LEFT))) {
-        editor->mode = NOT_BUSY;
-    }
     if (input_mousedown(MOUSE_RIGHT)) {
 
         save_state();
         editor->mode = FLYING;
     }
 
+
+    if (editor->mode && (input_mouseup(MOUSE_MIDDLE) || input_mouseup(MOUSE_RIGHT))) {
+        editor->mode = NOT_BUSY;
+    }
     if (editor->mode == FLYING) {
 
         float d = 0.25f;
@@ -258,7 +271,7 @@ void editor_update() {
     if (input_keydown(KEY_F)) {
         Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
         camera->zoom = editor->distance;
-        editor->center = vec3_zero;
+        editor->center = editor->focusPoint;
         camera->position = vec3_add(backward, editor->center);
         camera_update();
     }

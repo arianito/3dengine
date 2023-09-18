@@ -74,14 +74,18 @@ void draw_init() {
     for (int i = 0; i < types_n; i++) {
         glBindVertexArray(drawData->vaoIds[i]);
         glBindBuffer(GL_ARRAY_BUFFER, drawData->vboIds[i]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(drawData->vertices[i]), drawData->vertices[i], GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(drawData->vertices[i]),
+                     drawData->vertices[i], GL_DYNAMIC_DRAW);
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), BUFFER_OFFSET(0));
-        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), BUFFER_OFFSET(16));
-        glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), BUFFER_OFFSET(32));
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                              BUFFER_OFFSET(0));
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                              BUFFER_OFFSET(16));
+        glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                              BUFFER_OFFSET(32));
 
         drawData->counter[i] = 0;
     }
@@ -103,7 +107,8 @@ void draw_render() {
 
         glBindVertexArray(drawData->vaoIds[i]);
         glBindBuffer(GL_ARRAY_BUFFER, drawData->vboIds[i]);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, count * sizeof(Vertex), drawData->vertices[i]);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, count * sizeof(Vertex),
+                        drawData->vertices[i]);
         glDrawArrays(drawData->types[i], 0, count);
 
         drawData->counter[i] = 0;
@@ -171,7 +176,8 @@ void draw_bbox(BBox bbox, Color c) {
     }
 }
 
-void fill_face(Vertex *va, const Vec3 *a, const Vec3 *b, const Vec3 *c, const Vec3 *d) {
+void fill_face(Vertex *va, const Vec3 *a, const Vec3 *b, const Vec3 *c,
+               const Vec3 *d) {
 
     va->pos = *a;
     add_vertex(2, *va);
@@ -205,12 +211,12 @@ void fill_bbox(BBox bbox, Color c) {
     fill_face(&va, &vertices[0], &vertices[1], &vertices[2], &vertices[3]);
 }
 
-void draw_cube(Vec3 a, Color c, Vec3 s) {
+void draw_cube(Vec3 a, Vec3 s, Color c) {
     Vec3 size = vec3_mulf(s, 0.5f);
     draw_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
 }
 
-void draw_cubef(Vec3 a, Color c, float s) {
+void draw_cubef(Vec3 a, float s, Color c) {
     Vec3 size = vec3f(s * 0.5f);
     draw_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
 }
@@ -310,7 +316,7 @@ void fill_tetrahedron(Tetrahedron t, Color c) {
     add_vertex(2, va);
 }
 
-void draw_circleXY(Vec3 a, Color c, float r, int s) {
+void draw_circleXY(Vec3 a, float r, Color c, int s) {
     float p = 360.0f / s;
     float sp = sind(p);
     float cp = cosd(p);
@@ -336,7 +342,7 @@ void draw_circleXY(Vec3 a, Color c, float r, int s) {
     }
 }
 
-void draw_circleXZ(Vec3 a, Color c, float r, int s) {
+void draw_circleXZ(Vec3 a, float r, Color c, int s) {
     float p = 360.0f / s;
     float sp = sind(p);
     float cp = cosd(p);
@@ -362,7 +368,7 @@ void draw_circleXZ(Vec3 a, Color c, float r, int s) {
     }
 }
 
-void draw_circleYZ(Vec3 a, Color c, float r, int s) {
+void draw_circleYZ(Vec3 a, float r, Color c, int s) {
     float p = 360.0f / s;
     float sp = sind(p);
     float cp = cosd(p);
@@ -388,16 +394,16 @@ void draw_circleYZ(Vec3 a, Color c, float r, int s) {
     }
 }
 
-void draw_sphere(Vec3 a, Color c, float r, int s) {
-    draw_circleXZ(a, c, r, s);
-    draw_circleXY(a, c, r, s);
-    draw_circleYZ(a, c, r, s);
+void draw_sphere(Vec3 a, float r, Color c, int s) {
+    draw_circleXZ(a, r, c, s);
+    draw_circleXY(a, r, c, s);
+    draw_circleYZ(a, r, c, s);
 }
 
 void draw_arrow(Vec3 a, Vec3 b, Vec3 up, Color c, float p) {
     float d = vec3_dist(a, b);
     Vec3 dirX = vec3_norm(vec3_sub(b, a));
-    Vec3 dirY = vec3_cross( vec3_norm(up), dirX);
+    Vec3 dirY = vec3_cross(vec3_norm(up), dirX);
     Vec3 dirZ = vec3_cross(dirX, dirY);
     Vec3 forward = vec3_add(a, vec3_mulf(dirX, d));
     Vec3 end;
@@ -409,6 +415,11 @@ void draw_arrow(Vec3 a, Vec3 b, Vec3 up, Color c, float p) {
     t.c = vec3_add(t.c, vec3_mulf(dirZ, p * 0.25f));
     t.d = vec3_add(t.d, vec3_mulf(dirY, p * 0.25f));
     fill_tetrahedron(t, c);
+}
+
+void draw_ray(Ray r, Color c) {
+    draw_arrow(r.origin, vec3_add(r.origin, r.direction), vec3_up, c,
+               vec3_mag(r.direction) * 0.1f);
 }
 
 void draw_axis(Vec3 a, Quat q, float s) {

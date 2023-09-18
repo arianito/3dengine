@@ -115,6 +115,7 @@ public:
                validate(root->right);
 
     }
+    
     inline bool validate() {
         return validate(mRoot);
     }

@@ -28,15 +28,12 @@ extern "C"
 #include "data/BinarySearch.hpp"
 #include "data/BinarySearchTree.hpp"
 #include "data/FixedStack.hpp"
+#include "data/DrawUtils.hpp"
 
 struct GameWindow : public Object<GameWindow> {
-    using Node = BinarySearchTree<int>::Node;
-
     BinarySearchTree<int> bst{GlobalFreelistAllocator::instance()};
-    CircularQueue<Node *> queue{GlobalFreelistAllocator::instance(), 100};
 
     inline void Create() {
-
         bst.insert(12);
         bst.insert(5);
         bst.insert(15);
@@ -53,50 +50,14 @@ struct GameWindow : public Object<GameWindow> {
         bst.insert(8);
         bst.insert(14);
         bst.insert(25);
-
     }
-
-
-    inline void
-    drawTree(Vec3 pos, BinarySearchTree<int>::Node *node) {
-        if (node == nullptr)
-            return;
-
-        float hSpacing = 10,
-                vSpacing = 20;
-
-        auto xOffset = bst.width(node) * hSpacing * 0.5f;
-
-        if (node->left != nullptr) {
-            Vec3 newPos = {pos.x, pos.y + xOffset, pos.z - vSpacing};
-            drawTree(newPos, node->left);
-            draw_line(pos, newPos, color_red);
-        }
-
-        if (node->right != nullptr) {
-            Vec3 newPos = {pos.x, pos.y - xOffset, pos.z - vSpacing};
-            drawTree(newPos, node->right);
-            draw_line(pos, newPos, color_red);
-        }
-
-        draw_circleYZ(pos, color_yellow, 5.0f, 16);
-
-        debug_color(color_white);
-        debug_origin(vec2(0.5f, 0.5f));
-        debug_string3df(pos, "%d", node->value);
-    }
-
 
     inline void Update() {
-
-        if (input_keydown(KEY_SPACE)) {
-            bst.remove(17);
-        }
         debug_rotation(rot_inv(camera->rotation));
 
-        drawTree(vec3(0, 0, 100), bst.mRoot);
-        debug_origin(vec2(0,0));
+        DrawUtils::drawTree(bst, vec3(0, 0, 40), bst.mRoot);
 
+        debug_origin(vec2(0, 0));
         debug_stringf(vec2(10, 20), "%d", bst.validate());
     }
 };
