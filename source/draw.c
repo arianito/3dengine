@@ -107,7 +107,7 @@ void add_vertex(int type, Vertex v) {
     drawData->counter[type]++;
 }
 
-void draw_point(Vec3 pos, Color c, float size) {
+void draw_point(Vec3 pos, float size, Color c) {
     Vertex v;
     v.color = c;
     v.pos = pos;
@@ -149,8 +149,7 @@ void draw_bbox(BBox bbox, Color c) {
     }
 }
 
-void fill_face(Vertex *va, const Vec3 *a, const Vec3 *b, const Vec3 *c,
-               const Vec3 *d) {
+void fill_face(Vertex *va, const Vec3 *a, const Vec3 *b, const Vec3 *c, const Vec3 *d) {
 
     va->pos = *a;
     add_vertex(2, *va);
@@ -395,7 +394,7 @@ void draw_ray(Ray r, Color c) {
                vec3_mag(r.direction) * 0.1f);
 }
 
-void draw_axis(Vec3 a, Quat q, float s) {
+void draw_axis(Vec3 a, float s, Quat q) {
     Vec3 dirX = quat_forward(q);
     Vec3 dirY = quat_right(q);
     Vec3 dirZ = quat_up(q);
@@ -420,7 +419,7 @@ void draw_axis(Vec3 a, Quat q, float s) {
                s * 0.2f);
 }
 
-void draw_axisRot(Vec3 a, Rot r, float s) {
+void draw_axisRot(Vec3 a, float s, Rot r) {
     Vec3 dirX = rot_forward(r);
     Vec3 dirY = rot_right(r);
     Vec3 dirZ = rot_up(r);
@@ -443,4 +442,56 @@ void draw_axisRot(Vec3 a, Rot r, float s) {
                vec3_add(dirZ, dirY),
                color_blue,
                s * 0.2f);
+}
+
+
+void draw_frustum(Vec3 pos, Rot rt, float fov, float ratio, float nr, float fr, Color c) {
+    Mat4 view = mat4_view(pos, rt);
+    Mat4 projection = mat4_perspective(fov, game->ratio, nr, fr);
+
+    Mat4 projView = mat4_inv(mat4_mul(view, projection));
+
+    Vec3 points[8] = {{-1, -1, 0},
+                      {1,  -1, 0},
+                      {1,  1,  0},
+                      {-1, 1,  0},
+                      {-1, -1, 1},
+                      {1,  -1, 1},
+                      {1,  1,  1},
+                      {-1, 1,  1}};
+
+    for (int i = 0; i < 8; i++) {
+        Vec3 *p = &points[i];
+        Vec4 v = {p->x, p->y, p->z, 1.0f};
+        v = mat4_mulv4(projView, v);
+        p->x = v.x / v.w;
+        p->y = v.y / v.w;
+        p->z = v.z / v.w;
+    }
+
+    Vertex va;
+    va.color = color_alpha(c, 0.15f);
+    fill_face(&va, &points[0], &points[1], &points[2], &points[3]);
+
+
+    draw_line(pos, points[0], color_white);
+    draw_line(pos, points[1], color_white);
+    draw_line(pos, points[2], color_white);
+    draw_line(pos, points[3], color_white);
+
+    draw_line(points[0], points[1], color_white);
+    draw_line(points[1], points[2], color_white);
+    draw_line(points[2], points[3], color_white);
+    draw_line(points[3], points[0], color_white);
+
+    draw_line(points[4], points[5], color_white);
+    draw_line(points[5], points[6], color_white);
+    draw_line(points[6], points[7], color_white);
+    draw_line(points[7], points[4], color_white);
+
+    draw_line(points[0], points[4], color_white);
+    draw_line(points[1], points[5], color_white);
+    draw_line(points[2], points[6], color_white);
+    draw_line(points[3], points[7], color_white);
+
 }

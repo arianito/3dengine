@@ -1143,32 +1143,6 @@ static inline Quat rot_quat(Rot a) {
     return q;
 }
 
-static inline Rot rot_lookAt(Vec3 a, Vec3 b, Vec3 up) {
-
-    Vec3 forward = vec3_norm(vec3_sub(b, a));
-    Vec3 right = vec3_norm(vec3_cross(up, forward));
-    up = vec3_cross(forward, right);
-
-    Rot r;
-    r.pitch = 0;
-    r.yaw = 0;
-    r.roll = 0;
-
-    float dot = vec3_dot(forward, vec3_forward);
-
-    if (nearEq(dot, 1))
-        return r;
-
-    if (nearEq(dot, -1)) {
-        r.yaw = 180;
-        return r;
-    }
-
-    float rotAngle = acosd(-dot);
-    r.yaw = rotAngle;
-    return r;
-}
-
 // quat
 
 static inline Quat quat(float pitch, float yaw, float roll) {
@@ -1955,6 +1929,13 @@ static inline Mat4 mat4_inv(Mat4 m) {
 
     return res;
 }
+
+static inline Rot rot_lookAt(Vec3 a, Vec3 b, Vec3 up) {
+    Vec3 forward = vec3_norm(vec3_sub(b, a));
+    return mat4_rot(mat4_fromX(forward));
+}
+
+
 //
 
 static inline Transform transform(Vec3 pos, Rot r, Vec3 scale) {
@@ -1977,6 +1958,13 @@ static inline Ray ray_fromTo(Vec3 a, Vec3 b) {
     Ray r;
     r.origin = a;
     r.direction = vec3_sub(b, a);
+    return r;
+}
+
+static inline Ray ray_fromRot(Vec3 a, Rot b) {
+    Ray r;
+    r.origin = a;
+    r.direction = rot_forward(b);
     return r;
 }
 

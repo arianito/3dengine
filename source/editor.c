@@ -289,5 +289,5 @@ void editor_update() {
     debug_origin(vec2(1, 0));
     debug_stringf(pos, "%d", game->fps);
 
-    draw_axis(vec3_zero, quat_identity, 10);
+    draw_axis(vec3_zero, 10, quat_identity);
 }

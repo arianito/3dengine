@@ -10,7 +10,7 @@ void draw_render();
 
 void draw_terminate();
 
-void draw_point(Vec3 pos, Color c, float size);
+void draw_point(Vec3 pos, float size, Color c);
 
 void draw_line(Vec3 a, Vec3 b, Color c);
 
@@ -42,6 +42,8 @@ void draw_arrow(Vec3 a, Vec3 b, Vec3 up, Color c, float p);
 
 void draw_ray(Ray r, Color c);
 
-void draw_axis(Vec3 a, Quat q, float scale);
+void draw_axis(Vec3 a, float scale, Quat q);
 
-void draw_axisRot(Vec3 a, Rot r, float scale);
+void draw_axisRot(Vec3 a, float scale, Rot r);
+
+void draw_frustum(Vec3 pos, Rot rt, float fov, float ratio, float nr, float fr, Color c);
