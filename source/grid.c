@@ -131,10 +131,10 @@ void grid_render() {
     t.y = camera->position.y;
     t.z = 0;
 
-    float flt = 0.25f;
+    float flt = 0.5f;
     flt = (sind(fabsf(fmodf(camera->rotation.pitch, 180) ) )) * flt;
     if (!isOrtho) {
-        flt = flt * 0.25f + 0.25f;
+        flt = flt * 0.1f + 0.25f;
     }
     if (isOrtho && rot_nearEq(r2, r3)) {
 

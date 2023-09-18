@@ -3,28 +3,33 @@
 #include "engine/Object.hpp"
 #include "engine/Memory.hpp"
 
+static constexpr int MAX_HEAP = 1;
+static constexpr int MIN_HEAP = 2;
+
 template<typename T>
-class MinHeap {
+class Heap {
 
 public:
     Allocator *mAllocator{nullptr};
     T *mHeap{nullptr};
-    int mDefaultCapacity{16};
+    int mDefaultCapacity{8};
     int mCapacity{mDefaultCapacity};
     int mLength{0};
+    int mPolicy{MAX_HEAP};
 
-    explicit inline MinHeap(Allocator *a) : mAllocator(a) {
+    explicit inline Heap(Allocator *a, int policy) : mAllocator(a),
+                                                     mPolicy(policy) {
         mHeap = (T *) mAllocator->Alloc(mCapacity * sizeof(T));
     }
 
-    explicit inline MinHeap(const MinHeap &) = delete;
+    explicit inline Heap(const Heap &) = delete;
 
-    inline ~MinHeap() {
+    inline ~Heap() {
         mAllocator->Free((void **) &mHeap);
     }
 
     inline void expand() {
-        if (mLength * 2 < mCapacity)
+        if (mLength < mCapacity - 1)
             return;
 
         int nBytes = mCapacity * sizeof(T);
@@ -61,7 +66,9 @@ public:
         while (index > 1) {
             int parentIndex = index / 2;
 
-            if (mHeap[parentIndex - 1] <= mHeap[index - 1])
+            if ((mPolicy == MAX_HEAP) ?
+                (mHeap[parentIndex - 1] > mHeap[index - 1]) :
+                (mHeap[parentIndex - 1] < mHeap[index - 1]))
                 return;
 
             swap(parentIndex, index);
@@ -71,7 +78,7 @@ public:
     }
 
     T pop() {
-        assert(mLength > 0 && "MinHeap: is empty");
+        assert(mLength > 0 && "Heap: is empty");
 
         T root = mHeap[0];
         mHeap[0] = mHeap[--mLength];
@@ -86,16 +93,20 @@ public:
             if (leftIndex > mLength)
                 return root;
 
-            // assume left node is lesser
+            // assume left node is greater
             int next = leftIndex;
-            //  check whether right node is lesser or not
+            //  check whether right node is greater or not
             if (rightIndex <= mLength &&
-                mHeap[rightIndex - 1] < mHeap[leftIndex - 1]) {
+                ((mPolicy == MAX_HEAP) ?
+                 (mHeap[rightIndex - 1] > mHeap[leftIndex - 1]) :
+                 (mHeap[rightIndex - 1] < mHeap[leftIndex - 1]))) {
                 next = rightIndex;
             }
 
             // check if placed correctly
-            if (mHeap[index - 1] < mHeap[next - 1])
+            if ((mPolicy == MAX_HEAP) ?
+                (mHeap[index - 1] > mHeap[next - 1]) :
+                (mHeap[index - 1] < mHeap[next - 1]))
                 return root;
 
 
@@ -105,10 +116,13 @@ public:
         return root;
     }
 
-    inline bool isGreater(int index, const T &value) {
+    inline bool compare(int index, const T &value) {
         if (index > mLength)return true;
-        if (mHeap[index - 1] < value) return false;
-        return isGreater(index * 2, value) && isGreater(index * 2 + 1, value);
+        if ((mPolicy == MAX_HEAP) ?
+            (mHeap[index - 1] > value) :
+            (mHeap[index - 1] < value))
+            return false;
+        return compare(index * 2, value) && compare(index * 2 + 1, value);
     }
 
     inline bool validate(int index) {
@@ -116,7 +130,7 @@ public:
 
         return validate(index * 2) &&
                validate(index * 2 + 1) &&
-               isGreater(index * 2, mHeap[index - 1]) &&
-               isGreater(index * 2 + 1, mHeap[index - 1]);
+               compare(index * 2, mHeap[index - 1]) &&
+               compare(index * 2 + 1, mHeap[index - 1]);
     }
 };
