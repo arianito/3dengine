@@ -52,7 +52,7 @@ typedef struct {
 static InputData *globalInput;
 Input *input;
 
-void update_axis(int ax, char low, char high) {
+void update_axis(int ax, int low, int high) {
     float to = 0.0f + (low ? -1.0f : 0.0f) + (high ? 1.0f : 0.0f);
     InputAxis *axis = &(globalInput->axes[ax]);
     axis->value = moveTowards(axis->value, to, AXIS_SPEED * gameTime->deltaTime);
@@ -103,28 +103,32 @@ void input_update() {
 }
 
 void input_infinite() {
-    int pad = 10;
+    float pad = 10;
     char changed = 0;
     float width = game->width;
     float height = game->height;
     if (input->delta.x < 0 && input->position.x < pad) {
         input->position.x = width;
-        input->delta.x = clamp(input->delta.x, -1.0f, 1.0f);
+        if(input->delta.x < -(width - pad))
+            input->delta.x += width - pad;
         changed = 1;
     }
     if (input->delta.x > 0 && input->position.x > width - pad) {
         input->position.x = 0;
-        input->delta.x = clamp(input->delta.x, -1.0f, 1.0f);
+        if(input->delta.x > width - pad)
+            input->delta.x -= width - pad;
         changed = 1;
     }
     if (input->delta.y < 0 && input->position.y < pad) {
         input->position.y = height;
-        input->delta.y = clamp(input->delta.y, -1.0f, 1.0f);
+        if(input->delta.x < -(height - pad))
+            input->delta.x += height - pad;
         changed = 1;
     }
     if (input->delta.y > 0 && input->position.y > height - pad) {
         input->position.y = 0;
-        input->delta.y = clamp(input->delta.y, -1.0f, 1.0f);
+        if(input->delta.y > (height - pad))
+            input->delta.y -= (height - pad);
         changed = 1;
     }
     if (changed) {

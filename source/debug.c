@@ -42,12 +42,16 @@
 #define BUFFER_OFFSET(x) ((const void *)(x))
 
 enum {
-    max_space = 100 * KILOBYTES,
-    max_elements = 1000,
+    max_space = 10 * KILOBYTES,
+    max_elements = 2000,
 };
 
 typedef struct {
-    Transform transform;
+
+    Vec3 position;
+    Rot rotation;
+    float scale;
+
     Vec2 origin;
     Color color;
     const char *text;
@@ -55,8 +59,9 @@ typedef struct {
 } Text3DData;
 
 typedef struct {
-    Vec3 position;
+    Vec2 position;
     Vec2 origin;
+    float scale;
     Color color;
     const char *text;
 
@@ -78,6 +83,8 @@ typedef struct {
 
     Vec2 bound2d;
     Vec2 bound3d;
+    float scale;
+    Rot rotation;
     Vec2 origin;
     Color color;
 
@@ -103,6 +110,8 @@ void debug_init() {
     debugData->enabled = 1;
     debugData->origin = vec2_zero;
     debugData->color = color_white;
+    debugData->scale = 1.0f;
+    debugData->rotation = rot_zero;
     debugData->shader = shader_load("shaders/debug.vs", "shaders/debug.fs");
 
     // vao
@@ -125,15 +134,19 @@ void debug_init() {
 
         glBindVertexArray(debugData->vaoIds[1]);
         glBindBuffer(GL_ARRAY_BUFFER, debugData->vboIds[1]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
+                     GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, debugData->eboIds[1]);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+                     GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Quad), BUFFER_OFFSET(0));
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Quad), BUFFER_OFFSET(16));
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Quad),
+                              BUFFER_OFFSET(0));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Quad),
+                              BUFFER_OFFSET(16));
     }
 
     {
@@ -151,22 +164,26 @@ void debug_init() {
 
         glBindVertexArray(debugData->vaoIds[0]);
         glBindBuffer(GL_ARRAY_BUFFER, debugData->vboIds[0]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
+                     GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, debugData->eboIds[0]);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+                     GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Quad), BUFFER_OFFSET(0));
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Quad), BUFFER_OFFSET(16));
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Quad),
+                              BUFFER_OFFSET(0));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Quad),
+                              BUFFER_OFFSET(16));
     }
 
     // texture
     int width, height, nrChannels;
     char *path = resolve("fonts/consolas.png");
     unsigned char *data = stbi_load(path, &width, &height, &nrChannels, 0);
-    alloc_free(&path);
+    alloc_free((void **) &path);
     if (data == NULL) {
         printf("debug: failed to load font \n");
         debugData->enabled = 0;
@@ -179,7 +196,8 @@ void debug_init() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     stbi_image_free(data);
@@ -204,7 +222,7 @@ Vec2 calculateSpace(const char *str, Vec2 bound) {
         if (of.y > v.y)
             v.y = of.y;
     }
-    if (i > 1)
+    if (i > 0)
         v.y += bound.y;
     return v;
 }
@@ -221,7 +239,8 @@ void debug_render() {
     glBindTexture(GL_TEXTURE_2D, debugData->fontTexture[0]);
 
     if (debugData->count2d > 0) {
-        Mat4 ortho = mat4_orthographic(0, game->width, game->height, 0, -1.0f, 1.0f);
+        Mat4 ortho = mat4_orthographic(0, game->width, game->height, 0, -1.0f,
+                                       1.0f);
 
         shader_mat4(debugData->shader, "projection", &ortho);
         shader_mat4(debugData->shader, "view", &mat4_identity);
@@ -231,8 +250,10 @@ void debug_render() {
 
         for (int i = 0; i < debugData->count2d; i++) {
             Text2DData it = debugData->data2d[i];
-            Mat4 ma = mat4_mul(mat4_scalef(it.position.z), mat4_origin(vec3(it.position.x, it.position.y, 0)));
-            shader_mat4(debugData->shader, "world", &ma);
+            Mat4 mt = mat4_scalef(it.scale);
+            mt = mat4_mul(mt,
+                          mat4_origin(vec3(it.position.x, it.position.y, 0)));
+            shader_mat4(debugData->shader, "world", &mt);
             shader_vec4(debugData->shader, "color", &it.color);
 
 
@@ -261,14 +282,20 @@ void debug_render() {
         shader_mat4(debugData->shader, "projection", &camera->projection);
         shader_mat4(debugData->shader, "view", &camera->view);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                        GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         for (int i = 0; i < debugData->count3d; i++) {
             Text3DData it = debugData->data3d[i];
 
-            Mat4 m = mat4_transform(it.transform);
-            shader_mat4(debugData->shader, "world", &m);
+            Mat4 mt = mat4_scalef(it.scale);
+            if (!rot_eq(it.rotation, rot_zero))
+                mt = mat4_mul(mt, rot_matrix(it.rotation, vec3_zero));
+
+            mt = mat4_mul(mt, mat4_origin(it.position));
+
+            shader_mat4(debugData->shader, "world", &mt);
             shader_vec4(debugData->shader, "color", &it.color);
 
             Vec2 space = calculateSpace(it.text, debugData->bound3d);
@@ -315,7 +342,16 @@ void debug_color(Color color) {
     debugData->color = color;
 }
 
-void debug_string(Vec3 pos, const char *str, int n) {
+void debug_rotation(Rot rot) {
+    debugData->rotation = rot;
+
+}
+
+void debug_scale(float scale) {
+    debugData->scale = scale;
+}
+
+void debug_string(Vec2 pos, const char *str, int n) {
     if (debugData->count2d == max_elements)
         debugData->count2d = 0;
 
@@ -324,28 +360,31 @@ void debug_string(Vec3 pos, const char *str, int n) {
     Text2DData dt;
     dt.position = pos;
     dt.text = cpy;
+    dt.scale = debugData->scale;
     dt.origin = debugData->origin;
     dt.color = debugData->color;
 
     debugData->data2d[debugData->count2d++] = dt;
 }
 
-void debug_string3d(Transform t, const char *str, int n) {
+void debug_string3d(Vec3 pos, const char *str, int n) {
     if (debugData->count3d == max_elements)
         debugData->count3d = 0;
 
     char *cpy = arena_alloc(debugData->arena, n, sizeof(size_t));
     memcpy(cpy, str, n);
     Text3DData dt;
-    dt.transform = t;
+    dt.position = pos;
     dt.text = cpy;
+    dt.scale = debugData->scale;
+    dt.rotation = debugData->rotation;
     dt.origin = debugData->origin;
     dt.color = debugData->color;
 
     debugData->data3d[debugData->count3d++] = dt;
 }
 
-void debug_stringf(Vec3 pos, const char *fmt, ...) {
+void debug_stringf(Vec2 pos, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     int len = vsnprintf(NULL, 0, fmt, args);
@@ -357,11 +396,11 @@ void debug_stringf(Vec3 pos, const char *fmt, ...) {
         debug_string(pos, buffer, len + 1);
     }
 
-    alloc_free(&buffer);
+    alloc_free((void **) &buffer);
     va_end(args);
 }
 
-void debug_string3df(Transform t, const char *fmt, ...) {
+void debug_string3df(Vec3 pos, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     int len = vsnprintf(NULL, 0, fmt, args);
@@ -370,9 +409,9 @@ void debug_string3df(Transform t, const char *fmt, ...) {
     if (buffer != NULL) {
         vsnprintf(buffer, len + 1, fmt, args);
         buffer[len] = '\0';
-        debug_string3d(t, buffer, len + 1);
+        debug_string3d(pos, buffer, len + 1);
     }
 
-    alloc_free(&buffer);
+    alloc_free((void **) &buffer);
     va_end(args);
 }

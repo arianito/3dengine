@@ -268,7 +268,7 @@ void editor_update() {
         editor->mousePos.y += input->delta.y;
     }
 
-    Vec3 pos = vec3(12, 0, 1.0f);
+    Vec2 pos = vec2(12, 0);
     debug_color(color_white);
     debug_origin(vec2(0, 0));
 
