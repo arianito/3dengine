@@ -1,29 +1,5 @@
 
-/******************************************************************************
- *                                                                            *
- *  Copyright (c) 2023 Aryan Alikhani                                      *
- *  GitHub: github.com/arianito                                               *
- *  Email: alikhaniaryan@gmail.com                                            *
- *                                                                            *
- *  Permission is hereby granted, free of charge, to any person obtaining a   *
- *  copy of this software and associated documentation files (the "Software"),*
- *  to deal in the Software without restriction, including without limitation *
- *  the rights to use, copy, modify, merge, publish, distribute, sublicense,  *
- *  and/or sell copies of the Software, and to permit persons to whom the      *
- *  Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- *  The above copyright notice and this permission notice shall be included   *
- *  in all copies or substantial portions of the Software.                    *
- *                                                                            *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS   *
- *  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF                *
- *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN *
- *  NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,   *
- *  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR     *
- *  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE  *
- *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
- *                                                                            *
- *****************************************************************************/
+
 #include "input.h"
 
 #include <GLFW/glfw3.h>
@@ -109,25 +85,25 @@ void input_infinite() {
     float height = game->height;
     if (input->delta.x < 0 && input->position.x < pad) {
         input->position.x = width;
-        if(input->delta.x < -(width - pad))
+        if (input->delta.x < -(width - pad))
             input->delta.x += width - pad;
         changed = 1;
     }
     if (input->delta.x > 0 && input->position.x > width - pad) {
         input->position.x = 0;
-        if(input->delta.x > width - pad)
+        if (input->delta.x > width - pad)
             input->delta.x -= width - pad;
         changed = 1;
     }
     if (input->delta.y < 0 && input->position.y < pad) {
         input->position.y = height;
-        if(input->delta.x < -(height - pad))
+        if (input->delta.x < -(height - pad))
             input->delta.x += height - pad;
         changed = 1;
     }
     if (input->delta.y > 0 && input->position.y > height - pad) {
         input->position.y = 0;
-        if(input->delta.y > (height - pad))
+        if (input->delta.y > (height - pad))
             input->delta.y -= (height - pad);
         changed = 1;
     }

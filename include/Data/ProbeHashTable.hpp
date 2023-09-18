@@ -97,7 +97,7 @@ public:
             index = (index + 1) & (mCapacity - 1);
             i++;
         }
-        if(mProbes[index].key != key && mProbes[index].used)
+        if (mProbes[index].key != key && mProbes[index].used)
             return -1;
         return index;
     }
@@ -109,7 +109,7 @@ public:
             index = (index + 1) & (mCapacity - 1);
             i++;
         }
-        if(mProbes[index].key != key)
+        if (mProbes[index].key != key)
             return -1;
         return index;
     }
@@ -117,7 +117,7 @@ public:
     inline void set(const K &key, const V &value) {
         expand();
         int index = linearProbeSet(key);
-        if(index < 0)
+        if (index < 0)
             return;
         if (!mProbes[index].used)
             mLength++;
@@ -127,7 +127,7 @@ public:
 
     inline void remove(const K &key) {
         int index = linearProbeGet(key);
-        if(index < 0)
+        if (index < 0)
             return;
         if (mProbes[index].used && mProbes[index].key == key) {
             mProbes[index].used = false;
@@ -137,7 +137,7 @@ public:
 
     inline V &operator[](const K &key) {
         int index = linearProbeGet(key);
-        if(index < 0)
+        if (index < 0)
             return dummy.value;
         return mProbes[index].value;
     }

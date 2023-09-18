@@ -137,11 +137,11 @@ public:
         return mLength;
     }
 
-    inline Node *head()const {
+    inline Node *head() const {
         return mHead->next;
     }
 
-    inline Node *tail()const {
+    inline Node *tail() const {
         return mTail;
     }
 

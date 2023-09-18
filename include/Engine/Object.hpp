@@ -11,7 +11,7 @@ public:
     }
 
     inline void operator delete(void *ptr) {
-        if (ptr == NULL)
+        if (ptr == nullptr)
             return;
         printf("~%s\n", typeid(T).name());
         freelist_free(alloc->freelist, &ptr);

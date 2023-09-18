@@ -90,17 +90,17 @@ public:
     }
 
     inline bool isLesser(Node *root, T value) {
-        if(root == nullptr)
+        if (root == nullptr)
             return true;
-        if(root->value > value)
+        if (root->value > value)
             return false;
         return isLesser(root->left, value) && isLesser(root->right, value);
     }
 
     inline bool isGreater(Node *root, T value) {
-        if(root == nullptr)
+        if (root == nullptr)
             return true;
-        if(root->value < value)
+        if (root->value < value)
             return false;
         return isGreater(root->left, value) && isGreater(root->right, value);
     }
@@ -115,7 +115,7 @@ public:
                validate(root->right);
 
     }
-    
+
     inline bool validate() {
         return validate(mRoot);
     }

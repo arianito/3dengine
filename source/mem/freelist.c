@@ -1,28 +1,4 @@
-/******************************************************************************
- *                                                                            *
- *  Copyright (c) 2023 Aryan Alikhani                                      *
- *  GitHub: github.com/arianito                                               *
- *  Email: alikhaniaryan@gmail.com                                            *
- *                                                                            *
- *  Permission is hereby granted, free of charge, to any person obtaining a   *
- *  copy of this software and associated documentation files (the "Software"),*
- *  to deal in the Software without restriction, including without limitation *
- *  the rights to use, copy, modify, merge, publish, distribute, sublicense,  *
- *  and/or sell copies of the Software, and to permit persons to whom the      *
- *  Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- *  The above copyright notice and this permission notice shall be included   *
- *  in all copies or substantial portions of the Software.                    *
- *                                                                            *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS   *
- *  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF                *
- *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN *
- *  NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,   *
- *  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR     *
- *  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE  *
- *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
- *                                                                            *
- *****************************************************************************/
+
 #include "mem/freelist.h"
 
 #include <malloc.h>
@@ -35,8 +11,9 @@
 #define NODE_LOWER(node) ((size_t)(node) + MEMORY_SPACE_STD(FreeListMemory) - (node)->padding)
 #define NODE_HIGHER(node) ((size_t)(node) + MEMORY_SPACE_STD(FreeListMemory))
 
-void freelist_first(FreeListMemory *self, size_t size, unsigned int alignment, unsigned int *outPadding,
-                    FreeListMemory **outPrevNode, FreeListMemory **outNode) {
+void
+freelist_first(FreeListMemory *self, size_t size, unsigned int alignment, unsigned int *outPadding,
+               FreeListMemory **outPrevNode, FreeListMemory **outNode) {
     FreeListMemory
             *node = self->next,
             *prev = NULL;
@@ -55,8 +32,9 @@ void freelist_first(FreeListMemory *self, size_t size, unsigned int alignment, u
     *outPadding = padding;
 }
 
-void freelist_best(FreeListMemory *self, size_t size, unsigned int alignment, unsigned int *outPadding,
-                   FreeListMemory **outPrevNode, FreeListMemory **outNode) {
+void
+freelist_best(FreeListMemory *self, size_t size, unsigned int alignment, unsigned int *outPadding,
+              FreeListMemory **outPrevNode, FreeListMemory **outNode) {
     FreeListMemory
             *node = self->next,
             *best = NULL,
@@ -99,14 +77,16 @@ void freelist_remove(FreeListMemory *self, FreeListMemory *prevNode, FreeListMem
     prevNode->next = node->next;
 }
 
-void freelist_joinnext(FreeListMemory *self, FreeListMemory *previousNode, FreeListMemory *freeNode) {
+void
+freelist_joinnext(FreeListMemory *self, FreeListMemory *previousNode, FreeListMemory *freeNode) {
     FreeListMemory *next = (FreeListMemory *) freeNode->next;
     if (next != NULL && NODE_LOWER(freeNode) + freeNode->size == NODE_LOWER(next)) {
         freeNode->size += next->size;
         freelist_remove(self, freeNode, freeNode->next);
     }
 
-    if (previousNode != NULL && NODE_LOWER(previousNode) + previousNode->size == NODE_LOWER(freeNode)) {
+    if (previousNode != NULL &&
+        NODE_LOWER(previousNode) + previousNode->size == NODE_LOWER(freeNode)) {
         previousNode->size += freeNode->size;
         freelist_remove(self, previousNode, freeNode);
     }
@@ -195,7 +175,6 @@ unsigned char freelist_free(FreeListMemory *self, void **ptr) {
 
     if (prevNode == NULL && freeedNode == self->next) {
         size_t lower = NODE_LOWER(freeedNode);
-        size_t higher = NODE_HIGHER(freeedNode);
         void *tmp = freeedNode->next;
         size_t size = freeedNode->size;
 
@@ -257,7 +236,6 @@ FreeListMemory *make_freelist(size_t size) {
     if (m == NULL) {
         printf("freelist: make failed, system can't provide free memory\n");
         exit(EXIT_FAILURE);
-        return NULL;
     }
     return freelist_create(m, size);
 }

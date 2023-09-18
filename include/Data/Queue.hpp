@@ -52,11 +52,11 @@ public:
         return value;
     }
 
-    inline Node *head() const{
+    inline Node *head() const {
         return mHead;
     }
 
-    inline Node *tail() const{
+    inline Node *tail() const {
         return nullptr;
     }
 

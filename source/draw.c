@@ -1,43 +1,16 @@
-/******************************************************************************
- *                                                                            *
- *  Copyright (c) 2023 Aryan Alikhani                                      *
- *  GitHub: github.com/arianito                                               *
- *  Email: alikhaniaryan@gmail.com                                            *
- *                                                                            *
- *  Permission is hereby granted, free of charge, to any person obtaining a   *
- *  copy of this software and associated documentation files (the "Software"),*
- *  to deal in the Software without restriction, including without limitation *
- *  the rights to use, copy, modify, merge, publish, distribute, sublicense,  *
- *  and/or sell copies of the Software, and to permit persons to whom the      *
- *  Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- *  The above copyright notice and this permission notice shall be included   *
- *  in all copies or substantial portions of the Software.                    *
- *                                                                            *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS   *
- *  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF                *
- *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN *
- *  NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,   *
- *  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR     *
- *  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE  *
- *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
- *                                                                            *
- *****************************************************************************/
+
 #include "draw.h"
 
 #define GLFW_INCLUDE_NONE
 
-#include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
 #include "mathf.h"
 
 #include "shader.h"
 #include "camera.h"
-#include "input.h"
 
 #define BUFFER_OFFSET(x) ((const void *)(x))
-#define VERTEX_SIZE 8
 
 enum {
     types_n = 3,
@@ -47,8 +20,8 @@ enum {
 typedef struct {
     GLuint vaoIds[types_n];
     GLuint vboIds[types_n];
-    unsigned int types[types_n];
-    unsigned int counter[types_n];
+    int types[types_n];
+    int counter[types_n];
     Shader shader;
     Vertex vertices[types_n][object_count];
 } DrawData;
@@ -107,7 +80,7 @@ void draw_render() {
 
         glBindVertexArray(drawData->vaoIds[i]);
         glBindBuffer(GL_ARRAY_BUFFER, drawData->vboIds[i]);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, count * sizeof(Vertex),
+        glBufferSubData(GL_ARRAY_BUFFER, 0, count * (GLsizeiptr) sizeof(Vertex),
                         drawData->vertices[i]);
         glDrawArrays(drawData->types[i], 0, count);
 
@@ -317,7 +290,7 @@ void fill_tetrahedron(Tetrahedron t, Color c) {
 }
 
 void draw_circleXY(Vec3 a, float r, Color c, int s) {
-    float p = 360.0f / s;
+    float p = 360.0f / (float) s;
     float sp = sind(p);
     float cp = cosd(p);
     Vec3 r1 = {1.0f, 0.0f, 0.0f};
@@ -343,7 +316,7 @@ void draw_circleXY(Vec3 a, float r, Color c, int s) {
 }
 
 void draw_circleXZ(Vec3 a, float r, Color c, int s) {
-    float p = 360.0f / s;
+    float p = 360.0f / (float) s;
     float sp = sind(p);
     float cp = cosd(p);
     Vec3 r1 = {1.0f, 0.0f, 0.0f};
@@ -369,7 +342,7 @@ void draw_circleXZ(Vec3 a, float r, Color c, int s) {
 }
 
 void draw_circleYZ(Vec3 a, float r, Color c, int s) {
-    float p = 360.0f / s;
+    float p = 360.0f / (float) s;
     float sp = sind(p);
     float cp = cosd(p);
     Vec3 r1 = {0.0f, 1.0f, 0.0f};

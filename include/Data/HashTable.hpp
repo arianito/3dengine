@@ -60,7 +60,7 @@ public:
             auto it = mBuckets[i];
             while (it != nullptr) {
                 unsigned int hsh = hash(it->key, newSize);
-                Node* tmp = it;
+                Node *tmp = it;
                 it = it->next;
                 tmp->next = newList[hsh];
                 newList[hsh] = tmp;
@@ -116,7 +116,7 @@ public:
 
 
         if (prev == nullptr) {
-            Node* tmp = mBuckets[hsh];
+            Node *tmp = mBuckets[hsh];
             mBuckets[hsh] = tmp->next;
             mAllocator->Free((void **) &tmp);
             mLength--;

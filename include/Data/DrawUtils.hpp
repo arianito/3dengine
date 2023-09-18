@@ -76,18 +76,18 @@ public:
         auto total = previousPowerOfTwo(heap.mLength);
         auto current = previousPowerOfTwo(i);
 
-        int logTotal = (int)log2f((float)total);
-        int logCurrent = (int)log2f((float)current);
+        float logTotal = log2f((float) total);
+        float logCurrent = log2f((float) current);
 
-        int xOffset = hSpacing * 0.5f * (powf(2, logTotal - logCurrent));
+        float xOffset = hSpacing * 0.5f * (powf(2, logTotal - logCurrent));
 
-        if((i * 2) <= heap.mLength) {
+        if ((i * 2) <= heap.mLength) {
             Vec3 newPos = {pos.x, pos.y + xOffset, pos.z - vSpacing};
             drawHeap(heap, newPos, i * 2);
             draw_line(pos, newPos, color_red);
         }
 
-        if((i * 2 + 1) <= heap.mLength) {
+        if ((i * 2 + 1) <= heap.mLength) {
             Vec3 newPos = {pos.x, pos.y - xOffset, pos.z - vSpacing};
             drawHeap(heap, newPos, i * 2 + 1);
             draw_line(pos, newPos, color_red);

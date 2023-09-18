@@ -672,8 +672,10 @@ static unsigned char stb_easy_font_vseg[253] = {
         7,
 };
 
-static int stb_easy_font_draw_segs(float x, float y, unsigned char *segs, int num_segs, int vertical, int c, char *vbuf,
-                                   int vbuf_size, int offset) {
+static int
+stb_easy_font_draw_segs(float x, float y, unsigned char *segs, int num_segs, int vertical, int c,
+                        char *vbuf,
+                        int vbuf_size, int offset) {
     int i, j, z;
     for (i = 0; i < num_segs; ++i) {
         int len = segs[i] & 7;
@@ -710,7 +712,8 @@ static void stb_easy_font_spacing(float spacing) {
     stb_easy_font_spacing_val = spacing;
 }
 
-static int stb_easy_font_print(float x, float y, const char *text, int c, void *vertex_buffer, int vbuf_size) {
+static int
+stb_easy_font_print(float x, float y, const char *text, int c, void *vertex_buffer, int vbuf_size) {
     char *vbuf = (char *) vertex_buffer;
     float start_x = x;
     int offset = 0;
@@ -727,8 +730,10 @@ static int stb_easy_font_print(float x, float y, const char *text, int c, void *
             v_seg = stb_easy_font_charinfo[*text - 32].v_seg;
             num_h = stb_easy_font_charinfo[*text - 32 + 1].h_seg - h_seg;
             num_v = stb_easy_font_charinfo[*text - 32 + 1].v_seg - v_seg;
-            offset = stb_easy_font_draw_segs(x, y_ch, &stb_easy_font_hseg[h_seg], num_h, 0, c, vbuf, vbuf_size, offset);
-            offset = stb_easy_font_draw_segs(x, y_ch, &stb_easy_font_vseg[v_seg], num_v, 1, c, vbuf, vbuf_size, offset);
+            offset = stb_easy_font_draw_segs(x, y_ch, &stb_easy_font_hseg[h_seg], num_h, 0, c, vbuf,
+                                             vbuf_size, offset);
+            offset = stb_easy_font_draw_segs(x, y_ch, &stb_easy_font_vseg[v_seg], num_v, 1, c, vbuf,
+                                             vbuf_size, offset);
             x += advance & 15;
             x += stb_easy_font_spacing_val;
         }

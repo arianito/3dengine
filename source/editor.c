@@ -1,28 +1,4 @@
-/******************************************************************************
- *                                                                            *
- *  Copyright (c) 2023 Aryan Alikhani                                      *
- *  GitHub: github.com/arianito                                               *
- *  Email: alikhaniaryan@gmail.com                                            *
- *                                                                            *
- *  Permission is hereby granted, free of charge, to any person obtaining a   *
- *  copy of this software and associated documentation files (the "Software"),*
- *  to deal in the Software without restriction, including without limitation *
- *  the rights to use, copy, modify, merge, publish, distribute, sublicense,  *
- *  and/or sell copies of the Software, and to permit persons to whom the      *
- *  Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- *  The above copyright notice and this permission notice shall be included   *
- *  in all copies or substantial portions of the Software.                    *
- *                                                                            *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS   *
- *  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF                *
- *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN *
- *  NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,   *
- *  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR     *
- *  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE  *
- *  USE OR OTHER DEALINGS IN THE SOFTWARE.                                   *
- *                                                                            *
- *****************************************************************************/
+
 #include "editor.h"
 
 #include "camera.h"
@@ -151,7 +127,8 @@ void editor_update() {
 
         Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -editor->distance);
         camera->position = vec3_add(backward, editor->center);
-        camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+        camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT |
+                           VIEW_BOTTOM);
         camera_update();
         input_infinite();
     }
@@ -205,11 +182,13 @@ void editor_update() {
 
         if (camera->ortho & VIEW_FRONT) {
 
-            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT |
+                               VIEW_BOTTOM);
             camera->ortho |= VIEW_BACK;
             camera->rotation = rot(0, 0, 0);
         } else {
-            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT |
+                               VIEW_BOTTOM);
             camera->ortho |= VIEW_FRONT;
             camera->rotation = rot(0, 180, 0);
         }
@@ -229,11 +208,13 @@ void editor_update() {
 
         if (camera->ortho & VIEW_RIGHT) {
 
-            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT |
+                               VIEW_BOTTOM);
             camera->ortho |= VIEW_LEFT;
             camera->rotation = rot(0, 90, 0);
         } else {
-            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT |
+                               VIEW_BOTTOM);
             camera->ortho |= VIEW_RIGHT;
             camera->rotation = rot(0, -90, 0);
         }
@@ -254,11 +235,13 @@ void editor_update() {
         }
         camera->ortho |= VIEW_ORTHOGRAPHIC;
         if (camera->ortho & VIEW_TOP) {
-            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT |
+                               VIEW_BOTTOM);
             camera->ortho |= VIEW_BOTTOM;
             camera->rotation = rot(90, 0, 0);
         } else {
-            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT | VIEW_BOTTOM);
+            camera->ortho &= ~(VIEW_FRONT | VIEW_RIGHT | VIEW_TOP | VIEW_BACK | VIEW_LEFT |
+                               VIEW_BOTTOM);
             camera->ortho |= VIEW_TOP;
             camera->rotation = rot(-90, 0, 0);
         }

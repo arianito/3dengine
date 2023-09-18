@@ -15,14 +15,14 @@ public:
         T value;
     };
 private:
-    Allocator *mAllocator;
-    Node *mHead;
-    Node *mTail;
-    int mLength;
+    Allocator *mAllocator{nullptr};
+    Node *mHead{nullptr};
+    Node *mTail{nullptr};
+    int mLength{0};
 public:
     explicit inline Deque(Allocator *a) : mAllocator(a) {
-        mHead = (Node*)mAllocator->Alloc(sizeof (Node));
-        mTail = (Node*)mAllocator->Alloc(sizeof (Node));
+        mHead = (Node *) mAllocator->Alloc(sizeof(Node));
+        mTail = (Node *) mAllocator->Alloc(sizeof(Node));
         mHead->prev = nullptr;
         mHead->next = mTail;
         mTail->prev = mHead;
@@ -36,13 +36,13 @@ public:
     }
 
 
-    inline void pushBack(const T& value) {
+    inline void pushBack(const T &value) {
 
-        Node* newNode = (Node*)mAllocator->Alloc(sizeof (Node));
+        Node *newNode = (Node *) mAllocator->Alloc(sizeof(Node));
         newNode->next = mTail;
         newNode->value = value;
 
-        Node* prev = mTail->prev;
+        Node *prev = mTail->prev;
         mTail->prev = newNode;
         newNode->next = mTail;
         newNode->prev = prev;
@@ -51,13 +51,13 @@ public:
 
     }
 
-    inline void pushFront(const T& value) {
+    inline void pushFront(const T &value) {
 
-        Node* newNode = (Node*)mAllocator->Alloc(sizeof (Node));
+        Node *newNode = (Node *) mAllocator->Alloc(sizeof(Node));
         newNode->next = mTail;
         newNode->value = value;
 
-        Node* next = mHead->next;
+        Node *next = mHead->next;
 
         mHead->next = newNode;
         newNode->next = next;
@@ -68,48 +68,48 @@ public:
 
     inline T popFront() {
         assert(mHead->next != mTail && mTail->prev != mHead && "Deque: is empty");
-        Node* node = mHead->next;
+        Node *node = mHead->next;
 
         mHead->next = node->next;
         node->next->prev = mHead;
 
         T value = node->value;
-        mAllocator->Free((void**) &node);
+        mAllocator->Free((void **) &node);
         mLength--;
         return value;
     }
 
     inline T popBack() {
         assert(mHead->next != mTail && mTail->prev != mHead && "Deque: is empty");
-        Node* node = mTail->prev;
+        Node *node = mTail->prev;
 
         mTail->prev = node->prev;
         node->prev->next = mTail;
 
         T value = node->value;
-        mAllocator->Free((void**) &node);
+        mAllocator->Free((void **) &node);
         mLength--;
         return value;
     }
 
-    inline Node* head() const {
+    inline Node *head() const {
         return mHead->next;
     }
 
-    inline Node* tail() const {
+    inline Node *tail() const {
         return mTail;
     }
 
-    inline const int& size() {
+    inline const int &size() {
         return mLength;
     }
 
     inline void clear() {
-        Node* it = mHead->next;
-        while(it != mTail) {
-            Node* tmp = it;
+        Node *it = mHead->next;
+        while (it != mTail) {
+            Node *tmp = it;
             it = it->next;
-            mAllocator->Free((void**) &tmp);
+            mAllocator->Free((void **) &tmp);
         }
         mHead->next = mTail;
         mTail->prev = mHead;

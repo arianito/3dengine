@@ -73,17 +73,14 @@ SlabMemory *make_slab(unsigned int slabSize, unsigned short objectSize) {
     if (slabSize % objectSize != 0) {
         printf("slab: make failed, invalid chunk size\n");
         exit(EXIT_FAILURE);
-        return NULL;
     }
 
     void *m = malloc(sizeof(SlabMemory));
     if (m == NULL) {
         printf("slab: make failed, system can't provide free memory\n");
         exit(EXIT_FAILURE);
-        return NULL;
     }
     const size_t start = (size_t) m;
-    const unsigned int space = MEMORY_SPACE_STD(SlabMemory);
     const unsigned int padding = MEMORY_PADDING_STD(start);
 
     SlabMemory *self = (SlabMemory *) (start + padding);
