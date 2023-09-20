@@ -1,5 +1,7 @@
 #pragma once
 
+#include <typeinfo>
+
 #include "mem/alloc.h"
 
 template<class T>

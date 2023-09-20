@@ -5,7 +5,7 @@
 #include "engine/Object.hpp"
 
 template<typename T>
-class FixedStack : public Object<FixedStack<T>> {
+class FixedStack {
 public:
     Allocator *mAllocator;
     T *mStack{nullptr};

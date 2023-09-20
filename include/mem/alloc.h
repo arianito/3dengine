@@ -14,6 +14,7 @@ typedef struct {
     size_t global;
     size_t stack;
     size_t freelist;
+    size_t string;
 } MemoryMetadata;
 
 typedef struct {
@@ -21,6 +22,7 @@ typedef struct {
     ArenaMemory *global;
     StackMemory *stack;
     FreeListMemory *freelist;
+    FreeListMemory *string;
 } MemoryLayout;
 
 extern MemoryLayout *alloc;

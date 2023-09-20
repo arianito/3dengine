@@ -17,7 +17,7 @@ This project includes a highly optimized 3D math library that leverages SIMD (Si
 
 ### Debug Drawing Utilities
 
-Debugging complex applications can be challenging. To ease the process, we've integrated a set of debug drawing utilities into this project. These utilities allow you to visualize important information, such as bounding boxes, collision shapes, or even custom debug information directly in your application's rendering context.
+Debugging complex applications can be challenging. To ease the process, we've integrated a Set of debug drawing utilities into this project. These utilities allow you to visualize important information, such as bounding boxes, collision shapes, or even custom debug information directly in your application's rendering context.
 
 ### Custom Memory Allocator
 

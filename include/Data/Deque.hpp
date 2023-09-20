@@ -7,7 +7,7 @@
 
 
 template<typename T>
-class Deque : public Object<Deque<T>> {
+class Deque {
 public:
     struct Node {
         Node *next;

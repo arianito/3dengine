@@ -1,0 +1,167 @@
+#pragma once
+
+#include "mathf.h"
+#include "debug.h"
+#include "engine/Level.hpp"
+#include "engine/Component.hpp"
+#include "engine/Memory.hpp"
+
+
+struct MovementComponent : public Component {
+    float mSpeed;
+
+    explicit inline MovementComponent(float speed) : mSpeed(speed) {}
+};
+
+struct ShooterComponent : public Component {
+    float mRate{0.05f};
+    float mSpeed{100.0f};
+    float mLastShoot{0};
+
+    ShooterComponent(float rate, float speed) : mRate(rate), mSpeed(speed) {}
+};
+
+struct ShapeComponent : public Component {
+    int mType = 0;
+
+    explicit inline ShapeComponent(int type) : mType(type) {}
+};
+
+struct ProjectileComponent : public Component {
+    Vec3 mInitialPosition;
+    float mSpeed;
+
+    explicit inline ProjectileComponent(Vec3 pos, float speed) :
+            mInitialPosition(pos),
+            mSpeed(speed) {}
+};
+
+struct TransformComponent : public Component {
+    Vec3 mPosition;
+    Rot mRotation;
+
+    explicit inline TransformComponent(Vec3 pos, Rot rot) :
+            mPosition(pos),
+            mRotation(rot) {}
+};
+
+
+struct ProjectileSystem : public System<ProjectileComponent, TransformComponent> {
+    void Update() override {
+        for (auto &compTuple: GetComponents()) {
+            TransformComponent *pTransform = std::get<TransformComponent *>(compTuple);
+            ProjectileComponent *pProjectile = std::get<ProjectileComponent *>(compTuple);
+            Vec3 fwd = rot_forward(pTransform->mRotation);
+            fwd = vec3_mulf(fwd, pProjectile->mSpeed * gameTime->deltaTime);
+            pTransform->mPosition = vec3_add(pTransform->mPosition, fwd);
+            auto d = vec3_dist(pTransform->mPosition, pProjectile->mInitialPosition);
+            if (d > 400.0f)
+                GetDirector()->DestroyEntity(pProjectile->GetEntityId());
+        }
+    }
+};
+
+
+struct MovementSystem : public System<MovementComponent, TransformComponent> {
+    inline void Update() override {
+        auto vertical = input_axis(AXIS_VERTICAL);
+        auto horizontal = input_axis(AXIS_HORIZONTAL);
+        for (const auto &bucket: GetComponents()) {
+            auto pTransform = std::get<TransformComponent *>(bucket);
+            auto pMovement = std::get<MovementComponent *>(bucket);
+            pTransform->mRotation.yaw += horizontal;
+            Vec3 fwd = vec3_mulf(rot_forward(pTransform->mRotation),
+                                 vertical * pMovement->mSpeed * gameTime->deltaTime);
+            pTransform->mPosition = vec3_add(pTransform->mPosition, fwd);
+        }
+    }
+};
+
+
+struct ShooterSystem : public System<ShooterComponent, TransformComponent> {
+
+    void Update() override {
+        auto down = input_keypress(KEY_SPACE);
+
+        for (auto &components: GetComponents()) {
+
+
+            ShooterComponent *pShooter = std::get<ShooterComponent *>(components);
+            TransformComponent *pTransform = std::get<TransformComponent *>(components);
+
+            if (down && (gameTime->time - pShooter->mLastShoot > pShooter->mRate)) {
+                auto director = GetDirector();
+                auto entityId = director->CreateEntity();
+                director->AddComponent<TransformComponent>(entityId, pTransform->mPosition,
+                                                           pTransform->mRotation);
+
+                director->AddComponent<ProjectileComponent>(entityId, pTransform->mPosition,
+                                                            gameTime->deltaTime * pShooter->mSpeed);
+                director->AddComponent<ShapeComponent>(entityId, 0);
+                director->Commit(entityId);
+
+                pShooter->mLastShoot = gameTime->time;
+            }
+        }
+
+    }
+};
+
+struct RenderSystem : public System<ShapeComponent, TransformComponent> {
+    inline void Update() override {
+        for (const auto &bucket: GetComponents()) {
+            auto pShape = std::get<ShapeComponent *>(bucket);
+            auto pTransform = std::get<TransformComponent *>(bucket);
+
+            if (pShape->mType == 0) {
+                draw_sphere(pTransform->mPosition, 20, color_red, 16);
+                draw_ray(ray_scale(ray_fromRot(pTransform->mPosition, pTransform->mRotation), 20),
+                         color_red);
+            } else if (pShape->mType == 1) {
+                draw_cubef(pTransform->mPosition, 20, color_red);
+                draw_ray(ray_scale(ray_fromRot(pTransform->mPosition, pTransform->mRotation), 20),
+                         color_red);
+            } else if (pShape->mType == 2) {
+                draw_cubef(pTransform->mPosition, 5, color_red);
+                draw_ray(ray_scale(ray_fromRot(pTransform->mPosition, pTransform->mRotation), 20),
+                         color_red);
+            }
+
+        }
+    }
+};
+
+class StartLevel : public Level {
+public:
+    Director *mDirector{nullptr};
+
+    inline void Create() override {
+        mDirector = AllocNew<FreeListMemory, Director>();
+//        mDirector->AddSystem<MovementSystem>();
+        mDirector->AddSystem<RenderSystem>();
+//        mDirector->AddSystem<ShooterSystem>();
+//        mDirector->AddSystem<ProjectileSystem>();
+
+        auto entity = mDirector->CreateEntity();
+
+//        mDirector->AddComponent<MovementComponent>(entity, 20.0f);
+        mDirector->AddComponent<TransformComponent>(entity, vec3_zero, rot_zero);
+//        mDirector->AddComponent<ShooterComponent>(entity, 2.0f, 30000.0f);
+        mDirector->AddComponent<ShapeComponent>(entity, 0);
+        mDirector->Commit(entity);
+
+
+        mDirector->Create();
+    }
+
+    inline void Update() override {
+        debug_origin(vec2_zero);
+        debug_string3df(vec3_zero, "hello level debug");
+
+        mDirector->Update();
+    }
+
+    inline void Destroy() override {
+        Free<FreeListMemory>((void **) &mDirector);
+    }
+};

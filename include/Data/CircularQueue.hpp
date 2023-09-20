@@ -6,7 +6,7 @@
 #include "engine/Memory.hpp"
 
 template<typename T>
-class CircularQueue : public Object<CircularQueue<T>> {
+class CircularQueue {
 private:
     Allocator *mAllocator{nullptr};
 public:

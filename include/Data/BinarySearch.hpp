@@ -2,12 +2,10 @@
 
 
 template<typename T>
-void swap(T *a, T *b) {
+void swap(T &a, T &b) {
     if (a == b)
         return;
-    T tmp = *a;
-    *a = *b;
-    *b = tmp;
+    std::swap(a, b);
 }
 
 
@@ -18,11 +16,11 @@ inline void SortUp(T arr[], int a, int b) {
 
     int i = a;
     int j = a - 1;
-    T key = arr[b];
+    T &key = arr[b];
     for (; i < b; i++)
         if (key > arr[i])
-            swap<T>(&arr[i], &arr[++j]);
-    swap<T>(&arr[b], &arr[++j]);
+            swap<T>(arr[i], arr[++j]);
+    swap<T>(arr[b], arr[++j]);
 
     SortUp<T>(arr, a, j - 1);
     SortUp<T>(arr, j + 1, b);
@@ -39,13 +37,11 @@ BinarySearch(T searchItem, T arr[], int a, int b) {
     if (arr[midpoint] == searchItem)
         return midpoint;
 
-    if (searchItem > arr[midpoint]) {
+    if (searchItem > arr[midpoint])
         return BinarySearch(searchItem, arr, midpoint + 1, b);
-    }
 
-    if (searchItem < arr[midpoint]) {
+    if (searchItem < arr[midpoint])
         return BinarySearch(searchItem, arr, a, midpoint - 1);
-    }
 
     return -1;
 }

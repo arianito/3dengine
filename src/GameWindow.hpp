@@ -2,25 +2,22 @@
 
 #include <memory>
 
-extern "C"
-{
-#include "draw.h"
-#include "game.h"
-#include "mathf.h"
-#include "mem/freelist.h"
-#include "mem/utils.h"
-}
 
-#include "engine/Object.hpp"
-#include "data/Heap.hpp"
-#include "data/ProbeHashTable.hpp"
-#include "data/DrawUtils.hpp"
+#include "engine/LevelManager.hpp"
+#include "./StartLevel.hpp"
 
-struct GameWindow : public Object<GameWindow> {
+
+struct GameWindow {
+    LevelManager<> manager;
+    String str1 = "hello";
 
     inline void Create() {
+        manager.Add<StartLevel>("start");
+
+        manager.Load("start");
     }
 
     inline void Update() {
+        manager.Update();
     }
 };

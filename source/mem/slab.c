@@ -69,15 +69,9 @@ void free_slab(SlabPage *slab) {
     free((void *) (op));
 }
 
-SlabMemory *make_slab(unsigned int slabSize, unsigned short objectSize) {
+SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSize) {
     if (slabSize % objectSize != 0) {
-        printf("slab: make failed, invalid chunk size\n");
-        exit(EXIT_FAILURE);
-    }
-
-    void *m = malloc(sizeof(SlabMemory));
-    if (m == NULL) {
-        printf("slab: make failed, system can't provide free memory\n");
+        printf("slab: create failed, invalid chunk size\n");
         exit(EXIT_FAILURE);
     }
     const size_t start = (size_t) m;
@@ -93,6 +87,15 @@ SlabMemory *make_slab(unsigned int slabSize, unsigned short objectSize) {
     self->slabSize = slabSize;
     self->objectSize = objectSize;
     return self;
+}
+
+SlabMemory *make_slab(unsigned int slabSize, unsigned short objectSize) {
+    void *m = malloc(sizeof(SlabMemory));
+    if (m == NULL) {
+        printf("slab: make failed, system can't provide free memory\n");
+        exit(EXIT_FAILURE);
+    }
+    return slab_create(m, slabSize, objectSize);
 }
 
 void slab_destroy(SlabMemory **self) {

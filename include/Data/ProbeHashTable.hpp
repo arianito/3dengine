@@ -1,69 +1,75 @@
 #pragma once
 
 #include <cassert>
+#include <cstring>
+#include <utility>
 
-#include "engine/Object.hpp"
+#include "data/String.hpp"
 #include "engine/Memory.hpp"
 
-template<typename K, typename V>
-class ProbeHashTable : public Object<ProbeHashTable<K, V>> {
-public:
+template<typename K, typename V, class TAlloc = FreeListMemory>
+class ProbeHashTable {
+private:
     struct Node {
         K key;
         V value;
         bool used;
     };
-public:
+
+private:
     static constexpr size_t mPrimeA{492366587};
     static constexpr size_t mPrimeB{1645333507};
     static constexpr size_t mPrimeC{6692367337};
-    Allocator *mAllocator{nullptr};
     Node *mProbes{nullptr};
-    unsigned int mDefaultStart{8};
-    unsigned int mCapacity{mDefaultStart};
-    unsigned int mLength{0};
-    Node dummy;
+    int mDefaultStart{8};
+    int mCapacity{mDefaultStart};
+    int mLength{0};
+
 public:
-    explicit inline ProbeHashTable(Allocator *a) : mAllocator(a) {
-        unsigned int nBytes = mCapacity * sizeof(Node);
-        mProbes = (Node *) mAllocator->Alloc(nBytes);
-        memset(mProbes, 0, nBytes);
-    }
 
-    explicit inline ProbeHashTable(const ProbeHashTable &) = delete;
+    class Iterator {
+    private:
+        Node *mCurrent;
+        Node *mEnd;
 
-    inline ~ProbeHashTable() {
-        mAllocator->Free((void **) &mProbes);
-    }
-
-    inline void reserve(int newCapacity) {
-        unsigned int nBytes = newCapacity * sizeof(Node);
-
-        Node *newList = (Node *) mAllocator->Alloc(nBytes);
-        memset(newList, 0, nBytes);
-
-
-        for (int i = 0; i < mCapacity; i++) {
-            if (mProbes[i].used) {
-                Node probe = mProbes[i];
-                unsigned int index = hash(probe.key, newCapacity);
-                while (newList[index].used && newList[index].key != probe.key) {
-                    index = (index + 1) % newCapacity;
-                }
-                newList[index] = {probe.key, probe.value, probe.used};
+    public:
+        explicit inline Iterator(Node *current, Node *end) : mCurrent(current), mEnd(end) {
+            while (mCurrent != mEnd && !mCurrent->used) {
+                mCurrent++;
             }
         }
 
-        mAllocator->Free((void **) &mProbes);
-        mProbes = newList;
-        mCapacity = newCapacity;
+        inline Iterator &operator++() {
+            ++mCurrent;
+            while (mCurrent != mEnd && !mCurrent->used) {
+                ++mCurrent;
+            }
+            return *this;
+        }
+
+        inline bool operator!=(const Iterator &other) const {
+            return mCurrent != other.mEnd;
+        }
+
+        inline std::pair<const K &, const V &> operator*() const {
+            return {mCurrent->key, mCurrent->value};
+        }
+    };
+
+    Iterator begin() {
+        return Iterator(mProbes, mProbes + mCapacity);
     }
 
+    Iterator end() {
+        return Iterator(mProbes + mCapacity, mProbes + mCapacity);
+    }
+
+private:
     inline void expand() {
         float ratio = (float) mLength / mCapacity;
-        if (ratio < 0.75f)
+        if (ratio < 0.618f)
             return;
-        reserve(mCapacity << 1);
+        Reserve(mCapacity * 1.618f);
     }
 
     inline unsigned int hash(const K &key, unsigned int size) {
@@ -80,6 +86,13 @@ public:
                 for (int i = 0; i < sz; i++) {
                     hsh = (hsh << 5) + (*kw++);
                 }
+            }
+        } else if constexpr (std::is_same_v<K, String>) {
+            auto keyO = (String) key;
+            unsigned int sz = keyO.Length();
+            const char *kw = keyO.Str();
+            for (int i = 0; i < sz; i++) {
+                hsh = (hsh << 5) + (*kw++);
             }
         } else {
             unsigned int sz = sizeof(key);
@@ -115,43 +128,93 @@ public:
         return index;
     }
 
-    inline void set(const K &key, const V &value) {
+public:
+    explicit inline ProbeHashTable() {
+        mProbes = Alloc<TAlloc, Node, true>(mCapacity);
+    }
+
+    explicit inline ProbeHashTable(const ProbeHashTable &) = delete;
+
+    inline ~ProbeHashTable() {
+        Free<TAlloc>((void **) &mProbes);
+    }
+
+    inline void Reserve(int newCapacity) {
+        if (newCapacity < mLength)
+            return;
+
+        Node *newList = Alloc<TAlloc, Node, true>(newCapacity);
+
+        for (int i = 0; i < mCapacity; i++) {
+            if (mProbes[i].used) {
+                Node &probe = mProbes[i];
+                unsigned int index = hash(probe.key, newCapacity);
+                while (newList[index].used && newList[index].key != probe.key) {
+                    index = (index + 1) % newCapacity;
+                }
+                Node &newNode = newList[index];
+                newNode.key = probe.key;
+                newNode.value = probe.value;
+                newNode.used = probe.used;
+            }
+        }
+
+        Free<TAlloc>((void **) &mProbes);
+        mProbes = newList;
+        mCapacity = newCapacity;
+    }
+
+
+    inline bool Set(const K &key, const V &value) {
         expand();
         int index = linearProbeSet(key);
         if (index < 0)
-            return;
-        if (!mProbes[index].used)
-            mLength++;
-        mProbes[index] = {key, value, true};
+            return false;
 
+        auto &node = mProbes[index];
+
+        if (!node.used)
+            mLength++;
+
+        node.key = key;
+        node.value = value;
+        node.used = true;
+        return true;
     }
 
-    inline void remove(const K &key) {
+    [[maybe_unused]] inline V &Remove(const K &key) {
         int index = linearProbeGet(key);
-        if (index < 0)
-            return;
+        assert(index >= 0 && "ProbeHashTable: key not found");
         if (mProbes[index].used && mProbes[index].key == key) {
             mProbes[index].used = false;
             mLength--;
         }
+        return mProbes[index].value;
+    }
+
+    inline bool Contains(const K &key) {
+        int index = linearProbeGet(key);
+        auto &probe = mProbes[index];
+        return index >= 0 && probe.used;
     }
 
     inline V &operator[](const K &key) {
         int index = linearProbeGet(key);
-        if (index < 0)
-            return dummy.value;
-        return mProbes[index].value;
+        auto &probe = mProbes[index];
+        assert((index >= 0 && probe.used) && "ProbeHashTable: not found");
+        return probe.value;
     }
 
-    inline unsigned int &size() {
+    inline const int &Capacity() {
+        return mCapacity;
+    }
+
+    inline const int &Length() {
         return mLength;
     }
 
-    inline void clear() {
-        mAllocator->Free((void **) &mProbes);
-        mCapacity = mDefaultStart;
+    [[maybe_unused]] inline void Clear() {
         unsigned int nBytes = mCapacity * sizeof(Node);
-        mProbes = (Node *) mAllocator->Alloc(nBytes);
         memset(mProbes, 0, nBytes);
         mLength = 0;
     }

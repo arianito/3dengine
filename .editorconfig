@@ -1,4 +1,4 @@
 [*.{h,hpp,c,cpp}]
 indent_size = 2
 indent_style = space
-max_line_length = 100
+max_line_length = 160

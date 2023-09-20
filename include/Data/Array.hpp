@@ -1,75 +1,99 @@
 #pragma once
 
-#include <type_traits>
-#include <cstddef>
-#include <cstring>
+#include <utility>
 #include <cassert>
-#include <memory>
-#include <type_traits>
-#include "engine/Memory.hpp"
-#include "engine/Object.hpp"
 
-template<typename T>
-class Array : public Object<Array<T>> {
+#include "engine/Memory.hpp"
+
+template<typename T, class TAlloc = FreeListMemory>
+class Array {
 private:
     T *mList;
-    Allocator *mAllocator{nullptr};
-    int mCapacity{2};
-    int mDefaultCapacity{2};
+    int mCapacity{8};
     int mLength{0};
+public:
+
+    class Iterator {
+    private:
+        T *ptr;
+
+    public:
+        explicit inline Iterator(T *ptr) : ptr(ptr) {}
+
+        inline Iterator &operator++() {
+            ptr++;
+            return *this;
+        }
+
+        inline bool operator!=(const Iterator &other) const {
+            return ptr != other.ptr;
+        }
+
+        inline const T &operator*() const {
+            return *ptr;
+        }
+    };
+
+    Iterator begin() {
+        return Iterator(mList);
+    }
+
+    Iterator end() {
+        return Iterator(mList + mLength);
+    }
+
 private:
 
     inline void reserve(int newCapacity) {
-        int newBytes = newCapacity * sizeof(T);
+        if (newCapacity < mLength)
+            return;
+
         int nBytes = mLength * sizeof(T);
 
-        T *newList = (T *) mAllocator->Alloc(newBytes);
+        T *newList = Alloc<TAlloc, T>(newCapacity);
         assert(newList != nullptr && "Array: Insufficient memory.\n");
+
         memcpy(newList, mList, nBytes);
-        mAllocator->Free((void **) (&mList));
+        Free<TAlloc>((void **) &mList);
+
         mList = newList;
         mCapacity = newCapacity;
     }
 
     inline void expand() {
-        if (mLength < mCapacity)
+        if (mLength * 2 < mCapacity)
             return;
-
-        reserve(mCapacity << 1);
-
+        reserve(mCapacity * 1.618f);
     }
 
     inline void shrink() {
         if (mLength * 4 > mCapacity)
             return;
-        reserve(mCapacity >> 1);
+        reserve(mCapacity * 0.618f);
     }
 
 public:
-    inline Array(Allocator *a, int capacity) :
-            mCapacity(capacity),
-            mAllocator(a),
-            mLength(0),
-            mDefaultCapacity(capacity) {
-        size_t size = mCapacity * sizeof(T);
-        mList = (T *) mAllocator->Alloc(size);
-        memset(mList, 0, size);
-    }
+    explicit inline Array() : Array(8) {}
 
-    explicit inline Array(Allocator *a) : Array(a, 2) {}
+    inline Array(int capacity) : mCapacity(capacity), mLength(0) {
+        mList = Alloc<TAlloc, T>(mCapacity);
+    }
 
     explicit inline Array(const Array &) = delete;
 
     inline ~Array() {
-        mAllocator->Free((void **) (&mList));
+        Free<TAlloc>((void **) (&mList));
     }
 
-    inline void clear() {
+    inline void Clear() {
         mLength = 0;
-        reserve(mDefaultCapacity);
     }
 
-    inline void removeAt(int index) {
+    inline void Fit() {
+        reserve(mLength);
+    }
+
+    inline void Remove(int index) {
         assert(index >= 0 && index < mLength && "Array: Index out of range.\n");
         shrink();
         for (int i = index; i < mLength - 1; i++)
@@ -77,7 +101,7 @@ public:
         mLength--;
     }
 
-    inline void remove(const T &item) {
+    inline void Remove(const T &item) {
         int j = 0;
         for (int i = 0; i < mLength; i++) {
             if (mList[i + j] == item)
@@ -88,17 +112,19 @@ public:
         mLength -= j;
     }
 
-    inline void push(const T &element) {
-        insert(element, mLength);
+    inline T Pop() {
+        assert(mLength > 0 && "Array: is empty.\n");
+        shrink();
+        mLength--;
+        return mList[mLength];
     }
 
-    inline void prepend(const T &element) {
-        insert(element, 0);
+    inline void Add(const T &element) {
+        Insert(element, mLength);
     }
 
-    inline void insert(const T &element, int index) {
-        assert(index >= 0 && index <= mLength &&
-               "Array: Index out of range.\n");
+    inline void Insert(const T &element, int index) {
+        assert(index >= 0 && index <= mLength && "Array: Index out of range.\n");
         expand();
 
         for (int i = mLength; i > index; i--)
@@ -113,7 +139,7 @@ public:
         return mList[index];
     }
 
-    inline int find(const T &obj) {
+    inline int Find(const T &obj) {
         for (int i = 0; i < mLength; i++) {
             if (mList[i] == obj)
                 return i;
@@ -121,15 +147,15 @@ public:
         return -1;
     }
 
-    inline bool isEmpty() {
+    inline bool Empty() {
         return mLength == 0;
     }
 
-    inline const int &size() {
+    inline const int &Length() {
         return mLength;
     }
 
-    inline const int &capacity() {
+    inline const int &Capacity() {
         return mCapacity;
     }
 };

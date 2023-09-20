@@ -5,7 +5,7 @@
 
 
 template<typename T>
-class DoublyLinkedList : public Object<DoublyLinkedList<T>> {
+class DoublyLinkedList {
 public:
     struct Node {
         Node *next;

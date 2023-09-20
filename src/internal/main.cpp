@@ -1,6 +1,7 @@
 
-extern "C"
-{
+#include <memory>
+
+extern "C" {
 #include "mem/alloc.h"
 #include "game.h"
 #include "draw.h"
@@ -12,14 +13,14 @@ extern "C"
 #include "file.h"
 }
 
-#include <memory>
 #include "../GameWindow.hpp"
 
 int main(int argc, const char *argv[]) {
     MemoryMetadata meta;
     meta.global = 64 * MEGABYTES;
     meta.stack = 1 * MEGABYTES;
-    meta.freelist = 32 * MEGABYTES;
+    meta.freelist = 10 * MEGABYTES;
+    meta.string = 1 * MEGABYTES;
     alloc_create(meta);
 
     file_init("../assets/");
@@ -33,14 +34,14 @@ int main(int argc, const char *argv[]) {
     alloc_debug();
 
     {
-        auto window = std::make_unique<GameWindow>();
+        GameWindow window;
 
-        window->Create();
+        window.Create();
 
         while (game_loop()) {
             editor_update();
 
-            window->Update();
+            window.Update();
 
             input_update();
             draw_render();
@@ -49,7 +50,6 @@ int main(int argc, const char *argv[]) {
         }
     }
 
-    alloc_debug();
     debug_terminate();
     grid_terminate();
     draw_terminate();

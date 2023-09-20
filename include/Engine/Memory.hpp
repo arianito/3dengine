@@ -1,77 +1,57 @@
 #pragma once
 
-#include "mem/freelist.h"
+#include <type_traits>
+#include <cassert>
+#include <cstring>
+#include <utility>
+
+extern "C" {
 #include "mem/alloc.h"
-#include "engine/Object.hpp"
+#include "mem/freelist.h"
+#include "mem/stack.h"
+#include "mem/arena.h"
+}
 
-class Allocator : public Object<Allocator> {
-public:
-    virtual void *Alloc(size_t size) = 0;
+template<class T, bool Clean = false>
+inline void *Alloc(size_t size = -1, unsigned int alignment = sizeof(size_t)) {
+    void *m = nullptr;
 
-    virtual void Free(void **ptr) = 0;
-
-    virtual void Reset() = 0;
-};
-
-class GlobalArenaAllocator : public Allocator {
-
-public:
-    inline void *Alloc(size_t size) override {
-        return alloc_global(void, size);
+    if constexpr (std::is_same_v<T, FreeListMemory>) {
+        assert(size > 0 && "Alloc<FreeListMemory>: size must be greater than zero. ");
+        m = freelist_alloc(alloc->freelist, size, alignment);
+    } else if constexpr (std::is_same_v<T, StackMemory>) {
+        assert(size > 0 && "Alloc<StackMemory>: size must be greater than zero. ");
+        m = stack_alloc(alloc->stack, size, alignment);
+    } else if constexpr (std::is_same_v<T, ArenaMemory>) {
+        assert(size > 0 && "Alloc<ArenaMemory>: size must be greater than zero. ");
+        m = arena_alloc(alloc->global, size, alignment);
     }
 
-    inline void Free(void **ptr) override {
-    }
+    assert(m && "Alloc: allocator class not specified. ");
+    if constexpr (Clean) memset(m, 0, size);
+    return m;
+}
 
-    inline void Reset() override {
-    }
+template<class T, typename C, bool Clean = false>
+inline C *Alloc(unsigned int length = 1, unsigned int alignment = sizeof(size_t)) {
+    return (C *) Alloc<T, Clean>(length * sizeof(C), alignment);
+}
 
-    static Allocator *instance() {
-        static Allocator *mInstance = nullptr;
-        if (mInstance == nullptr)
-            mInstance = new GlobalArenaAllocator();
-        return mInstance;
-    }
-};
+template<class T, typename C, typename ...Args>
+inline C *AllocNew(Args &&...args) {
+    return new(Alloc<T, C>()) C(std::forward<Args>(args)...);
+}
 
-class GlobalStackAllocator : public Allocator {
-public:
-    inline void *Alloc(size_t size) override {
-        return alloc_stack(void, size);
-    }
-
-    inline void Free(void **ptr) override {
-        alloc_free(ptr);
-    }
-
-    inline void Reset() override {
-    }
-
-    static Allocator *instance() {
-        static Allocator *mInstance = nullptr;
-        if (mInstance == nullptr)
-            mInstance = new GlobalStackAllocator();
-        return mInstance;
-    }
-};
-
-class GlobalFreelistAllocator : public Allocator {
-public:
-    inline void *Alloc(size_t size) override {
-        return freelist_alloc(alloc->freelist, size, sizeof(size_t));
-    }
-
-    inline void Free(void **ptr) override {
+template<class T>
+inline void Free(void **ptr) {
+    if constexpr (std::is_same_v<T, FreeListMemory>) {
         freelist_free(alloc->freelist, ptr);
+        return;
+    } else if constexpr (std::is_same_v<T, StackMemory>) {
+        stack_free(alloc->stack, ptr);
+        return;
+    } else if constexpr (std::is_same_v<T, ArenaMemory>) {
+        return;
     }
-
-    inline void Reset() override {
-    }
-
-    static Allocator *instance() {
-        static Allocator *mInstance = nullptr;
-        if (mInstance == nullptr)
-            mInstance = new GlobalFreelistAllocator();
-        return mInstance;
-    }
-};
+    assert(0 && "Free: allocator class not specified. ");
+}

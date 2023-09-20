@@ -5,7 +5,7 @@
 #include "engine/Object.hpp"
 
 template<typename T>
-class Queue : public Object<Queue<T>> {
+class Queue {
 public:
     struct Node {
         Node *next;

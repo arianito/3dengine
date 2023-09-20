@@ -5,7 +5,7 @@
 #include "engine/Object.hpp"
 
 template<typename T>
-class SinglyLinkedList : public Object<SinglyLinkedList<T>> {
+class SinglyLinkedList {
 public:
     struct Node {
         Node *next;

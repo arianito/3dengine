@@ -23,6 +23,8 @@ typedef struct {
     void *(*allocator)(size_t);
 } SlabMemory;
 
+SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSize);
+
 SlabMemory *make_slab(unsigned int slabSize, unsigned short objectSize);
 
 void slab_destroy(SlabMemory **self);
