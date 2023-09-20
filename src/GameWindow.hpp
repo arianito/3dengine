@@ -9,7 +9,6 @@
 
 struct GameWindow {
     LevelManager<> manager;
-    String str1 = "hello";
 
     inline void Create() {
         manager.Add<StartLevel>("start");

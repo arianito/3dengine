@@ -19,6 +19,8 @@ typedef struct {
     unsigned int slabSize;
     unsigned int objectSize;
     unsigned int capacity;
+    unsigned int usage;
+    unsigned int bytes;
 
     void *(*allocator)(size_t);
 } SlabMemory;

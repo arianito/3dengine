@@ -5,10 +5,9 @@
 #include <cstring>
 #include <cstdarg>
 
-#include "mem/alloc.h"
 #include "engine/Memory.hpp"
 
-
+template<class TAlloc = StringMemory>
 class String {
 private:
     char *mStr{nullptr};
@@ -16,7 +15,7 @@ private:
     int mLength{0};
 
     inline void copy(const String &other) {
-        if(other.mLength > 0) {
+        if (other.mLength > 0) {
             Reserve(other.mLength);
             memcpy(mStr, other.mStr, other.mLength);
             mLength = other.mLength;
@@ -179,7 +178,7 @@ public:
         mLength = 0;
         mCapacity = 0;
         if (mStr != nullptr) {
-            freelist_free(alloc->string, (void **) (&mStr));
+            Free<TAlloc>((void **) (&mStr));
             mStr = nullptr;
         }
     }
@@ -190,19 +189,19 @@ public:
             mCapacity = 0;
 
             if (mStr != nullptr)
-                freelist_free(alloc->string, (void **) (&mStr));
+                Free<TAlloc>((void **) (&mStr));
             return;
         }
 
         int newCapacity = mLength + 1;
-        char *newList = (char *) freelist_alloc(alloc->string, newCapacity, sizeof(size_t));
+        char *newList = Alloc<TAlloc, char>(newCapacity);
         assert(newList != nullptr && "String: Insufficient memory.\n");
 
         memcpy(newList, mStr, mLength);
         mStr[mLength] = '\0';
 
         if (mStr != nullptr) {
-            freelist_free(alloc->string, (void **) (&mStr));
+            Free<TAlloc>((void **) (&mStr));
         }
 
         mStr = newList;
@@ -219,7 +218,7 @@ public:
             mLength = 0;
             mCapacity = 0;
             if (mStr != nullptr)
-                freelist_free(alloc->string, (void **) (&mStr));
+                Free<TAlloc>((void **) (&mStr));
             return;
         }
 
@@ -227,14 +226,14 @@ public:
         if (newCapacity <= mCapacity)
             return;
 
-        char *newList = (char *) freelist_alloc(alloc->string, newCapacity, sizeof(size_t));
+        char *newList = Alloc<TAlloc, char>(newCapacity);
         assert(newList != nullptr && "String: Insufficient memory.\n");
         if (mStr) {
             memcpy(newList, mStr, mLength);
             newList[mLength] = '\0';
 
             if (mStr != nullptr) {
-                freelist_free(alloc->string, (void **) (&mStr));
+                Free<TAlloc>((void **) (&mStr));
             }
         } else {
             mLength = 0;

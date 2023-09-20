@@ -87,8 +87,8 @@ private:
                     hsh = (hsh << 5) + (*kw++);
                 }
             }
-        } else if constexpr (std::is_same_v<K, String>) {
-            auto keyO = (String) key;
+        } else if constexpr (std::is_same_v<K, String<>>) {
+            auto keyO = (String<>) key;
             unsigned int sz = keyO.Length();
             const char *kw = keyO.Str();
             for (int i = 0; i < sz; i++) {
@@ -205,11 +205,11 @@ public:
         return probe.value;
     }
 
-    inline const int &Capacity() {
+    [[maybe_unused]] [[nodiscard]] inline const int &Capacity() const {
         return mCapacity;
     }
 
-    inline const int &Length() {
+    [[maybe_unused]] [[nodiscard]] inline const int &Length() const {
         return mLength;
     }
 

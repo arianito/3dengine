@@ -11,7 +11,7 @@
 template<class TAlloc = FreeListMemory>
 class LevelManager {
 private:
-    ProbeHashTable<String, Level *, TAlloc> mLevels;
+    ProbeHashTable<String<>, Level *, TAlloc> mLevels;
     Level *mPreviousLevel = nullptr;
     Level *mCurrentLevel = nullptr;
 public:
@@ -24,14 +24,14 @@ public:
     }
 
     template<typename T>
-    inline void Add(const String &name) {
+    inline void Add(const String<> &name) {
         static_assert(std::is_base_of_v<Level, T>, "Level Manager: class must be type of Level");
         if (mLevels.Contains(name)) return;
         Level *level = AllocNew<TAlloc, T>();
         mLevels.Set(name, level);
     }
 
-    inline void Load(const String &name) {
+    inline void Load(const String<> &name) {
         if (!mLevels.Contains(name)) return;
         mCurrentLevel = mLevels[name];
     }
