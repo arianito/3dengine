@@ -63,3 +63,9 @@ inline void Free(void **ptr) {
     }
     assert(0 && "Free: allocator class not specified. ");
 }
+
+template<class T, class C>
+inline void Free(C **ptr) {
+    (*ptr)->~C();
+    Free<T>((void **) ptr);
+}

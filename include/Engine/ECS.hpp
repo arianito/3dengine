@@ -181,9 +181,10 @@ public:
 class Director {
 private:
     EntityId mEntityCounter{1};
-    EntityMap *mEntities;
+    EntityMap mEntities;
+    SystemMap mSystems;
     ComponentEntityComponentMap mComponents;
-    SystemMap *mSystems;
+
     SlabMemory *mEntitySlab;
     PartialSlabMemory mComponentsSlab;
     PartialSlabMemory mSystemsSlab;
@@ -229,9 +230,9 @@ private:
     }
 
     inline void performDelete(EntityId entityId) {
-        if (!mEntities->Contains(entityId))
+        if (!mEntities.Contains(entityId))
             return;
-        Entity *entity = (*mEntities)[entityId];
+        Entity *entity = mEntities[entityId];
 
         for (auto p: mComponents) {
             ComponentId componentId = p.first;
@@ -246,57 +247,44 @@ private:
         }
         entity->~Entity();
         slab_free(mEntitySlab, (void **) &entity);
-        mEntities->Remove(entityId);
+        mEntities.Remove(entityId);
     }
 
 public:
     explicit inline Director() {
         mEntitySlab = makeSlab<Entity>(20);
-        mEntities = AllocNew<FreeListMemory, EntityMap>();
-        mSystems = AllocNew<FreeListMemory, SystemMap>();
     }
 
     inline ~Director() {
-        for (auto system: *mSystems) (system.second)->~BaseSystem();
-
-        for (auto p: mComponentsSlab) slab_destroy(&(p.second));
-
-        for (auto p: mSystemsSlab) slab_destroy(&(p.second));
+        for (auto entity: mEntities) (entity.second)->~Entity();
 
         for (auto p: mComponents) {
-            for (auto c: *(p.second)) {
-                auto component = c.second;
-                component->~Component();
-            }
-            auto map = p.second;
-            map->~EntityComponentMap();
-            Free<FreeListMemory>((void **) &map);
+            for (auto c: *(p.second))
+                c.second->~Component();
+            Free<FreeListMemory>(&p.second);
         }
 
+        for (auto entity: mSystems) (entity.second)->~BaseSystem();
 
-        for (auto entity: *mEntities) (entity.second)->~Entity();
-        mEntities->~EntityMap();
-        Free<FreeListMemory>((void **) &mEntities);
         slab_destroy(&mEntitySlab);
+        for (auto p: mComponentsSlab) slab_destroy(&(p.second));
+        for (auto p: mSystemsSlab) slab_destroy(&(p.second));
 
-
-        mSystems->~SystemMap();
-        Free<FreeListMemory>((void **) &mSystems);
     }
 
     explicit inline Director(const Director &) = delete;
 
     inline EntityId CreateEntity() {
         auto entity = new(slab_alloc(mEntitySlab)) Entity(mEntityCounter++);
-        mEntities->Set(entity->GetEntityId(), entity);
+        mEntities.Set(entity->GetEntityId(), entity);
         return entity->GetEntityId();
     }
 
     inline void DestroyEntity(EntityId entityId) {
-        if (!mEntities->Contains(entityId))
+        if (!mEntities.Contains(entityId))
             return;
 
-        for (auto system: (*mSystems))
+        for (auto system: mSystems)
             system.second->OnEntityDestroyed(entityId);
 
         mDestroyStack.Push(entityId);
@@ -304,10 +292,10 @@ public:
 
     template<class T, class... Args>
     inline T *AddComponent(EntityId entityId, Args &&...args) {
-        if (!mEntities->Contains(entityId))
+        if (!mEntities.Contains(entityId))
             return nullptr;
         EntityComponentMap *entityComponents;
-        auto entity = (*mEntities)[entityId];
+        auto entity = mEntities[entityId];
         ComponentId id = GetComponentTypeId<T>();
         if (mComponents.Contains(id)) {
             entityComponents = mComponents[id];
@@ -324,9 +312,9 @@ public:
     }
 
     inline void Commit(EntityId entityId) {
-        assert(mEntities->Contains(entityId) && "ECS: entity not found");
-        auto entity = (*mEntities)[entityId];
-        for (auto sys: (*mSystems)) {
+        assert(mEntities.Contains(entityId) && "ECS: entity not found");
+        auto entity = mEntities[entityId];
+        for (auto sys: mSystems) {
             sys.second->OnEntityCreated(entity);
         }
     }
@@ -334,15 +322,15 @@ public:
     template<class T, class... Args>
     inline T *AddSystem(Args &&...args) {
         SystemId id = GetSystemTypeId<T>();
-        if (mSystems->Contains(id)) return (T *) ((*mSystems)[id]);
+        if (mSystems.Contains(id)) return (T *) (mSystems[id]);
         T *sys = new(slab_alloc(getSystemSlab<T>())) T(std::forward<Args>(args)...);
         sys->SetDirector(this);
-        mSystems->Set(id, sys);
+        mSystems.Set(id, sys);
         return sys;
     }
 
     inline void Create() {
-        for (auto sys: (*mSystems)) { sys.second->Create(); }
+        for (auto sys: mSystems) { sys.second->Create(); }
     }
 
     inline void Update() {
@@ -368,9 +356,9 @@ public:
                             slab.first, slab.second->usage, slab.second->capacity, slab.second->bytes, slab.second->objectSize);
             pos.z -= d;
         }
-        debug_string3df(pos, " map - entities(%) %d", mEntities->Length());
+        debug_string3df(pos, " map - entities(%) %d", mEntities.Length());
         pos.z -= d;
-        debug_string3df(pos, " map - systems(%) %d", mSystems->Length());
+        debug_string3df(pos, " map - systems(%) %d", mSystems.Length());
         pos.z -= d;
         debug_string3df(pos, " map - components(%) %d", mComponents.Length());
         pos.z -= d;
@@ -379,7 +367,7 @@ public:
             pos.z -= d;
         }
 
-        for (auto sys: (*mSystems)) {
+        for (auto sys: mSystems) {
             if (sys.second->mShouldUpdate)
                 sys.second->Update();
 
