@@ -21,7 +21,7 @@ public:
         explicit inline Iterator(T *ptr) : ptr(ptr) {}
 
         inline Iterator &operator++() {
-            ptr++;
+            ++ptr;
             return *this;
         }
 
@@ -44,32 +44,10 @@ public:
 
 private:
 
-    inline void reserve(int newCapacity) {
-        if (newCapacity < mLength)
-            return;
-
-        int nBytes = mLength * sizeof(T);
-
-        T *newList = Alloc<TAlloc, T>(newCapacity);
-        assert(newList != nullptr && "Array: Insufficient memory.\n");
-
-        memcpy(newList, mList, nBytes);
-        Free<TAlloc>((void **) &mList);
-
-        mList = newList;
-        mCapacity = newCapacity;
-    }
-
     inline void expand() {
-        if (mLength * 2 < mCapacity)
+        if ((mLength << 1) < mCapacity)
             return;
-        reserve(mCapacity * 1.618f);
-    }
-
-    inline void shrink() {
-        if (mLength * 4 > mCapacity)
-            return;
-        reserve(mCapacity * 0.618f);
+        Reserve(mCapacity << 1);
     }
 
 public:
@@ -90,12 +68,28 @@ public:
     }
 
     inline void Fit() {
-        reserve(mLength);
+        Reserve(mLength);
+    }
+
+    inline void Reserve(int newCapacity) {
+        if (newCapacity < mLength)
+            return;
+
+        int nBytes = mLength * sizeof(T);
+
+
+        T *newList = Alloc<TAlloc, T>(newCapacity);
+        assert(newList != nullptr && "Array: Insufficient memory.\n");
+
+        memcpy(newList, mList, nBytes);
+        Free<TAlloc>((void **) &mList);
+
+        mList = newList;
+        mCapacity = newCapacity;
     }
 
     inline void Remove(int index) {
         assert(index >= 0 && index < mLength && "Array: Index out of range.\n");
-        shrink();
         for (int i = index; i < mLength - 1; i++)
             mList[i] = mList[i + 1];
         mLength--;
@@ -114,9 +108,7 @@ public:
 
     inline T Pop() {
         assert(mLength > 0 && "Array: is empty.\n");
-        shrink();
-        mLength--;
-        return mList[mLength];
+        return mList[--mLength];
     }
 
     inline void Add(const T &element) {

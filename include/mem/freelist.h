@@ -5,7 +5,7 @@
 
 typedef struct {
     void *next;
-    size_t size;
+    unsigned int size;
     unsigned int padding;
 } FreeListMemory;
 

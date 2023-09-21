@@ -81,11 +81,14 @@ struct ShooterSystem : public System<ShooterComponent, TransformComponent> {
             TransformComponent *pTransform = std::get<TransformComponent *>(components);
             if (down && (gameTime->time - pShooter->mLastShoot > pShooter->mRate)) {
                 auto director = GetDirector();
+                printf("before create\n");
                 auto entityId = director->CreateEntity();
                 director->AddComponent<TransformComponent>(entityId, pTransform->mPosition, pTransform->mRotation);
                 director->AddComponent<ProjectileComponent>(entityId, pTransform->mPosition, gameTime->deltaTime * pShooter->mSpeed);
-                director->AddComponent<ShapeComponent>(entityId, 0);
+                director->AddComponent<ShapeComponent>(entityId, 2);
+                printf("before commit\n");
                 director->Commit(entityId);
+                printf("after commit\n");
                 pShooter->mLastShoot = gameTime->time;
             }
         }
@@ -122,14 +125,12 @@ public:
         mDirector->AddSystem<ShooterSystem>();
         mDirector->AddSystem<ProjectileSystem>();
         mDirector->AddSystem<RenderSystem>();
-
-
         {
             auto entity = mDirector->CreateEntity();
             mDirector->AddComponent<TransformComponent>(entity, vec3_zero, rot_zero);
-            mDirector->AddComponent<ShapeComponent>(entity, 2);
+            mDirector->AddComponent<ShapeComponent>(entity, 0);
             mDirector->AddComponent<MovementComponent>(entity, 20.0f);
-            mDirector->AddComponent<ShooterComponent>(entity, 0.05f, 30000.0f);
+            mDirector->AddComponent<ShooterComponent>(entity, 0.5f, 30000.0f);
             mDirector->Commit(entity);
         }
         mDirector->Create();

@@ -24,7 +24,7 @@ SlabObject *slab_dequeue(SlabMemory *self) {
 }
 
 SlabPage *create_slab(SlabMemory *self) {
-    int n = self->slabSize / self->objectSize;
+    unsigned int n = self->slabSize / self->objectSize;
 
     unsigned int size = self->slabSize;
     size += MEMORY_SPACE_STD(SlabPage);
