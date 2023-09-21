@@ -34,8 +34,8 @@ SlabPage *create_slab(SlabMemory *self) {
     self->bytes += size;
 
     void *m = NULL;
-    if (self->allocator != NULL)
-        m = self->allocator(size);
+    if (self->allocator.alloc != NULL)
+        m = self->allocator.alloc(size);
     else
         m = malloc(size);
     if (m == NULL) {
@@ -66,11 +66,6 @@ SlabPage *create_slab(SlabMemory *self) {
     return slab;
 }
 
-void free_slab(SlabPage *slab) {
-    size_t op = (size_t) slab - slab->padding;
-    free((void *) (op));
-}
-
 SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSize) {
     if (slabSize % objectSize != 0) {
         printf("slab: create failed, invalid chunk size\n");
@@ -82,7 +77,8 @@ SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSiz
     SlabMemory *self = (SlabMemory *) (start + padding);
     self->pages = NULL;
     self->objects = NULL;
-    self->allocator = NULL;
+    self->allocator.alloc = NULL;
+    self->allocator.free = NULL;
     self->padding = padding;
     self->usage = 0;
     self->capacity = 0;
@@ -91,6 +87,17 @@ SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSiz
     self->slabSize = slabSize;
     self->objectSize = objectSize;
     return self;
+}
+
+SlabMemory *slab_create_alloc(SlabAllocator allocator, unsigned int slabSize, unsigned short objectSize) {
+    void *m = allocator.alloc(sizeof(SlabMemory));
+    if (m == NULL) {
+        printf("slab: make failed, system can't provide free memory\n");
+        exit(EXIT_FAILURE);
+    }
+    SlabMemory *slab = slab_create(m, slabSize, objectSize);
+    slab->allocator = allocator;
+    return slab;
 }
 
 SlabMemory *make_slab(unsigned int slabSize, unsigned short objectSize) {
@@ -113,13 +120,20 @@ void slab_destroy(SlabMemory **self) {
         void *next = slab->next;
 
         size_t op = (size_t) slab - slab->padding;
-        free((void *) (op));
+        if ((*self)->allocator.free != NULL)
+            (*self)->allocator.free((void *) (op));
+        else
+            free((void *) (op));
 
         slab = next;
     }
 
     size_t op = (size_t) (*self) - (*self)->padding;
-    free((void *) (op));
+
+    if ((*self)->allocator.free != NULL)
+        (*self)->allocator.free((void *) (op));
+    else
+        free((void *) (op));
     (*self) = NULL;
 }
 

@@ -1,25 +1,21 @@
 #pragma once
 
 
-#include <type_traits>
-#include <typeinfo>
-#include <new>
-#include <cassert>
-
 extern "C" {
 #include "mem/alloc.h"
 #include "mem/slab.h"
 #include "debug.h"
 }
 
+#include <type_traits>
+#include <typeinfo>
+#include <new>
+#include <cassert>
+
 #include "engine/Memory.hpp"
 #include "data/Array.hpp"
 #include "data/ProbeHashTable.hpp"
 #include "data/FixedStack.hpp"
-
-inline void *ecs_global_allocator(size_t size) {
-    return arena_alloc(alloc->global, size, sizeof(size_t));
-}
 
 class Entity;
 
@@ -29,15 +25,19 @@ class BaseSystem;
 
 class Director;
 
-typedef int ComponentId;
-typedef int SystemId;
-typedef int EntityId;
+typedef int BaseType;
+typedef BaseType ComponentId;
+typedef BaseType SystemId;
+typedef BaseType EntityId;
 using EntityMap = ProbeHashTable<EntityId, Entity *>;
 using ComponentMap = ProbeHashTable<ComponentId, Component *>;
 using SystemMap = ProbeHashTable<SystemId, BaseSystem *>;
 using EntityComponentMap = ProbeHashTable<EntityId, Component *>;
 using ComponentEntityComponentMap = ProbeHashTable<ComponentId, EntityComponentMap *>;
 using EntityIndexMap = ProbeHashTable<EntityId, int>;
+using EntityIdStack = FixedStack<EntityId>;
+using EntityPtrStack = FixedStack<Entity *>;
+using PartialSlabMemory = ProbeHashTable<BaseType, SlabMemory *>;
 
 static inline ComponentId nextComponentId() {
     static ComponentId lastID{1};
@@ -72,11 +72,26 @@ public:
 
     explicit inline Entity(const Entity &) = delete;
 
+    virtual ~Entity() = default;
+
     template<class T>
     inline void AddComponent(T *component) {
         ComponentId id = GetComponentTypeId<T>();
         assert(!mComponents.Contains(id) && "Entity: already has component");
         mComponents.Set(id, component);
+    }
+
+    template<class T>
+    inline T *GetComponent() {
+        ComponentId id = GetComponentTypeId<T>();
+        assert(!mComponents.Contains(id) && "Entity: already has component");
+        return mComponents[id];
+    }
+
+    template<class T>
+    inline bool HasComponent() {
+        ComponentId id = GetComponentTypeId<T>();
+        return mComponents.Contains(id);
     }
 
     [[nodiscard]] inline ComponentMap &GetComponents() { return mComponents; }
@@ -89,6 +104,8 @@ private:
     EntityId mEntityId;
 public:
     explicit inline Component() : mEntityId(0) {}
+
+    virtual ~Component() = default;
 
     [[nodiscard]] inline EntityId GetEntityId() const { return mEntityId; }
 
@@ -106,6 +123,8 @@ protected:
 
     Director *mDirector{nullptr};
 
+    virtual ~BaseSystem() = default;
+
     virtual void Process() = 0;
 
     virtual void OnEntityCreated(Entity *entity) = 0;
@@ -121,8 +140,8 @@ protected:
     using CTuple = std::tuple<std::add_pointer_t<Components>...>;
     Array<CTuple> mComponents;
     EntityIndexMap mEntityIndex;
-    FixedStack<EntityId> mDestroyStack;
-    FixedStack<Entity *> mCreateStack;
+    EntityIdStack mDestroyStack;
+    EntityPtrStack mCreateStack;
 
     template<int Index, class Type, class... Args>
     inline bool hasComponent(ComponentId id, Component *component, CTuple &tuple) {
@@ -134,7 +153,9 @@ protected:
     }
 
     template<int Index>
-    inline bool hasComponent(ComponentId id, Component *component, CTuple &tuple) { return false; }
+    inline bool hasComponent([[maybe_unused]] ComponentId id, [[maybe_unused]]  Component *component, [[maybe_unused]]  CTuple &tuple) {
+        return false;
+    }
 
     inline void OnEntityCreated(Entity *entity) override {
         mCreateStack.Push(entity);
@@ -164,16 +185,24 @@ private:
     ComponentEntityComponentMap mComponents;
     SystemMap *mSystems;
     SlabMemory *mEntitySlab;
-    ProbeHashTable<ComponentId, SlabMemory *> mComponentsSlab;
-    ProbeHashTable<SystemId, SlabMemory *> mSystemsSlab;
-    FixedStack<EntityId> mDestroyStack;
+    PartialSlabMemory mComponentsSlab;
+    PartialSlabMemory mSystemsSlab;
+    EntityIdStack mDestroyStack;
+
+    inline static void *ecs_global_alloc(size_t size) {
+        return freelist_alloc(alloc->freelist, size, sizeof(size_t));
+    }
+
+    inline static void ecs_global_free(void *ptr) {
+        freelist_free(alloc->freelist, &ptr);
+    }
 
     template<class T>
     inline SlabMemory *makeSlab(int length) {
-        void *m = arena_alloc(alloc->global, sizeof(SlabMemory), sizeof(size_t));
-        SlabMemory *slab = slab_create(m, sizeof(T) * length, sizeof(T));
-        slab->allocator = ecs_global_allocator;
-        return slab;
+        SlabAllocator pAlloc;
+        pAlloc.alloc = ecs_global_alloc;
+        pAlloc.free = ecs_global_free;
+        return slab_create_alloc(pAlloc, sizeof(T) * length, sizeof(T));
     }
 
     template<class T>
@@ -215,7 +244,7 @@ private:
                 entityComponents->Remove(entityId);
             }
         }
-
+        entity->~Entity();
         slab_free(mEntitySlab, (void **) &entity);
         mEntities->Remove(entityId);
     }
@@ -228,15 +257,31 @@ public:
     }
 
     inline ~Director() {
+        for (auto system: *mSystems) (system.second)->~BaseSystem();
+
+        for (auto p: mComponentsSlab) slab_destroy(&(p.second));
+
+        for (auto p: mSystemsSlab) slab_destroy(&(p.second));
+
+        for (auto p: mComponents) {
+            for (auto c: *(p.second)) {
+                auto component = c.second;
+                component->~Component();
+            }
+            auto map = p.second;
+            map->~EntityComponentMap();
+            Free<FreeListMemory>((void **) &map);
+        }
+
+
+        for (auto entity: *mEntities) (entity.second)->~Entity();
+        mEntities->~EntityMap();
+        Free<FreeListMemory>((void **) &mEntities);
         slab_destroy(&mEntitySlab);
-        for (auto p: mComponentsSlab) {
-            slab_destroy(&p.second);
-        }
-        for (auto p: mSystemsSlab) {
-            slab_destroy(&p.second);
-        }
-        Free<FreeListMemory>((void **) mEntities);
-        Free<FreeListMemory>((void **) mSystems);
+
+
+        mSystems->~SystemMap();
+        Free<FreeListMemory>((void **) &mSystems);
     }
 
     explicit inline Director(const Director &) = delete;

@@ -35,7 +35,7 @@ public:
     public:
         explicit inline Iterator(Node *current, Node *end) : mCurrent(current), mEnd(end) {
             while (mCurrent != mEnd && !mCurrent->used) {
-                mCurrent++;
+                ++mCurrent;
             }
         }
 
@@ -51,7 +51,7 @@ public:
             return mCurrent != other.mEnd;
         }
 
-        inline std::pair<const K &, const V &> operator*() const {
+        inline std::pair< K &,  V &> operator*() const {
             return {mCurrent->key, mCurrent->value};
         }
     };
@@ -67,9 +67,9 @@ public:
 private:
     inline void expand() {
         float ratio = (float) mLength / mCapacity;
-        if (ratio < 0.618f)
+        if (ratio < 0.5f)
             return;
-        Reserve(mCapacity * 1.618f);
+        Reserve(mCapacity << 1);
     }
 
     inline unsigned int hash(const K &key, unsigned int size) {
@@ -129,7 +129,9 @@ private:
     }
 
 public:
-    explicit inline ProbeHashTable() {
+    explicit inline ProbeHashTable() : ProbeHashTable(8) {}
+
+    explicit inline ProbeHashTable(int capacity) : mCapacity(capacity) {
         mProbes = Alloc<TAlloc, Node, true>(mCapacity);
     }
 
@@ -140,7 +142,7 @@ public:
     }
 
     inline void Reserve(int newCapacity) {
-        if (newCapacity < mLength)
+        if (newCapacity < mCapacity)
             return;
 
         Node *newList = Alloc<TAlloc, Node, true>(newCapacity);
@@ -182,25 +184,25 @@ public:
         return true;
     }
 
-    [[maybe_unused]] inline V &Remove(const K &key) {
+    [[maybe_unused]] inline void Remove(const K &key) {
         int index = linearProbeGet(key);
         assert(index >= 0 && "ProbeHashTable: key not found");
-        if (mProbes[index].used && mProbes[index].key == key) {
-            mProbes[index].used = false;
+        auto &probe = mProbes[index];
+        if (probe.used && probe.key == key) {
+            probe.used = false;
             mLength--;
         }
-        return mProbes[index].value;
     }
 
     inline bool Contains(const K &key) {
         int index = linearProbeGet(key);
-        auto &probe = mProbes[index];
+        Node &probe = mProbes[index];
         return index >= 0 && probe.used;
     }
 
     inline V &operator[](const K &key) {
         int index = linearProbeGet(key);
-        auto &probe = mProbes[index];
+        Node &probe = mProbes[index];
         assert((index >= 0 && probe.used) && "ProbeHashTable: not found");
         return probe.value;
     }

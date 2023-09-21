@@ -1,8 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include "engine/Manager.hpp"
-#include "engine/Object.hpp"
 
 template<typename T>
 class Queue {

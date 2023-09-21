@@ -3,6 +3,11 @@
 #include <stddef.h>
 
 typedef struct {
+    void *(*alloc)(size_t);
+    void (*free)(void *);
+} SlabAllocator;
+
+typedef struct {
     size_t next;
 } SlabObject;
 
@@ -21,11 +26,13 @@ typedef struct {
     unsigned int capacity;
     unsigned int usage;
     unsigned int bytes;
+    SlabAllocator allocator;
 
-    void *(*allocator)(size_t);
 } SlabMemory;
 
 SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSize);
+
+SlabMemory *slab_create_alloc(SlabAllocator allocator, unsigned int slabSize, unsigned short objectSize);
 
 SlabMemory *make_slab(unsigned int slabSize, unsigned short objectSize);
 

@@ -9,12 +9,14 @@
 #include "mem/arena.h"
 #include "mem/stack.h"
 #include "mem/freelist.h"
+#include "mem/buddy.h"
 
 typedef struct {
     size_t global;
     size_t stack;
     size_t freelist;
     size_t string;
+    unsigned int buddyOrder;
 } MemoryMetadata;
 
 typedef struct {
@@ -23,6 +25,7 @@ typedef struct {
     StackMemory *stack;
     FreeListMemory *freelist;
     FreeListMemory *string;
+    BuddyMemory *buddy;
 } MemoryLayout;
 
 extern MemoryLayout *alloc;

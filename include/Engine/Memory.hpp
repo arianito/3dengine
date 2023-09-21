@@ -12,8 +12,7 @@ extern "C" {
 #include "mem/arena.h"
 }
 
-class StringMemory {
-};
+class StringMemory;
 
 template<class T, bool Clean = false>
 inline void *Alloc(size_t size = -1, unsigned int alignment = sizeof(size_t)) {

@@ -3,7 +3,7 @@
 #include "mathf.h"
 #include "debug.h"
 #include "engine/Level.hpp"
-#include "engine/Component.hpp"
+#include "engine/ECS.hpp"
 #include "engine/Memory.hpp"
 
 
@@ -81,14 +81,11 @@ struct ShooterSystem : public System<ShooterComponent, TransformComponent> {
             TransformComponent *pTransform = std::get<TransformComponent *>(components);
             if (down && (gameTime->time - pShooter->mLastShoot > pShooter->mRate)) {
                 auto director = GetDirector();
-                printf("before create\n");
                 auto entityId = director->CreateEntity();
                 director->AddComponent<TransformComponent>(entityId, pTransform->mPosition, pTransform->mRotation);
                 director->AddComponent<ProjectileComponent>(entityId, pTransform->mPosition, gameTime->deltaTime * pShooter->mSpeed);
                 director->AddComponent<ShapeComponent>(entityId, 2);
-                printf("before commit\n");
                 director->Commit(entityId);
-                printf("after commit\n");
                 pShooter->mLastShoot = gameTime->time;
             }
         }
@@ -118,21 +115,20 @@ class StartLevel : public Level {
 public:
     Director *mDirector{nullptr};
 
-    inline void
-    Create() override {
+    inline void Create() override {
         mDirector = AllocNew<FreeListMemory, Director>();
         mDirector->AddSystem<MovementSystem>();
         mDirector->AddSystem<ShooterSystem>();
         mDirector->AddSystem<ProjectileSystem>();
         mDirector->AddSystem<RenderSystem>();
-        {
-            auto entity = mDirector->CreateEntity();
-            mDirector->AddComponent<TransformComponent>(entity, vec3_zero, rot_zero);
-            mDirector->AddComponent<ShapeComponent>(entity, 0);
-            mDirector->AddComponent<MovementComponent>(entity, 20.0f);
-            mDirector->AddComponent<ShooterComponent>(entity, 0.5f, 30000.0f);
-            mDirector->Commit(entity);
-        }
+
+        auto entity = mDirector->CreateEntity();
+        mDirector->AddComponent<TransformComponent>(entity, vec3_zero, rot_zero);
+        mDirector->AddComponent<ShapeComponent>(entity, 0);
+        mDirector->AddComponent<MovementComponent>(entity, 20.0f);
+        mDirector->AddComponent<ShooterComponent>(entity, 0.05f, 30000.0f);
+        mDirector->Commit(entity);
+
         mDirector->Create();
     }
 
@@ -141,6 +137,7 @@ public:
     }
 
     inline void Destroy() override {
+        mDirector->~Director();
         Free<FreeListMemory>((void **) &mDirector);
     }
 };

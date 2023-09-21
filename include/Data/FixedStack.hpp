@@ -6,7 +6,6 @@
 template<typename T, class TAlloc = FreeListMemory>
 class FixedStack {
 private:
-public:
     T *mStack{nullptr};
     int mLength{0};
     int mCapacity{8};

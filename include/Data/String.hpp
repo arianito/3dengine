@@ -232,9 +232,7 @@ public:
             memcpy(newList, mStr, mLength);
             newList[mLength] = '\0';
 
-            if (mStr != nullptr) {
-                Free<TAlloc>((void **) (&mStr));
-            }
+            Free<TAlloc>((void **) (&mStr));
         } else {
             mLength = 0;
             newList[mLength] = '\0';
