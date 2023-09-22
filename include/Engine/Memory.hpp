@@ -29,6 +29,8 @@ inline void *Alloc(size_t size = -1, unsigned int alignment = sizeof(size_t)) {
         m = arena_alloc(alloc->global, size, alignment);
     } else if constexpr (std::is_same_v<T, BuddyMemory>) {
         m = buddy_alloc(alloc->buddy, size);
+    } else {
+        m = T::Alloc(size, alignment);
     }
     assert(m && "Alloc: allocator class not specified. ");
     if constexpr (Clean) memset(m, 0, size);
@@ -60,6 +62,9 @@ inline void Free(void **ptr) {
         buddy_free(alloc->buddy, ptr);
         return;
     } else if constexpr (std::is_same_v<T, ArenaMemory>) {
+        return;
+    } else {
+        T::Free(ptr);
         return;
     }
     assert(0 && "Free: allocator class not specified. ");

@@ -3,11 +3,27 @@
 extern "C" {
 #include "mathf.h"
 #include "debug.h"
+
 }
 
 #include "engine/Level.hpp"
 #include "engine/ECS.hpp"
 #include "engine/Memory.hpp"
+
+static BuddyMemory *bbd{nullptr};
+
+class CustomAllocator {
+public:
+
+    inline static void *Alloc(size_t size, unsigned int alignment) {
+        return buddy_alloc(bbd, size);
+    }
+
+    inline static void Free(void **ptr) {
+        buddy_free(bbd, ptr);
+
+    }
+};
 
 class TempLevel : public Level {
 
@@ -152,7 +168,9 @@ public:
 
 
     inline void Create() override {
-        mDirector = AllocNew<BuddyMemory, Director>();
+        bbd = make_buddy(10);
+
+        mDirector = AllocNew<CustomAllocator, Director>();
         mDirector->AddSystem<MovementSystem>();
         mDirector->AddSystem<RenderSystem>();
 
@@ -218,6 +236,7 @@ public:
     }
 
     inline void Destroy() override {
-        Free<BuddyMemory>(&mDirector);
+        Free<CustomAllocator>(&mDirector);
+        buddy_destroy(&bbd);
     }
 };

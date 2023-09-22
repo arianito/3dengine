@@ -17,28 +17,23 @@ extern "C" {
 #include "data/ProbeHashTable.hpp"
 #include "data/FixedStack.hpp"
 
+
 using TAlloc = BuddyMemory;
 
 class Entity;
+
 class Component;
+
 class BaseSystem;
+
 class Director;
 
 
-typedef int BaseType;
+typedef size_t BaseType;
 typedef BaseType ComponentId;
 typedef BaseType SystemId;
 typedef BaseType EntityId;
 
-//using EntityMap = ProbeHashTable<EntityId, Entity *, TAlloc>;
-//using ComponentMap = ProbeHashTable<ComponentId, Component *, TAlloc>;
-//using SystemMap = ProbeHashTable<SystemId, BaseSystem *, TAlloc>;
-//using EntityComponentMap = ProbeHashTable<EntityId, Component *, TAlloc>;
-//using ComponentEntityComponentMap = ProbeHashTable<ComponentId, EntityComponentMap *, TAlloc>;
-//using EntityIndexMap = ProbeHashTable<EntityId, int, TAlloc>;
-//using EntityIdStack = FixedStack<EntityId, TAlloc>;
-//using EntityPtrStack = FixedStack<Entity *, TAlloc>;
-//using PartialSlabMemory = ProbeHashTable<BaseType, SlabMemory *, TAlloc>;
 
 static inline ComponentId nextComponentId() {
     static ComponentId lastID{1};
@@ -229,11 +224,11 @@ public:
 class Director {
 private:
     using EntityMap = ProbeHashTable<EntityId, Entity *, TAlloc>;
-using SystemMap = ProbeHashTable<SystemId, BaseSystem *, TAlloc>;
-using EntityComponentMap = ProbeHashTable<EntityId, Component *, TAlloc>;
-using ComponentEntityComponentMap = ProbeHashTable<ComponentId, EntityComponentMap *, TAlloc>;
-using EntityIdStack = FixedStack<EntityId, TAlloc>;
-using PartialSlabMemory = ProbeHashTable<BaseType, SlabMemory *, TAlloc>;
+    using SystemMap = ProbeHashTable<SystemId, BaseSystem *, TAlloc>;
+    using EntityComponentMap = ProbeHashTable<EntityId, Component *, TAlloc>;
+    using ComponentEntityComponentMap = ProbeHashTable<ComponentId, EntityComponentMap *, TAlloc>;
+    using EntityIdStack = FixedStack<EntityId, TAlloc>;
+    using PartialSlabMemory = ProbeHashTable<BaseType, SlabMemory *, TAlloc>;
 
 
     EntityId mEntityCounter{1};
