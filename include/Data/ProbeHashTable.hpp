@@ -16,120 +16,8 @@ private:
         bool used;
     };
 
-private:
-    static constexpr size_t mPrimeA{492366587};
-    static constexpr size_t mPrimeB{1645333507};
-    static constexpr size_t mPrimeC{6692367337};
-    Node *mProbes{nullptr};
-    int mDefaultStart{8};
-    int mCapacity{mDefaultStart};
-    int mLength{0};
-
 public:
-
-    class Iterator {
-    private:
-        Node *mCurrent;
-        Node *mEnd;
-
-    public:
-        explicit inline Iterator(Node *current, Node *end) : mCurrent(current), mEnd(end) {
-            while (mCurrent != mEnd && !mCurrent->used) {
-                ++mCurrent;
-            }
-        }
-
-        inline Iterator &operator++() {
-            ++mCurrent;
-            while (mCurrent != mEnd && !mCurrent->used) {
-                ++mCurrent;
-            }
-            return *this;
-        }
-
-        inline bool operator!=(const Iterator &other) const {
-            return mCurrent != other.mEnd;
-        }
-
-        inline std::pair< K &,  V &> operator*() const {
-            return {mCurrent->key, mCurrent->value};
-        }
-    };
-
-    Iterator begin() {
-        return Iterator(mProbes, mProbes + mCapacity);
-    }
-
-    Iterator end() {
-        return Iterator(mProbes + mCapacity, mProbes + mCapacity);
-    }
-
-private:
-    inline void expand() {
-        float ratio = (float) mLength / mCapacity;
-        if (ratio < 0.5f)
-            return;
-        Reserve(mCapacity << 1);
-    }
-
-    inline unsigned int hash(const K &key, unsigned int size) {
-        unsigned int hsh = 0;
-        if constexpr (std::is_pointer_v<K>) {
-            unsigned int sz = sizeof(*key);
-            if constexpr (sizeof(*key) == 1) {
-                K kw = key;
-                while (*kw != '\0') {
-                    hsh = (hsh << 5) + (*kw++);
-                }
-            } else {
-                const char *kw = ((char *) key);
-                for (int i = 0; i < sz; i++) {
-                    hsh = (hsh << 5) + (*kw++);
-                }
-            }
-        } else if constexpr (std::is_same_v<K, String<>>) {
-            auto keyO = (String<>) key;
-            unsigned int sz = keyO.Length();
-            const char *kw = keyO.Str();
-            for (int i = 0; i < sz; i++) {
-                hsh = (hsh << 5) + (*kw++);
-            }
-        } else {
-            unsigned int sz = sizeof(key);
-            const char *kw = ((char *) (&key));
-            for (int i = 0; i < sz; i++) {
-                hsh = (hsh << 5) + (*kw++);
-            }
-        }
-        return ((mPrimeA * hsh + mPrimeB) % mPrimeC) & (size - 1);
-    }
-
-    inline int linearProbeSet(const K &key) {
-        int index = hash(key, mCapacity);
-        int i = 0;
-        while (mProbes[index].used && mProbes[index].key != key && i <= mCapacity) {
-            index = (index + 1) & (mCapacity - 1);
-            i++;
-        }
-        if (mProbes[index].key != key && mProbes[index].used)
-            return -1;
-        return index;
-    }
-
-    inline int linearProbeGet(const K &key) {
-        int index = hash(key, mCapacity);
-        int i = 0;
-        while (mProbes[index].key != key && i <= mCapacity) {
-            index = (index + 1) & (mCapacity - 1);
-            i++;
-        }
-        if (mProbes[index].key != key)
-            return -1;
-        return index;
-    }
-
-public:
-    explicit inline ProbeHashTable() : ProbeHashTable(8) {}
+    explicit inline ProbeHashTable() : ProbeHashTable(32) {}
 
     explicit inline ProbeHashTable(int capacity) : mCapacity(capacity) {
         mProbes = Alloc<TAlloc, Node, true>(mCapacity);
@@ -219,5 +107,115 @@ public:
         unsigned int nBytes = mCapacity * sizeof(Node);
         memset(mProbes, 0, nBytes);
         mLength = 0;
+    }
+
+private:
+    static constexpr size_t mPrimeA{492366587};
+    static constexpr size_t mPrimeB{1645333507};
+    static constexpr size_t mPrimeC{6692367337};
+    Node *mProbes{nullptr};
+    int mCapacity{};
+    int mLength{0};
+
+private:
+    inline void expand() {
+        float ratio = (float) mLength / mCapacity;
+        if (ratio < 0.5f)
+            return;
+        Reserve(mCapacity << 1);
+    }
+
+    inline unsigned int hash(const K &key, unsigned int size) {
+        unsigned int hsh = 0;
+        if constexpr (std::is_pointer_v<K>) {
+            unsigned int sz = sizeof(*key);
+            if constexpr (sizeof(*key) == 1) {
+                K kw = key;
+                while (*kw != '\0') {
+                    hsh = (hsh << 5) + (*kw++);
+                }
+            } else {
+                const char *kw = ((char *) key);
+                for (int i = 0; i < sz; i++) {
+                    hsh = (hsh << 5) + (*kw++);
+                }
+            }
+        } else if constexpr (std::is_same_v<K, String<>>) {
+            auto keyO = (String<>) key;
+            unsigned int sz = keyO.Length();
+            const char *kw = keyO.Str();
+            for (int i = 0; i < sz; i++) {
+                hsh = (hsh << 5) + (*kw++);
+            }
+        } else {
+            unsigned int sz = sizeof(key);
+            const char *kw = ((char *) (&key));
+            for (int i = 0; i < sz; i++) {
+                hsh = (hsh << 5) + (*kw++);
+            }
+        }
+        return ((mPrimeA * hsh + mPrimeB) % mPrimeC) & (size - 1);
+    }
+
+    inline int linearProbeSet(const K &key) {
+        int index = hash(key, mCapacity);
+        int i = 0;
+        while (mProbes[index].used && mProbes[index].key != key && i <= mCapacity) {
+            index = (index + 1) & (mCapacity - 1);
+            i++;
+        }
+        if (mProbes[index].key != key && mProbes[index].used)
+            return -1;
+        return index;
+    }
+
+    inline int linearProbeGet(const K &key) {
+        int index = hash(key, mCapacity);
+        int i = 0;
+        while (mProbes[index].key != key && i <= mCapacity) {
+            index = (index + 1) & (mCapacity - 1);
+            i++;
+        }
+        if (mProbes[index].key != key)
+            return -1;
+        return index;
+    }
+
+public:
+    class Iterator {
+    private:
+        Node *mCurrent;
+        Node *mEnd;
+
+    public:
+        explicit inline Iterator(Node *current, Node *end) : mCurrent(current), mEnd(end) {
+            while (mCurrent != mEnd && !mCurrent->used) {
+                ++mCurrent;
+            }
+        }
+
+        inline Iterator &operator++() {
+            ++mCurrent;
+            while (mCurrent != mEnd && !mCurrent->used) {
+                ++mCurrent;
+            }
+            return *this;
+        }
+
+        inline bool operator!=(const Iterator &other) const {
+            return mCurrent != other.mEnd;
+        }
+
+        inline std::pair<K &, V &> operator*() const {
+            return {mCurrent->key, mCurrent->value};
+        }
+    };
+
+    Iterator begin() {
+        return Iterator(mProbes, mProbes + mCapacity);
+    }
+
+    Iterator end() {
+        return Iterator(mProbes + mCapacity, mProbes + mCapacity);
     }
 };

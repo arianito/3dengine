@@ -63,21 +63,33 @@ struct ProjectileSystem : public System<ProjectileComponent, TransformComponent>
 
 struct MovementSystem : public System<MovementComponent, TransformComponent> {
     inline void Update() override {
-        auto vertical = input_axis(AXIS_VERTICAL);
-        auto horizontal = input_axis(AXIS_HORIZONTAL);
+//        auto vertical = input_axis(AXIS_VERTICAL);
+//        auto horizontal = input_axis(AXIS_HORIZONTAL);
+
+        Ray r = camera_screenToWorld(input->position);
+        Vec3 dest = vec3_intersectPlane(r.origin, vec3_add(r.origin, r.direction), vec3_zero, vec3_up);
+
+
         for (const auto &bucket: GetComponents()) {
+
             auto pTransform = std::get<TransformComponent *>(bucket);
             auto pMovement = std::get<MovementComponent *>(bucket);
-            pTransform->mRotation.yaw += horizontal * pMovement->mSpeed * gameTime->deltaTime;
-            Vec3 fwd = vec3_mulf(rot_forward(pTransform->mRotation), vertical * pMovement->mSpeed * gameTime->deltaTime);
-            pTransform->mPosition = vec3_add(pTransform->mPosition, fwd);
+            Vec3 diff = vec3_sub(dest, pTransform->mPosition);
+            diff = vec3_norm(diff);
+
+            Vec3 d2 = vec3_sub(dest, vec3_mulf(diff, 40.0f));
+
+            float dist = vec3_dist(dest, pTransform->mPosition);
+
+            pTransform->mRotation = rot_lookAt(pTransform->mPosition, dest, vec3_up);
+            pTransform->mPosition = vec3_lerp(pTransform->mPosition, d2, clamp01(dist / 500.0f) * pMovement->mSpeed * gameTime->deltaTime);
         }
     }
 };
 
 struct ShooterSystem : public System<ShooterComponent, TransformComponent> {
     void Update() override {
-        auto down = input_keypress(KEY_SPACE);
+        auto down = input_mousepress(MOUSE_LEFT);
         for (auto &components: GetComponents()) {
             ShooterComponent *pShooter = std::get<ShooterComponent *>(components);
             TransformComponent *pTransform = std::get<TransformComponent *>(components);
@@ -128,8 +140,8 @@ public:
         auto entity = mDirector->CreateEntity();
         mDirector->AddComponent<TransformComponent>(entity, vec3_zero, rot_zero);
         mDirector->AddComponent<ShapeComponent>(entity, 0);
-        mDirector->AddComponent<MovementComponent>(entity, 200.0f);
-        mDirector->AddComponent<ShooterComponent>(entity, 0.1f, 600.0f);
+        mDirector->AddComponent<MovementComponent>(entity, 50.0f);
+        mDirector->AddComponent<ShooterComponent>(entity, 0.001f, 200.0f);
         mDirector->Commit(entity);
 
         mDirector->Create();

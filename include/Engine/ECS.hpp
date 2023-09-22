@@ -25,19 +25,21 @@ class BaseSystem;
 
 class Director;
 
+using TAlloc = BuddyMemory;
+
 typedef int BaseType;
 typedef BaseType ComponentId;
 typedef BaseType SystemId;
 typedef BaseType EntityId;
-using EntityMap = ProbeHashTable<EntityId, Entity *>;
-using ComponentMap = ProbeHashTable<ComponentId, Component *>;
-using SystemMap = ProbeHashTable<SystemId, BaseSystem *>;
-using EntityComponentMap = ProbeHashTable<EntityId, Component *>;
-using ComponentEntityComponentMap = ProbeHashTable<ComponentId, EntityComponentMap *>;
-using EntityIndexMap = ProbeHashTable<EntityId, int>;
-using EntityIdStack = FixedStack<EntityId>;
-using EntityPtrStack = FixedStack<Entity *>;
-using PartialSlabMemory = ProbeHashTable<BaseType, SlabMemory *>;
+using EntityMap = ProbeHashTable<EntityId, Entity *, TAlloc>;
+using ComponentMap = ProbeHashTable<ComponentId, Component *, TAlloc>;
+using SystemMap = ProbeHashTable<SystemId, BaseSystem *, TAlloc>;
+using EntityComponentMap = ProbeHashTable<EntityId, Component *, TAlloc>;
+using ComponentEntityComponentMap = ProbeHashTable<ComponentId, EntityComponentMap *, TAlloc>;
+using EntityIndexMap = ProbeHashTable<EntityId, int, TAlloc>;
+using EntityIdStack = FixedStack<EntityId, TAlloc>;
+using EntityPtrStack = FixedStack<Entity *, TAlloc>;
+using PartialSlabMemory = ProbeHashTable<BaseType, SlabMemory *, TAlloc>;
 
 static inline ComponentId nextComponentId() {
     static ComponentId lastID{1};
@@ -138,7 +140,7 @@ template<class ...Components>
 class System : public BaseSystem {
 protected:
     using CTuple = std::tuple<std::add_pointer_t<Components>...>;
-    Array<CTuple> mComponents;
+    Array<CTuple, TAlloc> mComponents;
     EntityIndexMap mEntityIndex;
     EntityIdStack mDestroyStack;
     EntityPtrStack mCreateStack;
@@ -171,7 +173,7 @@ protected:
     inline void Process() override;
 
 public:
-    inline Array<CTuple> &GetComponents() { return mComponents; }
+    inline Array<CTuple, TAlloc> &GetComponents() { return mComponents; }
 
     [[nodiscard]] inline Director *GetDirector() const { return mDirector; }
 
@@ -191,11 +193,11 @@ private:
     EntityIdStack mDestroyStack;
 
     inline static void *ecs_global_alloc(size_t size) {
-        return freelist_alloc(alloc->freelist, size, sizeof(size_t));
+        return Alloc<TAlloc>(size, sizeof(size_t));
     }
 
     inline static void ecs_global_free(void *ptr) {
-        freelist_free(alloc->freelist, &ptr);
+        Free<TAlloc>(&ptr);
     }
 
     template<class T>
@@ -210,7 +212,7 @@ private:
     inline SlabMemory *getComponentSlab() {
         ComponentId id = GetComponentTypeId<T>();
         if (mComponentsSlab.Contains(id)) return mComponentsSlab[id];
-        SlabMemory *slab = makeSlab<T>(20);
+        SlabMemory *slab = makeSlab<T>(16);
         mComponentsSlab.Set(id, slab);
         return slab;
     }
@@ -219,7 +221,7 @@ private:
     inline SlabMemory *getSystemSlab() {
         SystemId id = GetSystemTypeId<T>();
         if (mSystemsSlab.Contains(id)) return mSystemsSlab[id];
-        SlabMemory *slab = makeSlab<T>(20);
+        SlabMemory *slab = makeSlab<T>(16);
         mSystemsSlab.Set(id, slab);
         return slab;
     }
@@ -252,7 +254,7 @@ private:
 
 public:
     explicit inline Director() {
-        mEntitySlab = makeSlab<Entity>(20);
+        mEntitySlab = makeSlab<Entity>(16);
     }
 
     inline ~Director() {
@@ -261,7 +263,7 @@ public:
         for (auto p: mComponents) {
             for (auto c: *(p.second))
                 c.second->~Component();
-            Free<FreeListMemory>(&p.second);
+            Free<TAlloc>(&p.second);
         }
 
         for (auto entity: mSystems) (entity.second)->~BaseSystem();
@@ -301,7 +303,7 @@ public:
             entityComponents = mComponents[id];
             if (entityComponents->Contains(entityId)) { return (T *) ((*entityComponents)[entityId]); }
         } else {
-            entityComponents = AllocNew<FreeListMemory, EntityComponentMap>();
+            entityComponents = AllocNew<TAlloc, EntityComponentMap>();
             mComponents.Set(id, entityComponents);
         }
         T *component = new(slab_alloc(getComponentSlab<T>())) T(std::forward<Args>(args)...);
@@ -334,39 +336,6 @@ public:
     }
 
     inline void Update() {
-
-        debug_origin(vec2_zero);
-        debug_color(color_yellow);
-        float d = 8.0f;
-        Vec3 pos = vec3_zero;
-        debug_string3df(pos, " global(0) %d / %d", alloc->global->offset, alloc->global->size);
-        pos.z -= d;
-        debug_string3df(pos, " freelist(0) %d / %d", freelist_capacity(alloc->freelist), alloc->freelist->size);
-        pos.z -= d;
-        debug_string3df(pos, " entities(0) %d / %d -- %d|%d",
-                        mEntitySlab->usage, mEntitySlab->capacity, mEntitySlab->bytes, mEntitySlab->objectSize);
-        pos.z -= d;
-        for (auto slab: mSystemsSlab) {
-            debug_string3df(pos, "   system(%d) %d / %d -- %d|%d",
-                            slab.first, slab.second->usage, slab.second->capacity, slab.second->bytes, slab.second->objectSize);
-            pos.z -= d;
-        }
-        for (auto slab: mComponentsSlab) {
-            debug_string3df(pos, "component(%d) %d / %d -- %d|%d",
-                            slab.first, slab.second->usage, slab.second->capacity, slab.second->bytes, slab.second->objectSize);
-            pos.z -= d;
-        }
-        debug_string3df(pos, " map - entities(%) %d", mEntities.Length());
-        pos.z -= d;
-        debug_string3df(pos, " map - systems(%) %d", mSystems.Length());
-        pos.z -= d;
-        debug_string3df(pos, " map - components(%) %d", mComponents.Length());
-        pos.z -= d;
-        for (auto p: mComponents) {
-            debug_string3df(pos, " map - components(%d) %d", p.first, p.second->Length());
-            pos.z -= d;
-        }
-
         for (auto sys: mSystems) {
             if (sys.second->mShouldUpdate)
                 sys.second->Update();
