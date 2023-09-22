@@ -78,7 +78,7 @@ class TempLevel : public Level {
             Vec3 dest = vec3_intersectPlane(r.origin, vec3_add(r.origin, r.direction), vec3_zero, vec3_up);
             int down = input_mousepress(MOUSE_LEFT);
             float i = gameTime->time * 200.0f;
-            float n = (float)Components().Length();
+            float n = (float) Components().Length();
             float sp = 360.0f / n;
             for (const auto &bucket: Components()) {
                 auto pTransform = Get<TransformComponent>(bucket);
@@ -89,7 +89,7 @@ class TempLevel : public Level {
                     pMovement->destination = vec3_add(dest, vec3_mulf(rnd, 30.0f));
                 }
                 pTransform->position = vec3_moveTowards(pTransform->position, pMovement->destination, pMovement->speed * gameTime->deltaTime);
-                i+= sp;
+                i += sp;
             }
         }
     };
