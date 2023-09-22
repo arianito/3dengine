@@ -17,11 +17,16 @@ extern "C" {
 
 int main(int argc, const char *argv[]) {
     MemoryMetadata meta;
-    meta.global = 64 * MEGABYTES;
+    meta.boot = 128 * MEGABYTES;
+
+    meta.global = 32 * MEGABYTES;
+    meta.freelist = 32 * MEGABYTES;
+    meta.buddy = 32 * MEGABYTES;
+
     meta.stack = 1 * MEGABYTES;
-    meta.freelist = 10 * MEGABYTES;
     meta.string = 1 * MEGABYTES;
     alloc_create(meta);
+
 
     file_init("../assets/");
     game_init();
@@ -31,7 +36,6 @@ int main(int argc, const char *argv[]) {
     grid_init();
     debug_init();
     editor_init();
-    alloc_debug();
 
     {
         GameWindow window;

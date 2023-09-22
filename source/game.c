@@ -39,7 +39,7 @@ void game_init() {
     if (!glfwInit())
         return;
 
-    glfwWindowHint(GLFW_SAMPLES, 4);
+    glfwWindowHint(GLFW_SAMPLES, 0);
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -99,9 +99,9 @@ void calculate_fps() {
 }
 
 char game_loop() {
+    calculate_fps();
     glfwSwapBuffers(game->window);
     glfwPollEvents();
-    calculate_fps();
 
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

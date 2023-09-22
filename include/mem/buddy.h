@@ -10,8 +10,8 @@ typedef struct {
 typedef struct {
     BuddyBlock *head;
     BuddyBlock *tail;
-    unsigned int size;
     unsigned int padding;
+    unsigned int usage;
 } BuddyMemory;
 
 unsigned int buddy_size(unsigned int order);

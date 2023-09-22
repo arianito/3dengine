@@ -1,7 +1,10 @@
 #pragma once
 
+extern "C" {
 #include "mathf.h"
 #include "debug.h"
+}
+
 #include "engine/Level.hpp"
 #include "engine/ECS.hpp"
 #include "engine/Memory.hpp"
@@ -51,8 +54,7 @@ struct ProjectileSystem : public System<ProjectileComponent, TransformComponent>
             fwd = vec3_mulf(fwd, pProjectile->mSpeed * gameTime->deltaTime);
             pTransform->mPosition = vec3_add(pTransform->mPosition, fwd);
             auto d = vec3_dist(pTransform->mPosition, pProjectile->mInitialPosition);
-
-            if (d > 400.0f) {
+            if (d > 1000.0f) {
                 GetDirector()->DestroyEntity(pTransform->GetEntityId());
             }
         }
@@ -66,7 +68,7 @@ struct MovementSystem : public System<MovementComponent, TransformComponent> {
         for (const auto &bucket: GetComponents()) {
             auto pTransform = std::get<TransformComponent *>(bucket);
             auto pMovement = std::get<MovementComponent *>(bucket);
-            pTransform->mRotation.yaw += horizontal;
+            pTransform->mRotation.yaw += horizontal * pMovement->mSpeed * gameTime->deltaTime;
             Vec3 fwd = vec3_mulf(rot_forward(pTransform->mRotation), vertical * pMovement->mSpeed * gameTime->deltaTime);
             pTransform->mPosition = vec3_add(pTransform->mPosition, fwd);
         }
@@ -83,7 +85,7 @@ struct ShooterSystem : public System<ShooterComponent, TransformComponent> {
                 auto director = GetDirector();
                 auto entityId = director->CreateEntity();
                 director->AddComponent<TransformComponent>(entityId, pTransform->mPosition, pTransform->mRotation);
-                director->AddComponent<ProjectileComponent>(entityId, pTransform->mPosition, gameTime->deltaTime * pShooter->mSpeed);
+                director->AddComponent<ProjectileComponent>(entityId, pTransform->mPosition, pShooter->mSpeed);
                 director->AddComponent<ShapeComponent>(entityId, 2);
                 director->Commit(entityId);
                 pShooter->mLastShoot = gameTime->time;
@@ -98,8 +100,8 @@ struct RenderSystem : public System<ShapeComponent, TransformComponent> {
             auto pShape = std::get<ShapeComponent *>(bucket);
             auto pTransform = std::get<TransformComponent *>(bucket);
             if (pShape->mType == 0) {
-                draw_sphere(pTransform->mPosition, 20, color_red, 16);
-                draw_ray(ray_scale(ray_fromRot(pTransform->mPosition, pTransform->mRotation), 20), color_red);
+                draw_circleXY(pTransform->mPosition, 10, color_yellow, 12);
+                draw_ray(ray_scale(ray_fromRot(pTransform->mPosition, pTransform->mRotation), 20), color_yellow);
             } else if (pShape->mType == 1) {
                 draw_cubef(pTransform->mPosition, 20, color_red);
                 draw_ray(ray_scale(ray_fromRot(pTransform->mPosition, pTransform->mRotation), 20), color_red);
@@ -116,7 +118,8 @@ public:
     Director *mDirector{nullptr};
 
     inline void Create() override {
-        mDirector = AllocNew<FreeListMemory, Director>();
+        mDirector = AllocNew<BuddyMemory, Director>();
+
         mDirector->AddSystem<MovementSystem>();
         mDirector->AddSystem<ShooterSystem>();
         mDirector->AddSystem<ProjectileSystem>();
@@ -125,8 +128,8 @@ public:
         auto entity = mDirector->CreateEntity();
         mDirector->AddComponent<TransformComponent>(entity, vec3_zero, rot_zero);
         mDirector->AddComponent<ShapeComponent>(entity, 0);
-        mDirector->AddComponent<MovementComponent>(entity, 20.0f);
-        mDirector->AddComponent<ShooterComponent>(entity, 0.05f, 30000.0f);
+        mDirector->AddComponent<MovementComponent>(entity, 200.0f);
+        mDirector->AddComponent<ShooterComponent>(entity, 0.1f, 600.0f);
         mDirector->Commit(entity);
 
         mDirector->Create();
@@ -137,7 +140,6 @@ public:
     }
 
     inline void Destroy() override {
-        mDirector->~Director();
-        Free<FreeListMemory>((void **) &mDirector);
+        Free<BuddyMemory>(&mDirector);
     }
 };

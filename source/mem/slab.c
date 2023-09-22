@@ -3,8 +3,6 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
-#include <assert.h>
 
 #include "mem/utils.h"
 
@@ -28,7 +26,7 @@ SlabPage *create_slab(SlabMemory *self) {
 
     unsigned int size = self->slabSize;
     size += MEMORY_SPACE_STD(SlabPage);
-    size += n * sizeof(SlabObject);
+    size += n * MEMORY_SPACE_STD(SlabObject);
     size += sizeof(size_t);
 
     self->bytes += size;
@@ -168,7 +166,7 @@ char slab_free(SlabMemory *self, void **ptr) {
         printf("slab: free failed, invalid pointer\n");
         return 0;
     }
-    const unsigned int space = sizeof(SlabObject);
+    const unsigned int space = MEMORY_SPACE_STD(SlabObject);
     SlabObject *node = (SlabObject *) ((size_t) (*ptr) - space);
 
     if (!BYTE71_GET_1(node->next)) {

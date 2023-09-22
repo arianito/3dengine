@@ -12,15 +12,17 @@
 #include "mem/buddy.h"
 
 typedef struct {
+    size_t boot;
     size_t global;
     size_t stack;
     size_t freelist;
     size_t string;
-    unsigned int buddyOrder;
+    size_t buddy;
 } MemoryMetadata;
 
 typedef struct {
     MemoryMetadata metadata;
+    ArenaMemory *boot;
     ArenaMemory *global;
     StackMemory *stack;
     FreeListMemory *freelist;
