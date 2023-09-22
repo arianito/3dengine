@@ -72,6 +72,7 @@ void draw_render() {
     shader_mat4(drawData->shader, "view", &camera->view);
 
     glLineWidth(1);
+    glEnable(GL_DEPTH_TEST);
 
     for (int i = 0; i < types_n; i++) {
         int count = drawData->counter[i];
@@ -87,6 +88,7 @@ void draw_render() {
         drawData->counter[i] = 0;
     }
 
+    glDisable(GL_DEPTH_TEST);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
@@ -187,10 +189,18 @@ void draw_cube(Vec3 a, Vec3 s, Color c) {
     Vec3 size = vec3_mulf(s, 0.5f);
     draw_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
 }
+void fill_cube(Vec3 a, Vec3 s, Color c) {
+    Vec3 size = vec3_mulf(s, 0.5f);
+    fill_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
+}
 
 void draw_cubef(Vec3 a, float s, Color c) {
     Vec3 size = vec3f(s * 0.5f);
     draw_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
+}
+void fill_cubef(Vec3 a, float s, Color c) {
+    Vec3 size = vec3f(s * 0.5f);
+    fill_bbox(bbox(vec3_sub(a, size), vec3_add(a, size)), c);
 }
 
 void draw_edge(Edge e, Color c) {
@@ -391,7 +401,7 @@ void draw_arrow(Vec3 a, Vec3 b, Vec3 up, Color c, float p) {
 
 void draw_ray(Ray r, Color c) {
     draw_arrow(r.origin, vec3_add(r.origin, r.direction), vec3_up, c,
-               vec3_mag(r.direction) * 0.1f);
+               vec3_mag(r.direction) * 0.25f);
 }
 
 void draw_axis(Vec3 a, float s, Quat q) {

@@ -43,14 +43,14 @@ int main(int argc, const char *argv[]) {
         window.Create();
 
         while (game_loop()) {
+            input_update();
+
+            grid_render();
             editor_update();
+            draw_render();
+            debug_render();
 
             window.Update();
-
-            input_update();
-            draw_render();
-            grid_render();
-            debug_render();
         }
     }
 

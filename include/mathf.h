@@ -136,9 +136,11 @@ static const Vec4 vec4_one = {1, 1, 1, 1};
 static const Color color_black = {0, 0, 0, 1};
 static const Color color_white = {1, 1, 1, 1};
 static const Color color_red = {1, 0, 0, 1};
-static const Color color_darkred = {0.5f, 0, 0, 1};
+
 static const Color color_green = {0, 1, 0, 1};
+static const Color color_lightBlue = {0.706f, 0.882f, 1.0f, 1.0f};
 static const Color color_blue = {0, 0, 1, 1};
+static const Color color_darkBlue = {0.030f, 0.388f, 0.459f, 1.0f};
 static const Color color_yellow = {1, 1, 0, 1};
 static const Color color_gray = {0.5f, 0.5f, 0.5f, 1};
 
@@ -380,6 +382,21 @@ static inline Color color_alpha(Color c, float a) {
     return c;
 }
 
+static inline Color color_lerp(Color a, Color b, float d) {
+    a.a = lerp(a.a, b.a, d);
+    a.r = lerp(a.r, b.r, d);
+    a.g = lerp(a.g, b.g, d);
+    a.b = lerp(a.b, b.b, d);
+    return a;
+}
+
+static inline Color color_lerp01(Color a, Color b, float d) {
+    a.a = lerp01(a.a, b.a, d);
+    a.r = lerp01(a.r, b.r, d);
+    a.g = lerp01(a.g, b.g, d);
+    a.b = lerp01(a.b, b.b, d);
+    return a;
+}
 // vec2
 
 static inline Vec2 vec2(float x, float y) {
@@ -798,6 +815,15 @@ static inline Vec3 vec3_lerp(Vec3 a, Vec3 b, float dt) {
 static inline Vec3 vec3_lerp01(Vec3 a, Vec3 b, float dt) {
     return vec3_lerp(a, b, clamp01(dt));
 }
+
+static inline Vec3 vec3_moveTowards(Vec3 current, Vec3 target, float maxDelta) {
+    Vec3 toVector = vec3_sub(target, current);
+    float dist = vec3_mag(toVector);
+    if (dist <= maxDelta || dist < EPSILON)
+        return target;
+    return vec3_add(current, vec3_mulf(toVector, maxDelta / dist));
+}
+
 
 static inline Vec3 vec3_reflect(Vec3 a, Vec3 n) {
     return vec3_add(a, vec3_mulf(n, -2.0f * vec3_dot(n, a)));
