@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstring>
 #include <utility>
+#include <typeinfo>
 
 extern "C" {
 #include "mem/alloc.h"
@@ -32,7 +33,10 @@ inline void *Alloc(size_t size = -1, unsigned int alignment = sizeof(size_t)) {
     } else {
         m = T::Alloc(size, alignment);
     }
-    assert(m && "Alloc: allocator class not specified. ");
+    if(m == nullptr) {
+        printf("Alloc: allocation failed %s\n", typeid(T).name());
+        return m;
+    }
     if constexpr (Clean) memset(m, 0, size);
     return m;
 }

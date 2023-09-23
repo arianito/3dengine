@@ -1,12 +1,7 @@
 #pragma once
 
 #include <stddef.h>
-
-typedef struct {
-    void *(*alloc)(size_t);
-
-    void (*free)(void *);
-} P2SlabAllocator;
+#include "mem/utils.h"
 
 typedef struct {
     size_t next;
@@ -24,7 +19,7 @@ typedef struct {
 } P2SlabPool;
 
 typedef struct {
-    P2SlabAllocator allocator;
+    GeneralAllocator allocator;
     P2SlabPool pools[32];
     unsigned int padding;
     unsigned int usage;
@@ -34,7 +29,7 @@ typedef struct {
 
 P2SlabMemory *p2slab_create(void *m, unsigned int n);
 
-P2SlabMemory *p2slab_create_alloc(P2SlabAllocator allocator, unsigned int n);
+P2SlabMemory *p2slab_create_alloc(GeneralAllocator allocator, unsigned int n);
 
 P2SlabMemory *make_p2slab(unsigned int n);
 

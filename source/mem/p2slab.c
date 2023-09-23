@@ -83,7 +83,7 @@ P2SlabMemory *p2slab_create(void *m, unsigned int n) {
     return self;
 }
 
-P2SlabMemory *p2slab_create_alloc(P2SlabAllocator allocator, unsigned int n) {
+P2SlabMemory *p2slab_create_alloc(GeneralAllocator allocator, unsigned int n) {
     void *m = allocator.alloc(sizeof(P2SlabMemory));
     if (m == NULL) {
         printf("p2slab make failed, system can't provide free memory\n");

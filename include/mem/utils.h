@@ -35,3 +35,8 @@
 #define BYTE6AB_SET_B(full, b) (full | SET_NTH_BE(a, 1ULL, 1ULL))
 #define BYTE6AB_GET_B(full) (GET_NTH_BE(full, 1ULL, 1ULL))
 #define BYTE6AB_GET_6(full) (GET_NTH_LE(full, 6ULL, 0ULL))
+
+typedef struct {
+    void *(*alloc)(size_t);
+    void (*free)(void *);
+} GeneralAllocator;

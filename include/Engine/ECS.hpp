@@ -259,7 +259,7 @@ private:
 
     template<class T>
     inline SlabMemory *makeSlab(int length) {
-        SlabAllocator pAlloc;
+        GeneralAllocator pAlloc;
         pAlloc.alloc = ecs_global_alloc;
         pAlloc.free = ecs_global_free;
         return slab_create_alloc(pAlloc, sizeof(T) * length, sizeof(T));

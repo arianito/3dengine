@@ -85,7 +85,7 @@ SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSiz
     return self;
 }
 
-SlabMemory *slab_create_alloc(SlabAllocator allocator, unsigned int slabSize, unsigned short objectSize) {
+SlabMemory *slab_create_alloc(GeneralAllocator allocator, unsigned int slabSize, unsigned short objectSize) {
     void *m = allocator.alloc(sizeof(SlabMemory));
     if (m == NULL) {
         printf("slab: make failed, system can't provide free memory\n");

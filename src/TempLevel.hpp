@@ -4,7 +4,6 @@ extern "C" {
 #include "mathf.h"
 #include "debug.h"
 #include "mem/p2slab.h"
-
 }
 
 #include "data/Heap.hpp"
@@ -19,7 +18,6 @@ public:
 
     static inline void create() {
         slab = make_p2slab(10);
-
     }
 
     static inline void destroy() {
@@ -44,6 +42,7 @@ public:
 };
 
 P2SlabMemory *CustomTempAllocator3::slab = nullptr;
+
 
 class TempLevel : public Level {
     using TAlloc = CustomTempAllocator3;

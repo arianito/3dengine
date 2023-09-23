@@ -1,11 +1,7 @@
 #pragma once
 
 #include <stddef.h>
-
-typedef struct {
-    void *(*alloc)(size_t);
-    void (*free)(void *);
-} SlabAllocator;
+#include "mem/utils.h"
 
 typedef struct {
     size_t next;
@@ -18,7 +14,7 @@ typedef struct {
 } SlabPage;
 
 typedef struct {
-    SlabAllocator allocator;
+    GeneralAllocator allocator;
     SlabObject *objects;
     SlabPage *pages;
     unsigned int padding;
@@ -30,7 +26,7 @@ typedef struct {
 
 SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSize);
 
-SlabMemory *slab_create_alloc(SlabAllocator allocator, unsigned int slabSize, unsigned short objectSize);
+SlabMemory *slab_create_alloc(GeneralAllocator allocator, unsigned int slabSize, unsigned short objectSize);
 
 SlabMemory *make_slab(unsigned int slabSize, unsigned short objectSize);
 
