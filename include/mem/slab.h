@@ -18,16 +18,14 @@ typedef struct {
 } SlabPage;
 
 typedef struct {
+    SlabAllocator allocator;
     SlabObject *objects;
     SlabPage *pages;
     unsigned int padding;
     unsigned int slabSize;
     unsigned int objectSize;
-    unsigned int capacity;
     unsigned int usage;
-    unsigned int bytes;
-    SlabAllocator allocator;
-
+    unsigned int total;
 } SlabMemory;
 
 SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSize);

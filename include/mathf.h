@@ -972,6 +972,13 @@ static inline Vec3 vec3_snap(Vec3 a, float size) {
     a.z = snap(a.z, size);
     return a;
 }
+static inline Vec3 vec3_snapCube(Vec3 a, float size) {
+    float hs = size / 2;
+    a.x = snap(-hs + a.x, size) + hs;
+    a.y = snap(-hs + a.y, size)+ hs;
+    a.z = snap(-hs + a.z, size)+ hs;
+    return a;
+}
 
 static inline Vec3 vec3_clamp(Vec3 a, Vec3 min, Vec3 max) {
     a.x = clamp(a.x, -min.x, max.x);

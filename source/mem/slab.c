@@ -29,7 +29,7 @@ SlabPage *create_slab(SlabMemory *self) {
     size += n * MEMORY_SPACE_STD(SlabObject);
     size += sizeof(size_t);
 
-    self->bytes += size;
+    self->total += size;
 
     void *m = NULL;
     if (self->allocator.alloc != NULL)
@@ -59,7 +59,6 @@ SlabPage *create_slab(SlabMemory *self) {
             break;
 
         slab_enqueue(self, (SlabObject *) (address + padding - space));
-        self->capacity++;
     }
     return slab;
 }
@@ -79,8 +78,7 @@ SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSiz
     self->allocator.free = NULL;
     self->padding = padding;
     self->usage = 0;
-    self->capacity = 0;
-    self->bytes = padding + sizeof(SlabMemory);
+    self->total = padding + sizeof(SlabMemory);
 
     self->slabSize = slabSize;
     self->objectSize = objectSize;
@@ -152,7 +150,7 @@ void *slab_alloc(SlabMemory *self) {
 
     SlabObject *node = slab_dequeue(self);
     const unsigned int space = MEMORY_SPACE_STD(SlabObject);
-    self->usage++;
+    self->usage += self->objectSize;
     return (void *) ((size_t) node + space);
 }
 
@@ -175,6 +173,6 @@ char slab_free(SlabMemory *self, void **ptr) {
     }
 
     slab_enqueue(self, node);
-    self->usage--;
+    self->usage -= self->objectSize;
     return 1;
 }

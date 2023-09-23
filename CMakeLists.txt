@@ -25,6 +25,7 @@ add_executable(
         source/mem/stack.c
         source/mem/pool.c
         source/mem/freelist.c
+        source/mem/p2slab.c
 
         source/shader.c
         source/draw.c

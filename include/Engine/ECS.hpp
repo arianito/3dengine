@@ -314,7 +314,6 @@ public:
 
     }
 
-
     inline EntityId CreateEntity() {
         auto entity = new(slab_alloc(mEntitySlab)) Entity<TAlloc>(mEntityCounter++);
         mEntities.Set(entity->Id(), entity);

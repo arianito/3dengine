@@ -45,9 +45,16 @@ public:
 private:
 
     inline void expand() {
-        if ((mLength << 1) < mCapacity)
+        if (mLength < mCapacity - 1)
             return;
         Reserve(mCapacity << 1);
+    }
+
+    inline void shrink() {
+        float ratio = (float) mLength / mCapacity;
+        if ((ratio) > 0.25f)
+            return;
+        Reserve(mCapacity >> 1);
     }
 
 public:
@@ -65,6 +72,7 @@ public:
 
     inline void Clear() {
         mLength = 0;
+        Reserve(8);
     }
 
     inline void Fit() {
@@ -93,17 +101,6 @@ public:
         for (int i = index; i < mLength - 1; i++)
             mList[i] = mList[i + 1];
         mLength--;
-    }
-
-    inline void Remove(const T &item) {
-        int j = 0;
-        for (int i = 0; i < mLength; i++) {
-            if (mList[i + j] == item)
-                j++;
-            if (j > 0)
-                mList[i] = mList[i + j];
-        }
-        mLength -= j;
     }
 
     inline T Pop() {

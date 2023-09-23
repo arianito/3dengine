@@ -17,7 +17,7 @@ private:
     };
 
 public:
-    explicit inline ProbeHashTable() : ProbeHashTable(32) {}
+    explicit inline ProbeHashTable() : ProbeHashTable(8) {}
 
     explicit inline ProbeHashTable(int capacity) : mCapacity(capacity) {
         mProbes = Alloc<TAlloc, Node, true>(mCapacity);
@@ -26,11 +26,11 @@ public:
     explicit inline ProbeHashTable(const ProbeHashTable &) = delete;
 
     inline ~ProbeHashTable() {
-        Free<TAlloc>((void **) &mProbes);
+        Free<TAlloc>(&mProbes);
     }
 
     inline void Reserve(int newCapacity) {
-        if (newCapacity < mCapacity)
+        if (newCapacity < (mLength << 1))
             return;
 
         Node *newList = Alloc<TAlloc, Node, true>(newCapacity);
@@ -49,7 +49,7 @@ public:
             }
         }
 
-        Free<TAlloc>((void **) &mProbes);
+        Free<TAlloc>(&mProbes);
         mProbes = newList;
         mCapacity = newCapacity;
     }
@@ -123,6 +123,13 @@ private:
         if (ratio < 0.5f)
             return;
         Reserve(mCapacity << 1);
+    }
+
+    inline void shrink() {
+        float ratio = (float) mLength / mCapacity;
+        if (ratio > 0.25f)
+            return;
+        Reserve(mCapacity >> 1);
     }
 
     inline unsigned int hash(const K &key, unsigned int size) {

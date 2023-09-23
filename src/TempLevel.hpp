@@ -3,6 +3,7 @@
 extern "C" {
 #include "mathf.h"
 #include "debug.h"
+#include "mem/p2slab.h"
 
 }
 
@@ -16,6 +17,15 @@ class CustomTempAllocator {
 public:
     static BuddyMemory *buddy;
 
+    static inline void create() {
+        buddy = make_buddy(24);
+
+    }
+
+    static inline void destroy() {
+        buddy_destroy(&buddy);
+    }
+
     inline static void *Alloc(size_t size, unsigned int alignment) {
         return buddy_alloc(buddy, size);
     }
@@ -23,12 +33,112 @@ public:
     inline static void Free(void **ptr) {
         buddy_free(buddy, ptr);
     }
+
+    inline static size_t usage() {
+        return buddy->usage;
+    }
+
+    inline static size_t size() {
+        return 1 << CustomTempAllocator::buddy->order;
+    }
 };
 
+class CustomTempAllocator2 {
+public:
+    static FreeListMemory *freelist;
+
+    static inline void create() {
+        freelist = make_freelist(16 * MEGABYTES);
+
+    }
+
+    static inline void destroy() {
+        freelist_destroy(&freelist);
+    }
+
+    inline static void *Alloc(size_t size, unsigned int alignment) {
+        return freelist_alloc(freelist, size, alignment);
+    }
+
+    inline static void Free(void **ptr) {
+        freelist_free(freelist, ptr);
+    }
+
+    inline static size_t usage() {
+        return freelist_capacity(freelist);
+    }
+
+    inline static size_t size() {
+        return freelist->size;
+    }
+};
+
+
+class CustomTempAllocator3 {
+public:
+    static P2SlabMemory *slab;
+
+    static inline void create() {
+        slab = make_p2slab(20);
+
+    }
+
+    static inline void destroy() {
+        p2slab_destroy(&slab);
+    }
+
+    inline static void *Alloc(size_t size, unsigned int alignment) {
+        return p2slab_alloc(slab, size);
+    }
+
+    inline static void Free(void **ptr) {
+        p2slab_free(slab, ptr);
+    }
+
+    inline static size_t usage() {
+        return slab->usage;
+    }
+
+    inline static size_t size() {
+        return slab->total;
+    }
+};
+
+class CustomTempAllocator4 {
+public:
+    static size_t used;
+
+    static inline void create() {
+
+    }
+
+    static inline void destroy() {
+    }
+
+    inline static void *Alloc(size_t size, unsigned int alignment) {
+        used += size;
+        return ::operator new( size);
+    }
+
+    inline static void Free(void **ptr) {
+        ::operator delete(*ptr);
+    }
+
+    inline static size_t usage() {
+        return 0;
+    }
+
+    inline static size_t size() {
+        return used;
+    }
+};
 BuddyMemory *CustomTempAllocator::buddy = nullptr;
+FreeListMemory *CustomTempAllocator2::freelist = nullptr;
+P2SlabMemory *CustomTempAllocator3::slab = nullptr;
+size_t CustomTempAllocator4::used = 0;
 
 class TempLevel : public Level {
-    using TAlloc = CustomTempAllocator;
+    using TAlloc = CustomTempAllocator3;
 
     struct TransformComponent : public Component<TAlloc> {
         Vec3 position;
@@ -59,16 +169,13 @@ class TempLevel : public Level {
 
     struct ParticleComponent : public Component<TAlloc> {
         EmitterComponent *emitter{nullptr};
-
         Vec3 position{0.0f, 0.0f, 0.0f};
         Vec3 velocity{0.0f, 0.0f, 0.0f};
         float spawnTime{0.0f};
-        float timeSpan{1.0f};
+        float timeSpan{2.0f};
         float blend{1.0f};
         float size{12.0f};
         float damping{0};
-
-        explicit inline ParticleComponent() = default;
     };
 
     struct EmitterComponent : public Component<TAlloc> {
@@ -76,7 +183,7 @@ class TempLevel : public Level {
         float lastSpawn{0};
         Color color1{};
         Color color2{};
-        int maxParticles{40};
+        int maxParticles{120};
         int activeParticles{0};
         int removeParticles{0};
 
@@ -109,20 +216,18 @@ class TempLevel : public Level {
                     }
 
                     if (particle) {
-                        Vec3 rnd = vec3_add(vec3_rand(1, 1, 5), vec3(0,0, 5));
-                        particle->size = 12.0f;
+                        Vec3 rnd = vec3_add(vec3_rand(1, 1, 5), vec3(0, 0, 5));
+                        particle->size = 24.0f;
                         particle->emitter = pEmitter;
                         particle->position = pTransform->position;
                         particle->velocity = vec3_mulf(rnd, 0.5f);
                         particle->spawnTime = gameTime->time;
-                        particle->damping = (randf() * 0.02f) + 0.95f;
+                        particle->damping = (randf() * 0.1f) + 0.85f;
                         pEmitter->lastSpawn = gameTime->time;
                     }
-                    act += pEmitter->activeParticles;
                 }
 
             }
-            debug_string3df(vec3_zero, "%d", act);
         }
     };
 
@@ -139,7 +244,7 @@ class TempLevel : public Level {
                 if ((t > 1 || pParticle->size < 0.5f)) {
                     mDirector->DestroyEntity(pParticle->mEntityId);
                     pParticle->emitter->removeParticles++;
-                    if(pParticle->emitter->removeParticles == pParticle->emitter->maxParticles)
+                    if (pParticle->emitter->removeParticles == pParticle->emitter->maxParticles)
                         mDirector->DestroyEntity(pParticle->emitter->mEntityId);
 
                 }
@@ -173,7 +278,7 @@ class TempLevel : public Level {
             for (const auto &bucket: Components()) {
                 auto pParticle = Get<ParticleComponent>(bucket);
                 Color c = color_lerp01(pParticle->emitter->color2, pParticle->emitter->color1, powf(pParticle->blend, 12));
-                fill_cubef(pParticle->position, pParticle->size, c);
+                draw_point(pParticle->position, pParticle->size, c);
             }
         }
     };
@@ -189,17 +294,20 @@ class TempLevel : public Level {
         inline void Update() override {
             Ray r = camera_screenToWorld(input->position);
             Vec3 dest = vec3_intersectPlane(r.origin, vec3_add(r.origin, r.direction), vec3_zero, vec3_up);
-            dest = vec3_snap(dest, 5.0f);
 
-            if (input_mousepress(MOUSE_LEFT)) {
+            if (input_mousedown(MOUSE_LEFT)) {
 
-                auto entity = mDirector->CreateEntity();
-                mDirector->AddComponent<TransformComponent>(entity, dest);
-                auto emitterComponent = mDirector->AddComponent<EmitterComponent>(entity);
-                Color c = color_rand();
-                emitterComponent->color1 = color_darken(c, 0.1f);
-                emitterComponent->color2 = color_lighten(c, 0.5f);
-                mDirector->Commit(entity);
+                for (int i = 0; i < 20; i++) {
+                    Vec3 pos = vec3_add(dest, vec3_rand(100, 100, 0));
+                    pos = vec3_snapCube(pos, 10.0f);
+                    auto entity = mDirector->CreateEntity();
+                    mDirector->AddComponent<TransformComponent>(entity, pos);
+                    auto emitterComponent = mDirector->AddComponent<EmitterComponent>(entity);
+                    Color c = color_rand();
+                    emitterComponent->color1 = color_darken(c, 0.1f);
+                    emitterComponent->color2 = color_lighten(c, 0.5f);
+                    mDirector->Commit(entity);
+                }
             }
             if (input_keydown(KEY_SPACE)) {
                 auto entity = mDirector->Query<EmitterComponent>();
@@ -211,6 +319,7 @@ class TempLevel : public Level {
                 }
             }
 
+            dest = vec3_snapCube(dest, 10.0f);
             draw_cubef(dest, 10.0f, color_red);
         }
     };
@@ -220,7 +329,7 @@ public:
 
 
     inline void Create() override {
-        CustomTempAllocator::buddy = make_buddy(24);
+        TAlloc::create();
         mDirector = AllocNew<TAlloc, Director<TAlloc>>();
         mDirector->AddSystem<MovementSystem>();
         mDirector->AddSystem<RenderSystem>();
@@ -234,14 +343,16 @@ public:
     inline void Update() override {
         mDirector->Update();
         debug_origin(vec2(1, 1));
-        debug_color(color_yellow);
+        debug_color(color_white);
         Vec2 pos = vec2(game->width - 10, game->height - 10);
-        debug_stringf(pos, "temp %d / %d", CustomTempAllocator::buddy->usage, 1<< CustomTempAllocator::buddy->order);
-
+        debug_stringf(pos,
+                      "Alloc: %.2f",
+                      (float)TAlloc::usage() / (float )TAlloc::size()
+        );
     }
 
     inline void Destroy() override {
         Free<TAlloc>(&mDirector);
-        buddy_destroy(&CustomTempAllocator::buddy);
+        TAlloc::destroy();
     }
 };
