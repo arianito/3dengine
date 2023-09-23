@@ -1,50 +1,18 @@
 #pragma once
 
 #include <cassert>
-#include "engine/Object.hpp"
 #include "engine/Memory.hpp"
 
 static constexpr int MAX_HEAP = 1;
 static constexpr int MIN_HEAP = 2;
 
-template<typename T>
+template<typename T, class TAlloc>
 class Heap {
-
-public:
-    Allocator *mAllocator{nullptr};
+private:
     T *mHeap{nullptr};
-    int mDefaultCapacity{8};
-    int mCapacity{mDefaultCapacity};
+    int mCapacity{8};
     int mLength{0};
     int mPolicy{MAX_HEAP};
-
-    explicit inline Heap(Allocator *a, int policy) : mAllocator(a),
-                                                     mPolicy(policy) {
-        mHeap = (T *) mAllocator->Alloc(mCapacity * sizeof(T));
-    }
-
-    explicit inline Heap(const Heap &) = delete;
-
-    inline ~Heap() {
-        mAllocator->Free((void **) &mHeap);
-    }
-
-    inline void reserve(int newCapacity) {
-        int newBytes = newCapacity * sizeof(T);
-        int oldBytes = mCapacity * sizeof(T);
-        T *newList = (T *) mAllocator->Alloc(newBytes);
-        assert(newList != nullptr && "Heap: Insufficient memory.\n");
-        memcpy(newList, mHeap, oldBytes);
-        mAllocator->Free((void **) (&mHeap));
-        mHeap = newList;
-        mCapacity = newCapacity;
-    }
-
-    inline void expand() {
-        if (mLength < mCapacity - 1)
-            return;
-        reserve(mCapacity << 1);
-    }
 
     inline void swap(int i, int j) {
 
@@ -57,8 +25,10 @@ public:
         mHeap[j] = tmp;
     }
 
-    bool empty() {
-        return mLength == 0;
+    inline void expand() {
+        if (mLength < mCapacity - 1)
+            return;
+        Reserve(mCapacity << 1);
     }
 
 
@@ -121,13 +91,47 @@ public:
         }
     }
 
-    inline void heapify(const T buff[], int n) {
+
+    inline bool compare(int index, const T &value) {
+        if (index > mLength)return true;
+        if ((mPolicy == MAX_HEAP) ?
+            (mHeap[index - 1] > value) :
+            (mHeap[index - 1] < value))
+            return false;
+        return compare(index * 2, value) && compare(index * 2 + 1, value);
+    }
+
+public:
+    explicit inline Heap(int policy) : mPolicy(policy) {
+        mHeap = Alloc<TAlloc, T>(mCapacity);
+    }
+
+    explicit inline Heap(const Heap &) = delete;
+
+    inline ~Heap() {
+        Free<TAlloc>(&mHeap);
+    }
+
+    inline void Reserve(int newCapacity) {
+        T *newList = Alloc<TAlloc, T>(newCapacity);
+        assert(newList != nullptr && "Heap: Insufficient memory.\n");
+        int oldBytes = mCapacity * sizeof(T);
+        memcpy(newList, mHeap, oldBytes);
+        Free<TAlloc>(&mHeap);
+        mHeap = newList;
+        mCapacity = newCapacity;
+    }
+
+    bool Empty() {
+        return mLength == 0;
+    }
+
+    inline void Heapify(const T buff[], int n) {
         if (n > mCapacity) {
             int newCapacity = nextPowerOfTwo(n);
-            int newBytes = newCapacity * sizeof(T);
-            T *newList = (T *) mAllocator->Alloc(newBytes);
+            T *newList = Alloc<TAlloc, T>(newCapacity);
             assert(newList != nullptr && "Heap: Insufficient memory.\n");
-            mAllocator->Free((void **) (&mHeap));
+            Free<TAlloc>(&mHeap);
             mCapacity = newCapacity;
             mHeap = newList;
         }
@@ -140,14 +144,14 @@ public:
     }
 
 
-    void push(const T &item) {
+    void Push(const T &item) {
         expand();
         mHeap[mLength++] = item;
 
         sortUp(mLength);
     }
 
-    T pop() {
+    T Pop() {
         assert(mLength > 0 && "Heap: is empty");
 
         T root = mHeap[0];
@@ -157,20 +161,11 @@ public:
         return root;
     }
 
-    inline bool compare(int index, const T &value) {
-        if (index > mLength)return true;
-        if ((mPolicy == MAX_HEAP) ?
-            (mHeap[index - 1] > value) :
-            (mHeap[index - 1] < value))
-            return false;
-        return compare(index * 2, value) && compare(index * 2 + 1, value);
-    }
-
-    inline bool validate(int index) {
+    inline bool Validate(int index) {
         if (index > mLength) return true;
 
-        return validate(index * 2) &&
-               validate(index * 2 + 1) &&
+        return Validate(index * 2) &&
+               Validate(index * 2 + 1) &&
                compare(index * 2, mHeap[index - 1]) &&
                compare(index * 2 + 1, mHeap[index - 1]);
     }

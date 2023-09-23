@@ -17,7 +17,6 @@ struct GameWindow {
         manager.Add<StartLevel>();
         manager.Add<BuddyLevel>();
         manager.Add<TempLevel>();
-
         manager.Load<TempLevel>();
     }
 

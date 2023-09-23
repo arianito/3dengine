@@ -84,6 +84,13 @@ typedef struct __attribute__((aligned(16), packed)) {
     float a;
 } Color;
 
+typedef struct __attribute__((aligned(16), packed)) {
+    float h;
+    float s;
+    float l;
+    float a;
+} ColorHSL;
+
 typedef struct __attribute__((aligned(64), packed)) {
     Vec3 pos;
     Color color;
@@ -377,6 +384,85 @@ static inline Color color(float r, float g, float b, float a) {
     return c;
 }
 
+static inline ColorHSL color_hslf(float r, float g, float b, float a) {
+    float max = fmaxf(r, fmaxf(g, b));
+    float min = fminf(r, fminf(g, b));
+
+    float h, s, l;
+    h = s = l = (max + min) / 2.0f;
+
+    if (max == min) {
+        h = s = 0.0f;
+    } else {
+        float d = max - min;
+        s = (l > 0.5) ? d / (2.0f - max - min) : d / (max + min);
+
+        if (max == r) {
+            h = (g - b) / d + ((g < b) ? 6.0f : 0.0f);
+        } else if (max == g) {
+            h = (b - r) / d + 2.0f;
+        } else {
+            h = (r - g) / d + 4.0f;
+        }
+
+        h *= 60.0f;
+    }
+
+    ColorHSL hsl;
+    hsl.a = a;
+    hsl.h = h;
+    hsl.s = s;
+    hsl.l = l;
+    return hsl;
+}
+
+static inline ColorHSL color_hsl(Color rgb) {
+    return color_hslf(rgb.r, rgb.g, rgb.b, rgb.a);
+}
+
+static inline Color color_fromHSLf(float h, float s, float l, float a) {
+    float C = (1 - fabsf(2 * l - 1)) * s;
+    float X = C * (1 - fabsf(fmodf(h / 60.0f, 2) - 1));
+    float m = l - C / 2.0f;
+
+    float R, G, B;
+    if (h >= 0 && h < 60) {
+        R = C;
+        G = X;
+        B = 0;
+    } else if (h >= 60 && h < 120) {
+        R = X;
+        G = C;
+        B = 0;
+    } else if (h >= 120 && h < 180) {
+        R = 0;
+        G = C;
+        B = X;
+    } else if (h >= 180 && h < 240) {
+        R = 0;
+        G = X;
+        B = C;
+    } else if (h >= 240 && h < 300) {
+        R = X;
+        G = 0;
+        B = C;
+    } else {
+        R = C;
+        G = 0;
+        B = X;
+    }
+    Color rgb;
+    rgb.a = a;
+    rgb.r = R + m;
+    rgb.g = G + m;
+    rgb.b = B + m;
+    return rgb;
+}
+static inline Color color_fromHSL(ColorHSL hsl) {
+    return color_fromHSLf(hsl.h, hsl.s, hsl.l, hsl.a);
+}
+
+
 static inline Color color_alpha(Color c, float a) {
     c.a = a;
     return c;
@@ -388,6 +474,27 @@ static inline Color color_lerp(Color a, Color b, float d) {
     a.g = lerp(a.g, b.g, d);
     a.b = lerp(a.b, b.b, d);
     return a;
+}
+
+static inline Color color_rand() {
+    Color a;
+    a.a = 1;
+    a.r = randf();
+    a.g = randf();
+    a.b = randf();
+    return a;
+}
+
+static inline Color color_darken(Color rgba, float p) {
+    ColorHSL hsl = color_hsl(rgba);
+    hsl.l = clamp(hsl.l - p, 0.0f, 1.0f);
+    return color_fromHSL(hsl);
+}
+
+static inline Color color_lighten(Color rgba, float p) {
+    ColorHSL hsl = color_hsl(rgba);
+    hsl.l = clamp(hsl.l + p, 0.0f, 1.0f);
+    return color_fromHSL(hsl);
 }
 
 static inline Color color_lerp01(Color a, Color b, float d) {
@@ -625,6 +732,13 @@ static inline Vec3 vec3(float x, float y, float z) {
     return a;
 }
 
+static inline Vec3 vec3_rand(float x, float y, float z) {
+    Vec3 a;
+    a.x = randf() * x - x * 0.5f;
+    a.y = randf() * y - y * 0.5f;
+    a.z = randf() * z - z * 0.5f;
+    return a;
+}
 static inline Vec3 vec3f(float a) {
     Vec3 v;
     v.x = v.y = v.z = a;

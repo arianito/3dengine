@@ -26,6 +26,7 @@ BuddyMemory *buddy_create(void *m, unsigned int order) {
     self->head->size = size;
     self->head->free = 1;
     self->usage = 0;
+    self->order = order;
 
     self->tail = buddy_next(self->head);
     self->padding = padding;

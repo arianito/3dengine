@@ -9,15 +9,32 @@ extern "C" {
 #include "engine/ECS.hpp"
 #include "engine/Memory.hpp"
 
-class StartLevel : public Level {
 
-    struct MovementComponent : public Component {
+class CustomStartLevelAllocator {
+public:
+    static FreeListMemory *buddy;
+
+    inline static void *Alloc(size_t size, unsigned int alignment) {
+        return freelist_alloc(buddy, size, alignment);
+    }
+
+    inline static void Free(void **ptr) {
+        freelist_free(buddy, ptr);
+    }
+};
+
+FreeListMemory *CustomStartLevelAllocator::buddy = nullptr;
+
+class StartLevel : public Level {
+    using TAlloc = CustomStartLevelAllocator;
+
+    struct MovementComponent : public Component<TAlloc> {
         float mSpeed;
 
         explicit inline MovementComponent(float speed) : mSpeed(speed) {}
     };
 
-    struct ShooterComponent : public Component {
+    struct ShooterComponent : public Component<TAlloc> {
         float mRate{0.05f};
         float mSpeed{100.0f};
         float mLastShoot{0};
@@ -25,44 +42,44 @@ class StartLevel : public Level {
         ShooterComponent(float rate, float speed) : mRate(rate), mSpeed(speed) {}
     };
 
-    struct ShapeComponent : public Component {
+    struct ShapeComponent : public Component<TAlloc> {
         int mType = 0;
 
         explicit inline ShapeComponent(int type) : mType(type) {}
     };
 
-    struct ProjectileComponent : public Component {
+    struct ProjectileComponent : public Component<TAlloc> {
         Vec3 mInitialPosition;
         float mSpeed;
 
         explicit inline ProjectileComponent(Vec3 pos, float speed) : mInitialPosition(pos), mSpeed(speed) {}
     };
 
-    struct TransformComponent : public Component {
+    struct TransformComponent : public Component<TAlloc> {
         Vec3 mPosition;
         Rot mRotation;
 
         explicit inline TransformComponent(Vec3 pos, Rot rot) : mPosition(pos), mRotation(rot) {}
     };
 
-    struct ProjectileSystem : public System<ProjectileComponent, TransformComponent> {
+    struct ProjectileSystem : public System<TAlloc, ProjectileComponent, TransformComponent> {
         void Update() override {
             for (auto &compTuple: Components()) {
-                TransformComponent *pTransform = std::get<TransformComponent *>(compTuple);
-                ProjectileComponent *pProjectile = std::get<ProjectileComponent *>(compTuple);
+                auto pTransform = Get<TransformComponent>(compTuple);
+                auto pProjectile = Get<ProjectileComponent>(compTuple);
 
                 Vec3 fwd = rot_forward(pTransform->mRotation);
                 fwd = vec3_mulf(fwd, pProjectile->mSpeed * gameTime->deltaTime);
                 pTransform->mPosition = vec3_add(pTransform->mPosition, fwd);
                 auto d = vec3_dist(pTransform->mPosition, pProjectile->mInitialPosition);
                 if (d > 1000.0f) {
-                    GetDirector()->DestroyEntity(pTransform->Id());
+                    mDirector->DestroyEntity(pTransform->mEntityId);
                 }
             }
         }
     };
 
-    struct MovementSystem : public System<MovementComponent, TransformComponent> {
+    struct MovementSystem : public System<TAlloc, MovementComponent, TransformComponent> {
         inline void Update() override {
             Ray r = camera_screenToWorld(input->position);
             Vec3 dest = vec3_intersectPlane(r.origin, vec3_add(r.origin, r.direction), vec3_zero, vec3_up);
@@ -82,30 +99,29 @@ class StartLevel : public Level {
         }
     };
 
-    struct ShooterSystem : public System<ShooterComponent, TransformComponent> {
+    struct ShooterSystem : public System<TAlloc, ShooterComponent, TransformComponent> {
         void Update() override {
             auto down = input_mousepress(MOUSE_LEFT);
             for (auto &components: Components()) {
-                ShooterComponent *pShooter = std::get<ShooterComponent *>(components);
-                TransformComponent *pTransform = std::get<TransformComponent *>(components);
+                auto pShooter = Get<ShooterComponent>(components);
+                auto pTransform = Get<TransformComponent>(components);
                 if (down && (gameTime->time - pShooter->mLastShoot > pShooter->mRate)) {
-                    auto director = GetDirector();
-                    auto entityId = director->CreateEntity();
-                    director->AddComponent<TransformComponent>(entityId, pTransform->mPosition, pTransform->mRotation);
-                    director->AddComponent<ProjectileComponent>(entityId, pTransform->mPosition, pShooter->mSpeed);
-                    director->AddComponent<ShapeComponent>(entityId, 2);
-                    director->Commit(entityId);
+                    auto entityId = mDirector->CreateEntity();
+                    mDirector->AddComponent<TransformComponent>(entityId, pTransform->mPosition, pTransform->mRotation);
+                    mDirector->AddComponent<ProjectileComponent>(entityId, pTransform->mPosition, pShooter->mSpeed);
+                    mDirector->AddComponent<ShapeComponent>(entityId, 2);
+                    mDirector->Commit(entityId);
                     pShooter->mLastShoot = gameTime->time;
                 }
             }
         }
     };
 
-    struct RenderSystem : public System<ShapeComponent, TransformComponent> {
+    struct RenderSystem : public System<TAlloc, ShapeComponent, TransformComponent> {
         inline void Update() override {
             for (const auto &bucket: Components()) {
-                auto pShape = std::get<ShapeComponent *>(bucket);
-                auto pTransform = std::get<TransformComponent *>(bucket);
+                auto pShape = Get<ShapeComponent>(bucket);
+                auto pTransform = Get<TransformComponent>(bucket);
                 if (pShape->mType == 0) {
                     draw_circleXY(pTransform->mPosition, 10, color_yellow, 12);
                     draw_ray(ray_scale(ray_fromRot(pTransform->mPosition, pTransform->mRotation), 20), color_yellow);
@@ -120,10 +136,12 @@ class StartLevel : public Level {
         }
     };
 
-    Director *mDirector{nullptr};
+    Director<TAlloc> *mDirector{nullptr};
 
     inline void Create() override {
-        mDirector = AllocNew<BuddyMemory, Director>();
+
+        CustomStartLevelAllocator::buddy = make_freelist(16 * MEGABYTES);
+        mDirector = AllocNew<TAlloc, Director<TAlloc>>();
 
         mDirector->AddSystem<MovementSystem>();
         mDirector->AddSystem<ShooterSystem>();
@@ -134,7 +152,7 @@ class StartLevel : public Level {
         mDirector->AddComponent<TransformComponent>(entity, vec3_zero, rot_zero);
         mDirector->AddComponent<ShapeComponent>(entity, 0);
         mDirector->AddComponent<MovementComponent>(entity, 50.0f);
-        mDirector->AddComponent<ShooterComponent>(entity, 0.001f, 200.0f);
+        mDirector->AddComponent<ShooterComponent>(entity, 0.1f, 500.0f);
         mDirector->Commit(entity);
 
         mDirector->Create();
@@ -142,9 +160,14 @@ class StartLevel : public Level {
 
     inline void Update() override {
         mDirector->Update();
+        debug_origin(vec2(1, 1));
+        debug_color(color_yellow);
+        Vec2 pos = vec2(game->width - 10, game->height - 10);
+        debug_stringf(pos, "temp %d / %d", freelist_capacity(CustomStartLevelAllocator::buddy), CustomStartLevelAllocator::buddy->size);
     }
 
     inline void Destroy() override {
-        Free<BuddyMemory>(&mDirector);
+        Free<TAlloc>(&mDirector);
+        freelist_destroy(&CustomStartLevelAllocator::buddy);
     }
 };

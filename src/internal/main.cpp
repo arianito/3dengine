@@ -17,14 +17,14 @@ extern "C" {
 
 int main(int argc, const char *argv[]) {
     MemoryMetadata meta;
-    meta.boot = 128 * MEGABYTES;
+    meta.boot = 64 * MEGABYTES;
 
     meta.global = 32 * MEGABYTES;
-    meta.freelist = 32 * MEGABYTES;
-    meta.buddy = 32 * MEGABYTES;
-
+    meta.freelist = 8 * MEGABYTES;
+    meta.buddy = 8 * MEGABYTES;
     meta.stack = 1 * MEGABYTES;
     meta.string = 1 * MEGABYTES;
+
     alloc_create(meta);
 
 

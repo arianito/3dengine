@@ -18,14 +18,16 @@ extern "C" {
 #include "data/FixedStack.hpp"
 
 
-using TAlloc = BuddyMemory;
-
+template<class TAlloc>
 class Entity;
 
+template<class TAlloc>
 class Component;
 
+template<class TAlloc>
 class BaseSystem;
 
+template<class TAlloc>
 class Director;
 
 
@@ -45,25 +47,27 @@ static inline SystemId nextSystemId() {
     return lastID++;
 }
 
-template<class T>
+template<class TAlloc, class T>
 static inline ComponentId GetComponentTypeId() noexcept {
-    static_assert(std::is_base_of_v<Component, T>, "T must be a base class of Component");
+    static_assert(std::is_base_of_v<Component<TAlloc>, T>, "T must be a base class of Component");
     static ComponentId id{nextComponentId()};
     return id;
 }
 
-template<class T>
+template<class TAlloc, class T>
 static inline SystemId GetSystemTypeId() noexcept {
-    static_assert(std::is_base_of_v<BaseSystem, T>, "T must be a base class of System");
+    static_assert(std::is_base_of_v<BaseSystem<TAlloc>, T>, "T must be a base class of System");
     static SystemId id{nextSystemId()};
     return id;
 }
 
+template<class TAlloc>
 class Entity {
 private:
-    using ComponentMap = ProbeHashTable<ComponentId, Component *, TAlloc>;
+    using ComponentMap = ProbeHashTable<ComponentId, Component<TAlloc> *, TAlloc>;
     ComponentMap mComponents;
     EntityId mEntityId;
+
 public:
     explicit inline Entity(EntityId id) : mEntityId(id) {}
 
@@ -73,7 +77,7 @@ public:
 
     template<class T>
     inline void AddComponent(T *component) {
-        ComponentId id = GetComponentTypeId<T>();
+        ComponentId id = GetComponentTypeId<TAlloc, T>();
         if (mComponents.Contains(id)) {
             printf("Entity: Component %s already assigned to entity.\n", typeid(T).name());
             return;
@@ -83,7 +87,7 @@ public:
 
     template<class T>
     inline T *GetComponent() {
-        ComponentId id = GetComponentTypeId<T>();
+        ComponentId id = GetComponentTypeId<TAlloc, T>();
         if (!mComponents.Contains(id)) {
             printf("Entity: Component %s not found.\n", typeid(T).name());
             return nullptr;
@@ -93,7 +97,7 @@ public:
 
     template<class T>
     inline bool HasComponent() {
-        ComponentId id = GetComponentTypeId<T>();
+        ComponentId id = GetComponentTypeId<TAlloc, T>();
         return mComponents.Contains(id);
     }
 
@@ -102,11 +106,13 @@ public:
     [[nodiscard]] inline EntityId Id() const { return mEntityId; }
 };
 
+template<class TAlloc>
 class Component {
-private:
-    EntityId mEntityId{0};
-    Entity *mEntity{nullptr};
 public:
+    EntityId mEntityId{0};
+    Entity<TAlloc> *mEntity{nullptr};
+    Director<TAlloc> *mDirector{nullptr};
+
     explicit inline Component() = default;
 
     explicit inline Component(const Component &) = delete;
@@ -115,73 +121,71 @@ public:
 
     virtual void Create() {};
 
+    template<class T>
+    inline void AddComponent(T *component) { mEntity->template AddComponent<T>(component); }
 
     template<class T>
-    inline void AddComponent(T *component) { mEntity->AddComponent<T>(component); }
+    inline T *GetComponent() { return mEntity->template GetComponent<T>(); }
 
     template<class T>
-    inline T *GetComponent() { return mEntity->GetComponent<T>(); }
-
-    template<class T>
-    inline bool HasComponent() { return mEntity->HasComponent<T>(); }
-
-
-    [[nodiscard]] inline Entity *Owner() const { return mEntity; }
-
-    [[nodiscard]] inline EntityId Id() const { return mEntityId; }
+    inline bool HasComponent() { return mEntity->template HasComponent<T>(); }
 
 protected:
-    inline void SetEntity(const EntityId &id, Entity *entity) {
+    inline void SetEntity(Director<TAlloc> *director, const EntityId &id, Entity<TAlloc> *entity) {
         mEntityId = id;
         mEntity = entity;
+        mDirector = director;
         Create();
     }
 
-    friend class Director;
+    friend class Director<TAlloc>;
 };
 
+template<class TAlloc>
 class BaseSystem {
 public:
+    using EntityIdStack = FixedStack<EntityId, TAlloc>;
+    using EntityPtrStack = FixedStack<Entity<TAlloc> *, TAlloc>;
+
     explicit inline BaseSystem() = default;
 
     explicit inline BaseSystem(const BaseSystem &) = delete;
+
+    virtual ~BaseSystem() = default;
 
     virtual void Create() {}
 
     virtual void Update() {}
 
-protected:
-    friend class Director;
-
-    Director *mDirector{nullptr};
-
-    virtual ~BaseSystem() = default;
-
     virtual void Process() = 0;
 
-    virtual void OnEntityCreated(Entity *entity) = 0;
-
-    virtual void OnEntityDestroyed(EntityId entity) = 0;
-
+    using EntityIndexMap = ProbeHashTable<EntityId, int, TAlloc>;
+    EntityIdStack mDestroyStack;
+    EntityPtrStack mCreateStack;
+    EntityIndexMap mEntityIndex;
+    Director<TAlloc> *mDirector{nullptr};
     bool mShouldUpdate = false;
+
+    inline void OnEntityCreated(Entity<TAlloc> *entity) {
+        mCreateStack.Push(entity);
+    }
+
+    inline void OnEntityDestroyed(EntityId entityId) {
+        if (!mEntityIndex.Contains(entityId)) return;
+        mDestroyStack.Push(entityId);
+    }
 };
 
 
-template<class ...Types>
-class System : public BaseSystem {
-protected:
-    using EntityIndexMap = ProbeHashTable<EntityId, int, TAlloc>;
-    using EntityIdStack = FixedStack<EntityId, TAlloc>;
-    using EntityPtrStack = FixedStack<Entity *, TAlloc>;
+template<class TAlloc, class ...Types>
+class System : public BaseSystem<TAlloc> {
+public:
     using CTuple = std::tuple<std::add_pointer_t<Types>...>;
     Array<CTuple, TAlloc> mComponents;
-    EntityIndexMap mEntityIndex;
-    EntityIdStack mDestroyStack;
-    EntityPtrStack mCreateStack;
 
     template<int Index, class Type, class... Args>
-    inline bool hasComponent(ComponentId id, Component *component, CTuple &tuple) {
-        if (GetComponentTypeId<Type>() == id) {
+    inline bool hasComponent(ComponentId id, Component<TAlloc> *component, CTuple &tuple) {
+        if (GetComponentTypeId<TAlloc, Type>() == id) {
             std::get<Index>(tuple) = static_cast<Type *>(component);
             return true;
         }
@@ -189,20 +193,9 @@ protected:
     }
 
     template<int Index>
-    inline bool hasComponent([[maybe_unused]] ComponentId id, [[maybe_unused]]  Component *component, [[maybe_unused]]  CTuple &tuple) {
+    inline bool hasComponent([[maybe_unused]] ComponentId id, [[maybe_unused]]  Component<TAlloc> *component, [[maybe_unused]]  CTuple &tuple) {
         return false;
     }
-
-    inline void OnEntityCreated(Entity *entity) override {
-        mCreateStack.Push(entity);
-    }
-
-    inline void OnEntityDestroyed(EntityId entityId) override {
-        if (!mEntityIndex.Contains(entityId)) return;
-        mDestroyStack.Push(entityId);
-    }
-
-    inline void SetDirector(Director *director) { mDirector = director; }
 
     inline void Process() override;
 
@@ -215,21 +208,17 @@ public:
     inline static T *Get(const CTuple &tuple) { return std::get<T *>(tuple); };
 
     inline Array<CTuple, TAlloc> &Components() { return mComponents; }
-
-    [[nodiscard]] inline Director *GetDirector() const { return mDirector; }
-
-    friend class Director;
 };
 
+template<class TAlloc>
 class Director {
 private:
-    using EntityMap = ProbeHashTable<EntityId, Entity *, TAlloc>;
-    using SystemMap = ProbeHashTable<SystemId, BaseSystem *, TAlloc>;
-    using EntityComponentMap = ProbeHashTable<EntityId, Component *, TAlloc>;
+    using EntityMap = ProbeHashTable<EntityId, Entity<TAlloc> *, TAlloc>;
+    using SystemMap = ProbeHashTable<SystemId, BaseSystem<TAlloc> *, TAlloc>;
+    using EntityComponentMap = ProbeHashTable<EntityId, Component<TAlloc> *, TAlloc>;
     using ComponentEntityComponentMap = ProbeHashTable<ComponentId, EntityComponentMap *, TAlloc>;
     using EntityIdStack = FixedStack<EntityId, TAlloc>;
     using PartialSlabMemory = ProbeHashTable<BaseType, SlabMemory *, TAlloc>;
-
 
     EntityId mEntityCounter{1};
     EntityMap mEntities;
@@ -259,7 +248,7 @@ private:
 
     template<class T>
     inline SlabMemory *getComponentSlab() {
-        ComponentId id = GetComponentTypeId<T>();
+        ComponentId id = GetComponentTypeId<TAlloc, T>();
         if (mComponentsSlab.Contains(id)) return mComponentsSlab[id];
         SlabMemory *slab = makeSlab<T>(16);
         mComponentsSlab.Set(id, slab);
@@ -268,7 +257,7 @@ private:
 
     template<class T>
     inline SlabMemory *getSystemSlab() {
-        SystemId id = GetSystemTypeId<T>();
+        SystemId id = GetSystemTypeId<TAlloc, T>();
         if (mSystemsSlab.Contains(id)) return mSystemsSlab[id];
         SlabMemory *slab = makeSlab<T>(16);
         mSystemsSlab.Set(id, slab);
@@ -283,41 +272,41 @@ private:
     inline void performDelete(EntityId entityId) {
         if (!mEntities.Contains(entityId))
             return;
-        Entity *entity = mEntities[entityId];
+        Entity<TAlloc> *entity = mEntities[entityId];
 
         for (auto p: mComponents) {
             ComponentId componentId = p.first;
             auto entityComponents = p.second;
             if (entityComponents->Contains(entityId)) {
                 auto component = (*entityComponents)[entityId];
-                component->~Component();
+                component->~Component<TAlloc>();
                 auto slab = getComponentSlab(componentId);
                 slab_free(slab, (void **) &component);
                 entityComponents->Remove(entityId);
             }
         }
-        entity->~Entity();
+        entity->~Entity<TAlloc>();
         slab_free(mEntitySlab, (void **) &entity);
         mEntities.Remove(entityId);
     }
 
 public:
     explicit inline Director() {
-        mEntitySlab = makeSlab<Entity>(16);
+        mEntitySlab = makeSlab<Entity<TAlloc>>(16);
     }
 
     explicit inline Director(const Director &) = delete;
 
     inline ~Director() {
-        for (auto entity: mEntities) (entity.second)->~Entity();
+        for (auto entity: mEntities) (entity.second)->~Entity<TAlloc>();
 
         for (auto p: mComponents) {
             for (auto c: *(p.second))
-                c.second->~Component();
+                c.second->~Component<TAlloc>();
             Free<TAlloc>(&p.second);
         }
 
-        for (auto entity: mSystems) (entity.second)->~BaseSystem();
+        for (auto entity: mSystems) (entity.second)->~BaseSystem<TAlloc>();
 
         slab_destroy(&mEntitySlab);
         for (auto p: mComponentsSlab) slab_destroy(&(p.second));
@@ -327,7 +316,7 @@ public:
 
 
     inline EntityId CreateEntity() {
-        auto entity = new(slab_alloc(mEntitySlab)) Entity(mEntityCounter++);
+        auto entity = new(slab_alloc(mEntitySlab)) Entity<TAlloc>(mEntityCounter++);
         mEntities.Set(entity->Id(), entity);
         return entity->Id();
     }
@@ -336,10 +325,20 @@ public:
         if (!mEntities.Contains(entityId))
             return;
 
+        auto entity = mEntities[entityId];
+
         for (auto system: mSystems)
             system.second->OnEntityDestroyed(entityId);
 
         mDestroyStack.Push(entityId);
+    }
+
+    template<class T>
+    inline EntityComponentMap *Query() {
+        ComponentId id = GetComponentTypeId<TAlloc, T>();
+        if (!mComponents.Contains(id))
+            return nullptr;
+        return mComponents[id];
     }
 
     template<class T, class... Args>
@@ -348,7 +347,7 @@ public:
             return nullptr;
         EntityComponentMap *entityComponents;
         auto entity = mEntities[entityId];
-        ComponentId id = GetComponentTypeId<T>();
+        ComponentId id = GetComponentTypeId<TAlloc, T>();
         if (mComponents.Contains(id)) {
             entityComponents = mComponents[id];
             if (entityComponents->Contains(entityId)) { return (T *) ((*entityComponents)[entityId]); }
@@ -357,8 +356,8 @@ public:
             mComponents.Set(id, entityComponents);
         }
         T *component = new(slab_alloc(getComponentSlab<T>())) T(std::forward<Args>(args)...);
-        component->SetEntity(entityId, entity);
-        entity->AddComponent(component);
+        component->SetEntity(this, entityId, entity);
+        entity->template AddComponent<T>(component);
         entityComponents->Set(entityId, component);
         return component;
     }
@@ -373,10 +372,10 @@ public:
 
     template<class T, class... Args>
     inline T *AddSystem(Args &&...args) {
-        SystemId id = GetSystemTypeId<T>();
+        SystemId id = GetSystemTypeId<TAlloc, T>();
         if (mSystems.Contains(id)) return (T *) (mSystems[id]);
         T *sys = new(slab_alloc(getSystemSlab<T>())) T(std::forward<Args>(args)...);
-        sys->SetDirector(this);
+        sys->mDirector = this;
         mSystems.Set(id, sys);
         return sys;
     }
@@ -401,12 +400,12 @@ public:
 };
 
 
-template<class... Types>
-inline void System<Types...>::Process() {
-    while (!mDestroyStack.Empty()) {
-        auto entityId = mDestroyStack.Pop();
-        if (mEntityIndex.Contains(entityId)) {
-            auto index = mEntityIndex[entityId];
+template<class TAlloc, class... Types>
+inline void System<TAlloc, Types...>::Process() {
+    while (!this->mDestroyStack.Empty()) {
+        auto entityId = this->mDestroyStack.Pop();
+        if (this->mEntityIndex.Contains(entityId)) {
+            auto index = this->mEntityIndex[entityId];
             const auto entityToMoveIndex = mComponents.Length() - 1;
             const auto movedEntity = std::get<0>(mComponents[entityToMoveIndex]);
 
@@ -414,18 +413,18 @@ inline void System<Types...>::Process() {
                 mComponents[index] = std::move(mComponents[entityToMoveIndex]);
                 mComponents.Pop();
 
-                auto movedEntityId = movedEntity->Id();
-                if (mEntityIndex.Contains(movedEntityId)) {
-                    mEntityIndex[movedEntityId] = index;
-                    mShouldUpdate = mComponents.Length() > 0;
+                auto movedEntityId = movedEntity->mEntityId;
+                if (this->mEntityIndex.Contains(movedEntityId)) {
+                    this->mEntityIndex[movedEntityId] = index;
+                    this->mShouldUpdate = mComponents.Length() > 0;
                 }
             }
-            mEntityIndex.Remove(entityId);
+            this->mEntityIndex.Remove(entityId);
         }
     }
 
-    while (!mCreateStack.Empty()) {
-        auto entity = mCreateStack.Pop();
+    while (!this->mCreateStack.Empty()) {
+        auto entity = this->mCreateStack.Pop();
         CTuple tuple;
         int matches = 0;
         for (auto component: entity->Components()) {
@@ -433,8 +432,8 @@ inline void System<Types...>::Process() {
                 ++matches;
                 if (matches == sizeof...(Types)) {
                     mComponents.Add(std::move(tuple));
-                    mEntityIndex.Set(entity->Id(), mComponents.Length() - 1);
-                    mShouldUpdate = mComponents.Length() > 0;
+                    this->mEntityIndex.Set(entity->Id(), mComponents.Length() - 1);
+                    this->mShouldUpdate = mComponents.Length() > 0;
                     break;
                 }
             }

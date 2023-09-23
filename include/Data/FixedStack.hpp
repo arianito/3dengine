@@ -57,6 +57,8 @@ public:
 
 
     inline void Push(const T &value) {
+        if(mStack == nullptr)
+            return;
         assert(mLength < mCapacity && "FixedStack: is full");
         expand();
         mStack[mLength++] = value;

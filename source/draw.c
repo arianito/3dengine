@@ -14,7 +14,7 @@
 
 enum {
     types_n = 3,
-    object_count = 100000,
+    object_count = 150000,
 };
 
 typedef struct {

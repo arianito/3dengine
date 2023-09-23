@@ -12,6 +12,7 @@ typedef struct {
     BuddyBlock *tail;
     unsigned int padding;
     unsigned int usage;
+    unsigned int order;
 } BuddyMemory;
 
 unsigned int buddy_size(unsigned int order);
