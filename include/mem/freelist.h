@@ -3,24 +3,24 @@
 
 #include <stddef.h>
 
-typedef struct {
+typedef struct __attribute__((aligned(16), packed)) {
     void *next;
-    unsigned int size;
+    unsigned int total;
     unsigned int padding;
 } FreeListMemory;
 
-void *freelist_alloc(FreeListMemory *self, size_t size, unsigned int alignment);
+FreeListMemory *make_freelist(unsigned int size);
 
-unsigned char freelist_free(FreeListMemory *self, void **ptr);
-
-void freelist_reset(FreeListMemory *self);
-
-size_t freelist_capacity(FreeListMemory *self);
+FreeListMemory *freelist_create(void *m, unsigned int size);
 
 void freelist_destroy(FreeListMemory **self);
 
-FreeListMemory *freelist_create(void *m, size_t size);
+void freelist_reset(FreeListMemory *self);
 
-FreeListMemory *make_freelist(size_t size);
+void *freelist_alloc(FreeListMemory *self, unsigned int size, unsigned int alignment);
 
-FreeListMemory *make_freelist_exact(size_t size);
+char freelist_free(FreeListMemory *self, void **ptr);
+
+unsigned int freelist_usage(FreeListMemory *self);
+
+

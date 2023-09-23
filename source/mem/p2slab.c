@@ -6,8 +6,23 @@
 
 #include "mem/utils.h"
 
-// a used
-// b order
+
+typedef struct __attribute__((aligned(16), packed)) {
+    void *objects;
+    void *pages;
+} P2SlabPool;
+
+typedef struct __attribute__((aligned(8), packed)) {
+    size_t next;
+} P2SlabObject;
+
+typedef struct __attribute__((aligned(16), packed)) {
+    void *next;
+    unsigned int size;
+    unsigned int padding;
+} P2SlabPage;
+
+
 void p2slab_enqueue(P2SlabPool *pool, P2SlabObject *node, unsigned char order) {
     node->next = BYTE6AB((size_t) pool->objects, 0, order);
     pool->objects = node;
@@ -76,7 +91,8 @@ P2SlabMemory *p2slab_create(void *m, unsigned int n) {
     self->padding = padding;
     self->usage = 0;
     self->total = padding + sizeof(P2SlabMemory);
-    for (int i = 0; i < 32; i++) {
+
+    for (int i = 0; i < P2SLAB_MAX; i++) {
         self->pools[i].objects = NULL;
         self->pools[i].pages = NULL;
     }
@@ -109,7 +125,7 @@ void p2slab_destroy(P2SlabMemory **self) {
         return;
     }
 
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < P2SLAB_MAX; i++) {
         P2SlabPage *slab = (*self)->pools[i].pages;
         while (slab != NULL) {
             void *next = slab->next;

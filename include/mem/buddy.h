@@ -2,26 +2,21 @@
 
 #include <stddef.h>
 
-typedef struct {
-    unsigned int size;
-    unsigned char free;
-} BuddyBlock;
-
-typedef struct {
-    BuddyBlock *head;
-    BuddyBlock *tail;
-    unsigned int padding;
+typedef struct __attribute__((aligned(32), packed)) {
+    void *head;
+    void *tail;
+    unsigned int total;
     unsigned int usage;
-    unsigned int order;
+    unsigned int padding;
 } BuddyMemory;
-
-unsigned int buddy_size(unsigned int order);
-
-BuddyMemory *buddy_create(void *m, unsigned int order);
 
 BuddyMemory *make_buddy(unsigned int order);
 
+BuddyMemory *buddy_create(void *m, unsigned int order);
+
 void buddy_destroy(BuddyMemory **self);
+
+unsigned int buddy_size(unsigned int order);
 
 void *buddy_alloc(BuddyMemory *self, unsigned int size);
 

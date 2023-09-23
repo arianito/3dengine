@@ -18,7 +18,7 @@ add_executable(
         source/mem/alloc.c
         source/mem/rbt.c
         source/mem/buddy.c
-        source/mem/memory.c
+        source/mem/utils.c
         source/mem/slab.c
         source/mem/std.c
         source/mem/arena.c

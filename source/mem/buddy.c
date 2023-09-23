@@ -6,6 +6,10 @@
 
 #include "mem/utils.h"
 
+typedef struct __attribute__((aligned(8), packed)) {
+    unsigned int size;
+    unsigned int free;
+} BuddyBlock;
 
 unsigned int buddy_size(unsigned int order) {
     return sizeof(size_t) + sizeof(BuddyMemory) + (1 << order);
@@ -23,10 +27,10 @@ BuddyMemory *buddy_create(void *m, unsigned int order) {
     unsigned int size = 1 << order;
     BuddyMemory *self = (BuddyMemory *) (start + padding);
     self->head = (BuddyBlock *) (start + padding + space);
-    self->head->size = size;
-    self->head->free = 1;
+    ((BuddyBlock*)self->head)->size = size;
+    ((BuddyBlock*)self->head)->free = 1;
     self->usage = 0;
-    self->order = order;
+    self->total = 1 << order;
 
     self->tail = buddy_next(self->head);
     self->padding = padding;
@@ -142,7 +146,7 @@ void *buddy_alloc(BuddyMemory *self, unsigned int size) {
     size += space;
 
     BuddyBlock *found = buddy_best(self->head, self->tail, size);
-    
+
     if (found == NULL) {
         buddy_merge(self->head, self->tail);
         found = buddy_best(self->head, self->tail, size);

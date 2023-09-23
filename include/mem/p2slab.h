@@ -3,28 +3,15 @@
 #include <stddef.h>
 #include "mem/utils.h"
 
-typedef struct {
-    size_t next;
-} P2SlabObject;
+#define P2SLAB_MAX 32
 
-typedef struct {
-    void *next;
-    unsigned int size;
-    unsigned int padding;
-} P2SlabPage;
-
-typedef struct {
-    P2SlabObject *objects;
-    P2SlabPage *pages;
-} P2SlabPool;
-
-typedef struct {
+typedef struct __attribute__((aligned(512), packed)) {
     GeneralAllocator allocator;
-    P2SlabPool pools[32];
-    unsigned int padding;
-    unsigned int usage;
+    char pools[P2SLAB_MAX * 16];
     unsigned int total;
-    unsigned int n;
+    unsigned int usage;
+    unsigned short n;
+    unsigned short padding;
 } P2SlabMemory;
 
 P2SlabMemory *p2slab_create(void *m, unsigned int n);

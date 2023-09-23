@@ -4,11 +4,8 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 
-#include "mem/utils.h"
-
-void *arena_alloc(ArenaMemory *self, size_t size, unsigned int alignment) {
+void *arena_alloc(ArenaMemory *self, unsigned int size, unsigned int alignment) {
     if (!ISPOW2(alignment)) {
         printf("arena: alloc failed, invalid alignment\n");
         return NULL;
@@ -17,14 +14,14 @@ void *arena_alloc(ArenaMemory *self, size_t size, unsigned int alignment) {
         printf("arena: alloc failed, invalid instance\n");
         return NULL;
     }
-    size_t address = ((size_t) self - self->padding) + self->offset;
+    size_t address = ((size_t) self - self->padding) + self->usage;
     int padding = MEMORY_PADDING(address, alignment);
-    if (self->offset + size + padding > self->size) {
+    if (self->usage + size + padding > self->total) {
         printf("arena: alloc failed, insufficient memory\n");
         return NULL;
     }
     address += padding;
-    self->offset += size + padding;
+    self->usage += size + padding;
     return (void *) (address);
 }
 
@@ -34,7 +31,7 @@ void arena_reset(ArenaMemory *self) {
         return;
     }
     const unsigned int space = MEMORY_SPACE_STD(ArenaMemory);
-    self->offset = self->padding + space;
+    self->usage = self->padding + space;
 }
 
 void arena_destroy(ArenaMemory **self) {
@@ -47,27 +44,22 @@ void arena_destroy(ArenaMemory **self) {
     *self = NULL;
 }
 
-ArenaMemory *arena_create(void *m, size_t size) {
+ArenaMemory *arena_create(void *m, unsigned int size) {
     size_t address = (size_t) m;
     const unsigned int space = MEMORY_SPACE_STD(ArenaMemory);
     const unsigned int padding = MEMORY_PADDING_STD(address);
     ArenaMemory *self = (ArenaMemory *) (address + padding);
-    self->size = size;
-    self->offset = padding + space;
+    self->total = size;
+    self->usage = padding + space;
     self->padding = padding;
     return self;
 }
 
-ArenaMemory *make_arena(size_t size) {
+ArenaMemory *make_arena(unsigned int size) {
     void *m = malloc(size);
     if (m == NULL) {
         printf("arena: make failed, system can't provide free memory\n");
         exit(EXIT_FAILURE);
     }
     return arena_create(m, size);
-}
-
-ArenaMemory *make_arena_exact(size_t size) {
-    size += MEMORY_SPACE_STD(ArenaMemory) + sizeof(size_t);
-    return make_arena(size);
 }

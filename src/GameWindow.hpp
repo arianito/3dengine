@@ -71,10 +71,10 @@ struct GameWindow {
                                "string %d / %d\n"
                                "buddy %d / %d\n"
                                "stack %d / %d",
-                          alloc->boot->offset, alloc->boot->size,
-                          alloc->global->offset, alloc->global->size,
-                          freelist_capacity(alloc->freelist), alloc->freelist->size,
-                          freelist_capacity(alloc->string), alloc->string->size,
+                          alloc->boot->usage, alloc->boot->total,
+                          alloc->global->usage, alloc->global->total,
+                          freelist_usage(alloc->freelist), alloc->freelist->total,
+                          freelist_usage(alloc->string), alloc->string->total,
                           alloc->buddy->usage, alloc->metadata.buddy,
                           alloc->stack->offset, alloc->stack->size
             );

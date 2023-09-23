@@ -1,22 +1,21 @@
 #pragma once
 
-
 #include <stddef.h>
 
-typedef struct {
-    size_t size;
-    size_t offset;
-    size_t padding;
+#include "mem/utils.h"
+
+typedef struct __attribute__((aligned(16), packed)) {
+    unsigned int total;
+    unsigned int usage;
+    unsigned int padding;
 } ArenaMemory;
 
-void *arena_alloc(ArenaMemory *self, size_t size, unsigned int alignment);
+ArenaMemory *make_arena(unsigned int size);
 
-void arena_reset(ArenaMemory *self);
+ArenaMemory *arena_create(void *m, unsigned int size);
 
 void arena_destroy(ArenaMemory **self);
 
-ArenaMemory *arena_create(void *m, size_t size);
+void *arena_alloc(ArenaMemory *self, unsigned int size, unsigned int alignment);
 
-ArenaMemory *make_arena(size_t size);
-
-ArenaMemory *make_arena_exact(size_t size);
+void arena_reset(ArenaMemory *self);

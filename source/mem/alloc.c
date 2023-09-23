@@ -16,7 +16,7 @@ void alloc_create(MemoryMetadata meta) {
     meta.boot += sizeof (BuddyMemory);
 
     alloc->metadata = meta;
-    alloc->boot = make_arena_exact(meta.boot);
+    alloc->boot = make_arena(meta.boot);
 
     alloc->global = arena_create(
             arena_alloc(alloc->boot, meta.global, sizeof(size_t)),

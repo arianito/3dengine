@@ -5,11 +5,12 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#include "mem/memory.h"
+
 #include "mem/arena.h"
 #include "mem/stack.h"
 #include "mem/freelist.h"
 #include "mem/buddy.h"
+#include "mem/utils.h"
 
 typedef struct {
     size_t boot;

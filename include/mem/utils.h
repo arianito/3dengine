@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <stddef.h>
 
 #define MODULO(address, alignment) (address & (alignment - 1UL))
@@ -36,7 +35,17 @@
 #define BYTE6AB_GET_B(full) (GET_NTH_BE(full, 1ULL, 1ULL))
 #define BYTE6AB_GET_6(full) (GET_NTH_LE(full, 6ULL, 0ULL))
 
+#define BYTES (1)
+#define KILOBYTES (BYTES * 1024)
+#define MEGABYTES (KILOBYTES * 1024)
+#define GIGABYTES (MEGABYTES * 1024)
+
 typedef struct {
     void *(*alloc)(size_t);
     void (*free)(void *);
 } GeneralAllocator;
+
+
+void format_bytes(double bytes, char *buff, unsigned int n);
+
+void clear(void *p, size_t s);
