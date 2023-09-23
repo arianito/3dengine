@@ -54,7 +54,7 @@ static inline void camera_init() {
     camera->rotation = rot(-15, 180, 0);
     Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -300);
     camera->position = vec3_add(backward, vec3_zero);
-    camera->fov = 80.0f;
+    camera->fov = 60.0f;
     camera->zoom = 300.0f;
     camera->ortho = VIEW_INITIAL;
     camera_update();

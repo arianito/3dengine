@@ -12,74 +12,13 @@ extern "C" {
 #include "engine/ECS.hpp"
 #include "engine/Memory.hpp"
 
-
-class CustomTempAllocator {
-public:
-    static BuddyMemory *buddy;
-
-    static inline void create() {
-        buddy = make_buddy(24);
-
-    }
-
-    static inline void destroy() {
-        buddy_destroy(&buddy);
-    }
-
-    inline static void *Alloc(size_t size, unsigned int alignment) {
-        return buddy_alloc(buddy, size);
-    }
-
-    inline static void Free(void **ptr) {
-        buddy_free(buddy, ptr);
-    }
-
-    inline static size_t usage() {
-        return buddy->usage;
-    }
-
-    inline static size_t size() {
-        return 1 << CustomTempAllocator::buddy->order;
-    }
-};
-
-class CustomTempAllocator2 {
-public:
-    static FreeListMemory *freelist;
-
-    static inline void create() {
-        freelist = make_freelist(16 * MEGABYTES);
-
-    }
-
-    static inline void destroy() {
-        freelist_destroy(&freelist);
-    }
-
-    inline static void *Alloc(size_t size, unsigned int alignment) {
-        return freelist_alloc(freelist, size, alignment);
-    }
-
-    inline static void Free(void **ptr) {
-        freelist_free(freelist, ptr);
-    }
-
-    inline static size_t usage() {
-        return freelist_capacity(freelist);
-    }
-
-    inline static size_t size() {
-        return freelist->size;
-    }
-};
-
-
 class CustomTempAllocator3 {
+
 public:
     static P2SlabMemory *slab;
 
     static inline void create() {
-        slab = make_p2slab(20);
+        slab = make_p2slab(10);
 
     }
 
@@ -104,38 +43,7 @@ public:
     }
 };
 
-class CustomTempAllocator4 {
-public:
-    static size_t used;
-
-    static inline void create() {
-
-    }
-
-    static inline void destroy() {
-    }
-
-    inline static void *Alloc(size_t size, unsigned int alignment) {
-        used += size;
-        return ::operator new( size);
-    }
-
-    inline static void Free(void **ptr) {
-        ::operator delete(*ptr);
-    }
-
-    inline static size_t usage() {
-        return 0;
-    }
-
-    inline static size_t size() {
-        return used;
-    }
-};
-BuddyMemory *CustomTempAllocator::buddy = nullptr;
-FreeListMemory *CustomTempAllocator2::freelist = nullptr;
 P2SlabMemory *CustomTempAllocator3::slab = nullptr;
-size_t CustomTempAllocator4::used = 0;
 
 class TempLevel : public Level {
     using TAlloc = CustomTempAllocator3;
@@ -201,7 +109,6 @@ class TempLevel : public Level {
 
     struct EmitterSystem : public System<TAlloc, EmitterComponent, TransformComponent> {
         inline void Update() override {
-            int act = 0;
             for (const auto &bucket: Components()) {
                 auto pTransform = Get<TransformComponent>(bucket);
                 auto pEmitter = Get<EmitterComponent>(bucket);
@@ -216,13 +123,13 @@ class TempLevel : public Level {
                     }
 
                     if (particle) {
-                        Vec3 rnd = vec3_add(vec3_rand(1, 1, 5), vec3(0, 0, 5));
-                        particle->size = 24.0f;
+                        Vec3 rnd = vec3_add(vec3_rand(2, 2, 5), vec3(0, 0, 5));
+                        particle->size = 10.0f;
                         particle->emitter = pEmitter;
                         particle->position = pTransform->position;
                         particle->velocity = vec3_mulf(rnd, 0.5f);
                         particle->spawnTime = gameTime->time;
-                        particle->damping = (randf() * 0.1f) + 0.85f;
+                        particle->damping = (randf() * 0.1f) + 0.1f;
                         pEmitter->lastSpawn = gameTime->time;
                     }
                 }
@@ -237,9 +144,9 @@ class TempLevel : public Level {
                 auto pParticle = Get<ParticleComponent>(bucket);
                 float t = (gameTime->time - pParticle->spawnTime) / pParticle->timeSpan;
                 pParticle->blend = 1 - t;
-                pParticle->velocity = vec3_mulf(pParticle->velocity, pParticle->damping);
+                pParticle->velocity = vec3_lerp(pParticle->velocity, vec3_zero, pParticle->damping);
                 pParticle->position = vec3_add(pParticle->position, pParticle->velocity);
-                pParticle->size = pParticle->size * pParticle->damping;
+                pParticle->size = lerp(pParticle->size, 0, pParticle->damping);
 
                 if ((t > 1 || pParticle->size < 0.5f)) {
                     mDirector->DestroyEntity(pParticle->mEntityId);
@@ -309,17 +216,9 @@ class TempLevel : public Level {
                     mDirector->Commit(entity);
                 }
             }
-            if (input_keydown(KEY_SPACE)) {
-                auto entity = mDirector->Query<EmitterComponent>();
-                if (entity != nullptr) {
-                    for (const auto p: *entity) {
-                        mDirector->DestroyEntity(p.first);
-                        break;
-                    }
-                }
-            }
 
             dest = vec3_snapCube(dest, 10.0f);
+            dest.z = 0;
             draw_cubef(dest, 10.0f, color_red);
         }
     };
@@ -345,10 +244,11 @@ public:
         debug_origin(vec2(1, 1));
         debug_color(color_white);
         Vec2 pos = vec2(game->width - 10, game->height - 10);
-        debug_stringf(pos,
-                      "Alloc: %.2f",
-                      (float)TAlloc::usage() / (float )TAlloc::size()
-        );
+        debug_stringf(pos, "Alloc: %zu / %zu", TAlloc::usage(), TAlloc::size());
+
+        if (input_keydown(KEY_SPACE)) {
+            mDirector->Fit();
+        }
     }
 
     inline void Destroy() override {

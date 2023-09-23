@@ -1,6 +1,11 @@
 #pragma once
 
 #include <cassert>
+
+extern "C" {
+#include "mem/utils.h"
+}
+
 #include "engine/Memory.hpp"
 
 template<typename T, class TAlloc = FreeListMemory>
@@ -82,7 +87,7 @@ public:
     }
 
     inline void Fit() {
-        Reserve(mLength);
+        Reserve(NEXTPOW2(mLength));
     }
 
     inline void Reserve(int newCapacity) {

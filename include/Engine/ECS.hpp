@@ -63,6 +63,8 @@ static inline SystemId GetSystemTypeId() noexcept {
 
 template<class TAlloc>
 class Entity {
+    friend class Director<TAlloc>;
+
 private:
     using ComponentMap = ProbeHashTable<ComponentId, Component<TAlloc> *, TAlloc>;
     ComponentMap mComponents;
@@ -108,6 +110,8 @@ public:
 
 template<class TAlloc>
 class Component {
+    friend class Director<TAlloc>;
+
 public:
     EntityId mEntityId{0};
     Entity<TAlloc> *mEntity{nullptr};
@@ -137,16 +141,11 @@ protected:
         mDirector = director;
         Create();
     }
-
-    friend class Director<TAlloc>;
 };
 
 template<class TAlloc>
 class BaseSystem {
 public:
-    using EntityIdStack = FixedStack<EntityId, TAlloc>;
-    using EntityPtrStack = FixedStack<Entity<TAlloc> *, TAlloc>;
-
     explicit inline BaseSystem() = default;
 
     explicit inline BaseSystem(const BaseSystem &) = delete;
@@ -157,14 +156,27 @@ public:
 
     virtual void Update() {}
 
-    virtual void Process() = 0;
 
+protected:
+    friend class Director<TAlloc>;
+
+    using EntityIdStack = FixedStack<EntityId, TAlloc>;
+    using EntityPtrStack = FixedStack<Entity<TAlloc> *, TAlloc>;
     using EntityIndexMap = ProbeHashTable<EntityId, int, TAlloc>;
+
     EntityIdStack mDestroyStack;
     EntityPtrStack mCreateStack;
     EntityIndexMap mEntityIndex;
     Director<TAlloc> *mDirector{nullptr};
     bool mShouldUpdate = false;
+
+    virtual void Process() = 0;
+
+    virtual void Fit() {
+        mDestroyStack.Fit();
+        mCreateStack.Fit();
+        mEntityIndex.Fit();
+    }
 
     inline void OnEntityCreated(Entity<TAlloc> *entity) {
         mCreateStack.Push(entity);
@@ -179,7 +191,7 @@ public:
 
 template<class TAlloc, class ...Types>
 class System : public BaseSystem<TAlloc> {
-public:
+protected:
     using CTuple = std::tuple<std::add_pointer_t<Types>...>;
     Array<CTuple, TAlloc> mComponents;
 
@@ -199,6 +211,11 @@ public:
 
     inline void Process() override;
 
+    inline void Fit() override {
+        BaseSystem<TAlloc>::Fit();
+        mComponents.Fit();
+    }
+
 public:
     explicit inline System() = default;
 
@@ -213,6 +230,8 @@ public:
 template<class TAlloc>
 class Director {
 private:
+    friend class BaseSystem<TAlloc>;
+
     using EntityMap = ProbeHashTable<EntityId, Entity<TAlloc> *, TAlloc>;
     using SystemMap = ProbeHashTable<SystemId, BaseSystem<TAlloc> *, TAlloc>;
     using EntityComponentMap = ProbeHashTable<EntityId, Component<TAlloc> *, TAlloc>;
@@ -367,6 +386,17 @@ public:
         for (auto sys: mSystems) {
             sys.second->OnEntityCreated(entity);
         }
+    }
+
+    inline void Fit() {
+        for (auto entity: mEntities) (entity.second)->mComponents.Fit();
+        mEntities.Fit();
+        for (auto sys: mSystems) {
+            sys.second->Fit();
+        }
+        mSystems.Fit();
+        for (auto p: mComponents) p.second->Fit();
+        mComponents.Fit();
     }
 
     template<class T, class... Args>

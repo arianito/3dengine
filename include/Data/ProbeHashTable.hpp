@@ -4,6 +4,10 @@
 #include <cstring>
 #include <utility>
 
+extern "C" {
+#include "mem/utils.h"
+}
+
 #include "data/String.hpp"
 #include "engine/Memory.hpp"
 
@@ -54,6 +58,9 @@ public:
         mCapacity = newCapacity;
     }
 
+    inline void Fit() {
+        Reserve(NEXTPOW2(mLength));
+    }
 
     inline bool Set(const K &key, const V &value) {
         expand();
@@ -124,7 +131,6 @@ private:
             return;
         Reserve(mCapacity << 1);
     }
-
     inline void shrink() {
         float ratio = (float) mLength / mCapacity;
         if (ratio > 0.25f)

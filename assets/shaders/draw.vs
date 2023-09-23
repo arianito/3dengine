@@ -13,5 +13,9 @@ void main(void) {
   m_color = v_color;
   gl_Position = projection * view * vec4(v_position, 1);
   float x = max(v_size, 1);
-  gl_PointSize = min((x * 200) / gl_Position.z, x);
+  float o = 0.125f;
+  if(gl_Position.z > 0.99)
+    o = 1000.0f;
+
+  gl_PointSize =  x / gl_Position.z * o;
 }
