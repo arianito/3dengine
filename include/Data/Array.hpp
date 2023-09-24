@@ -54,12 +54,6 @@ private:
         Reserve(mCapacity << 1);
     }
 
-    inline void shrink() {
-        float ratio = (float) mLength / mCapacity;
-        if ((ratio) > 0.25f)
-            return;
-        Reserve(mCapacity >> 1);
-    }
 
 public:
     explicit inline Array() : Array(8) {}

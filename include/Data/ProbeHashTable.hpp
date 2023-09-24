@@ -30,7 +30,7 @@ public:
     explicit inline ProbeHashTable(const ProbeHashTable &) = delete;
 
     inline ~ProbeHashTable() {
-        Free<TAlloc>(&mProbes);
+        Free<TAlloc>((void **) &mProbes);
     }
 
     inline void Reserve(int newCapacity) {
@@ -130,12 +130,6 @@ private:
         if (ratio < 0.5f)
             return;
         Reserve(mCapacity << 1);
-    }
-    inline void shrink() {
-        float ratio = (float) mLength / mCapacity;
-        if (ratio > 0.25f)
-            return;
-        Reserve(mCapacity >> 1);
     }
 
     inline unsigned int hash(const K &key, unsigned int size) {

@@ -254,7 +254,7 @@ private:
     }
 
     inline static void ecs_global_free(void *ptr) {
-        Free<TAlloc>(&ptr);
+        Free<TAlloc>((void**) &ptr);
     }
 
     template<class T>

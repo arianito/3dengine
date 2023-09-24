@@ -109,7 +109,7 @@ public:
     explicit inline Heap(const Heap &) = delete;
 
     inline ~Heap() {
-        Free<TAlloc>(&mHeap);
+        Free<TAlloc>((void**) &mHeap);
     }
 
     inline void Reserve(int newCapacity) {
@@ -117,7 +117,7 @@ public:
         assert(newList != nullptr && "Heap: Insufficient memory.\n");
         int oldBytes = mCapacity * sizeof(T);
         memcpy(newList, mHeap, oldBytes);
-        Free<TAlloc>(&mHeap);
+        Free<TAlloc>((void**) &mHeap);
         mHeap = newList;
         mCapacity = newCapacity;
     }
@@ -131,7 +131,7 @@ public:
             int newCapacity = nextPowerOfTwo(n);
             T *newList = Alloc<TAlloc, T>(newCapacity);
             assert(newList != nullptr && "Heap: Insufficient memory.\n");
-            Free<TAlloc>(&mHeap);
+            Free<TAlloc>((void**) &mHeap);
             mCapacity = newCapacity;
             mHeap = newList;
         }

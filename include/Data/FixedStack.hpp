@@ -127,7 +127,7 @@ public:
 
     inline void Clear() {
         mLength = 0;
-        Reserve(8);
+        Reserve(0);
     }
 
     inline bool Empty() {
