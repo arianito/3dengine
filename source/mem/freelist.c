@@ -7,13 +7,13 @@
 
 #include "mem/utils.h"
 
-#define NODE_LOWER(node) ((size_t)(node) + MEMORY_SPACE_STD(FreeListMemory) - (node)->padding)
+#define NODE_LOWER(node) ((size_t)(node) + MEMORY_SPACE_STD(FreeListMemory) - (node)->_padding)
 #define NODE_HIGHER(node) ((size_t)(node) + MEMORY_SPACE_STD(FreeListMemory))
 
 void freelist_first(FreeListMemory *self, unsigned int size, unsigned int alignment, unsigned int *outPadding,
                     FreeListMemory **outPrevNode, FreeListMemory **outNode) {
     FreeListMemory
-            *node = self->next,
+            *node = self->_next,
             *prev = NULL;
     unsigned int padding;
     while (node != NULL) {
@@ -23,7 +23,7 @@ void freelist_first(FreeListMemory *self, unsigned int size, unsigned int alignm
             break;
 
         prev = node;
-        node = node->next;
+        node = node->_next;
     }
     *outPrevNode = prev;
     *outNode = node;
@@ -33,7 +33,7 @@ void freelist_first(FreeListMemory *self, unsigned int size, unsigned int alignm
 void freelist_best(FreeListMemory *self, unsigned int size, unsigned int alignment, unsigned int *outPadding,
                    FreeListMemory **outPrevNode, FreeListMemory **outNode) {
     FreeListMemory
-            *node = self->next,
+            *node = self->_next,
             *best = NULL,
             *prev = NULL,
             *bestPrev = NULL;
@@ -49,7 +49,7 @@ void freelist_best(FreeListMemory *self, unsigned int size, unsigned int alignme
             min = node->total - space;
         }
         prev = node;
-        node = node->next;
+        node = node->_next;
     }
     *outNode = best;
     *outPrevNode = bestPrev;
@@ -58,27 +58,27 @@ void freelist_best(FreeListMemory *self, unsigned int size, unsigned int alignme
 
 void freelist_insert(FreeListMemory *self, FreeListMemory *prevNode, FreeListMemory *newNode) {
     if (prevNode == NULL) {
-        newNode->next = self->next;
-        self->next = newNode;
+        newNode->_next = self->_next;
+        self->_next = newNode;
         return;
     }
-    newNode->next = prevNode->next;
-    prevNode->next = newNode;
+    newNode->_next = prevNode->_next;
+    prevNode->_next = newNode;
 }
 
 void freelist_remove(FreeListMemory *self, FreeListMemory *prevNode, FreeListMemory *node) {
     if (prevNode == NULL) {
-        self->next = node->next;
+        self->_next = node->_next;
         return;
     }
-    prevNode->next = node->next;
+    prevNode->_next = node->_next;
 }
 
 void freelist_joinnext(FreeListMemory *self, FreeListMemory *previousNode, FreeListMemory *freeNode) {
-    FreeListMemory *next = (FreeListMemory *) freeNode->next;
+    FreeListMemory *next = (FreeListMemory *) freeNode->_next;
     if (next != NULL && NODE_LOWER(freeNode) + freeNode->total == NODE_LOWER(next)) {
         freeNode->total += next->total;
-        freelist_remove(self, freeNode, freeNode->next);
+        freelist_remove(self, freeNode, freeNode->_next);
     }
 
     if (previousNode != NULL &&
@@ -113,16 +113,16 @@ void *freelist_alloc(FreeListMemory *self, unsigned int size, unsigned int align
     unsigned int remainingSpace = node->total - requiredSpace;
 
     size_t addr = NODE_LOWER(node);
-    void *tmp = node->next;
+    void *tmp = node->_next;
     node = (FreeListMemory *) (addr + padding - space);
-    node->padding = padding;
-    node->next = tmp;
+    node->_padding = padding;
+    node->_next = tmp;
 
     node->total = requiredSpace;
 
     if (remainingSpace > 0) {
         FreeListMemory *newNode = (FreeListMemory *) (addr + requiredSpace);
-        newNode->padding = space;
+        newNode->_padding = space;
         newNode->total = remainingSpace;
         freelist_insert(self, node, newNode);
     }
@@ -145,10 +145,10 @@ char freelist_free(FreeListMemory *self, void **ptr) {
     unsigned int space = MEMORY_SPACE_STD(FreeListMemory);
 
     FreeListMemory *freeedNode = (FreeListMemory *) ((size_t) (*ptr) - space);
-    freeedNode->next = NULL;
+    freeedNode->_next = NULL;
 
     FreeListMemory *prevNode = NULL;
-    FreeListMemory *node = self->next;
+    FreeListMemory *node = self->_next;
 
     while (node != NULL) {
         if (*ptr < (void *) node) {
@@ -156,21 +156,21 @@ char freelist_free(FreeListMemory *self, void **ptr) {
             break;
         }
         prevNode = node;
-        node = node->next;
+        node = node->_next;
     }
 
     freelist_joinnext(self, prevNode, freeedNode);
 
-    if (prevNode == NULL && freeedNode == self->next) {
+    if (prevNode == NULL && freeedNode == self->_next) {
         size_t lower = NODE_LOWER(freeedNode);
-        void *tmp = freeedNode->next;
+        void *tmp = freeedNode->_next;
         unsigned int size = freeedNode->total;
 
         node = (FreeListMemory *) (lower);
-        node->padding = space;
+        node->_padding = space;
         node->total = size;
-        node->next = tmp;
-        self->next = node;
+        node->_next = tmp;
+        self->_next = node;
     }
 
     *ptr = NULL;
@@ -190,19 +190,19 @@ void freelist_reset(FreeListMemory *self) {
     size_t start = NODE_HIGHER(self);
     const unsigned int padding = MEMORY_ALIGNMENT_STD(start, FreeListMemory);
     FreeListMemory *node = (FreeListMemory *) start;
-    self->next = NULL;
-    node->padding = padding;
-    node->total = self->total - (self->padding);
-    node->next = NULL;
+    self->_next = NULL;
+    node->_padding = padding;
+    node->total = self->total - (self->_padding);
+    node->_next = NULL;
     freelist_insert(self, NULL, node);
 }
 
 unsigned int freelist_usage(FreeListMemory *self) {
     unsigned int sum = 0;
-    FreeListMemory *node = self->next;
+    FreeListMemory *node = self->_next;
     while (node != NULL) {
         sum += node->total;
-        node = node->next;
+        node = node->_next;
     }
     return self->total - sum;
 }
@@ -213,7 +213,7 @@ FreeListMemory *freelist_create(void *m, unsigned int size) {
     const unsigned int padding = MEMORY_ALIGNMENT_STD(address, FreeListMemory);
     FreeListMemory *self = (FreeListMemory *) (address + padding - space);
     self->total = size;
-    self->padding = padding;
+    self->_padding = padding;
 
     freelist_reset(self);
     return self;

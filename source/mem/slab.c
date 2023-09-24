@@ -6,25 +6,35 @@
 
 #include "mem/utils.h"
 
+typedef struct {
+    size_t next;
+} SlabObject;
+
+typedef struct {
+    void *next;
+    unsigned int size;
+    unsigned int padding;
+} SlabPage;
+
 void slab_enqueue(SlabMemory *self, SlabObject *node) {
-    node->next = BYTE71((size_t) self->objects, 0);
-    self->objects = node;
+    node->next = BYTE71((size_t) self->_objects, 0);
+    self->_objects = node;
 }
 
 SlabObject *slab_dequeue(SlabMemory *self) {
-    if (self->objects == NULL)
+    if (self->_objects == NULL)
         return NULL;
 
-    SlabObject *node = self->objects;
+    SlabObject *node = self->_objects;
     node->next = BYTE71_SET_1(node->next, 1);
-    self->objects = (SlabObject *) (BYTE71_GET_7(node->next));
+    self->_objects = (SlabObject *) (BYTE71_GET_7(node->next));
     return node;
 }
 
 SlabPage *create_slab(SlabMemory *self) {
-    unsigned int n = self->slabSize / self->objectSize;
+    unsigned int n = self->_slabSize / self->_objectSize;
 
-    unsigned int size = self->slabSize;
+    unsigned int size = self->_slabSize;
     size += MEMORY_SPACE_STD(SlabPage);
     size += n * MEMORY_SPACE_STD(SlabObject);
     size += sizeof(size_t);
@@ -32,8 +42,8 @@ SlabPage *create_slab(SlabMemory *self) {
     self->total += size;
 
     void *m = NULL;
-    if (self->allocator.alloc != NULL)
-        m = self->allocator.alloc(size);
+    if (self->_allocator.alloc != NULL)
+        m = self->_allocator.alloc(size);
     else
         m = malloc(size);
     if (m == NULL) {
@@ -54,7 +64,7 @@ SlabPage *create_slab(SlabMemory *self) {
     while (1) {
         size_t address = start + cursor;
         padding = MEMORY_ALIGNMENT_STD(address, SlabObject);
-        cursor += padding + self->objectSize;
+        cursor += padding + self->_objectSize;
         if (cursor > size)
             break;
 
@@ -72,16 +82,16 @@ SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSiz
     const unsigned int padding = MEMORY_PADDING_STD(start);
 
     SlabMemory *self = (SlabMemory *) (start + padding);
-    self->pages = NULL;
-    self->objects = NULL;
-    self->allocator.alloc = NULL;
-    self->allocator.free = NULL;
-    self->padding = padding;
+    self->_pages = NULL;
+    self->_objects = NULL;
+    self->_allocator.alloc = NULL;
+    self->_allocator.free = NULL;
+    self->_padding = padding;
     self->usage = 0;
     self->total = padding + sizeof(SlabMemory);
 
-    self->slabSize = slabSize;
-    self->objectSize = objectSize;
+    self->_slabSize = slabSize;
+    self->_objectSize = objectSize;
     return self;
 }
 
@@ -92,7 +102,7 @@ SlabMemory *slab_create_alloc(GeneralAllocator allocator, unsigned int slabSize,
         exit(EXIT_FAILURE);
     }
     SlabMemory *slab = slab_create(m, slabSize, objectSize);
-    slab->allocator = allocator;
+    slab->_allocator = allocator;
     return slab;
 }
 
@@ -111,23 +121,23 @@ void slab_destroy(SlabMemory **self) {
         return;
     }
 
-    SlabPage *slab = (*self)->pages;
+    SlabPage *slab = (*self)->_pages;
     while (slab != NULL) {
         void *next = slab->next;
 
         size_t op = (size_t) slab - slab->padding;
-        if ((*self)->allocator.free != NULL)
-            (*self)->allocator.free((void *) (op));
+        if ((*self)->_allocator.free != NULL)
+            (*self)->_allocator.free((void *) (op));
         else
             free((void *) (op));
 
         slab = next;
     }
 
-    size_t op = (size_t) (*self) - (*self)->padding;
+    size_t op = (size_t) (*self) - (*self)->_padding;
 
-    if ((*self)->allocator.free != NULL)
-        (*self)->allocator.free((void *) (op));
+    if ((*self)->_allocator.free != NULL)
+        (*self)->_allocator.free((void *) (op));
     else
         free((void *) (op));
     (*self) = NULL;
@@ -138,19 +148,19 @@ void *slab_alloc(SlabMemory *self) {
         printf("slab: alloc failed, invalid instance\n");
         return NULL;
     }
-    if (self->objects == NULL) {
+    if (self->_objects == NULL) {
         SlabPage *slab = create_slab(self);
         if (slab == NULL) {
             printf("slab: alloc failed, cannot create new slab\n");
             return NULL;
         }
-        slab->next = self->pages;
-        self->pages = slab;
+        slab->next = self->_pages;
+        self->_pages = slab;
     }
 
     SlabObject *node = slab_dequeue(self);
     const unsigned int space = MEMORY_SPACE_STD(SlabObject);
-    self->usage += self->objectSize;
+    self->usage += self->_objectSize;
     return (void *) ((size_t) node + space);
 }
 
@@ -173,6 +183,6 @@ char slab_free(SlabMemory *self, void **ptr) {
     }
 
     slab_enqueue(self, node);
-    self->usage -= self->objectSize;
+    self->usage -= self->_objectSize;
     return 1;
 }

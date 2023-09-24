@@ -3,11 +3,11 @@
 #include <stddef.h>
 
 typedef struct __attribute__((aligned(32), packed)) {
-    void *head;
-    void *tail;
+    void *_head;
+    void *_tail;
+    unsigned int _padding;
     unsigned int total;
     unsigned int usage;
-    unsigned int padding;
 } BuddyMemory;
 
 BuddyMemory *make_buddy(unsigned int order);

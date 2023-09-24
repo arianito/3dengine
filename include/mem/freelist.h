@@ -4,9 +4,9 @@
 #include <stddef.h>
 
 typedef struct __attribute__((aligned(16), packed)) {
-    void *next;
+    void *_next;
+    unsigned int _padding;
     unsigned int total;
-    unsigned int padding;
 } FreeListMemory;
 
 FreeListMemory *make_freelist(unsigned int size);

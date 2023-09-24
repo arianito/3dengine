@@ -76,7 +76,7 @@ struct GameWindow {
                           freelist_usage(alloc->freelist), alloc->freelist->total,
                           freelist_usage(alloc->string), alloc->string->total,
                           alloc->buddy->usage, alloc->metadata.buddy,
-                          alloc->stack->offset, alloc->stack->size
+                          alloc->stack->usage, alloc->stack->total
             );
         }
 

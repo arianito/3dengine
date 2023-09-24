@@ -3,25 +3,15 @@
 #include <stddef.h>
 #include "mem/utils.h"
 
-typedef struct {
-    size_t next;
-} SlabObject;
-
-typedef struct {
-    void *next;
-    unsigned int size;
-    unsigned int padding;
-} SlabPage;
-
-typedef struct {
-    GeneralAllocator allocator;
-    SlabObject *objects;
-    SlabPage *pages;
-    unsigned int padding;
-    unsigned int slabSize;
-    unsigned int objectSize;
-    unsigned int usage;
+typedef struct __attribute__((aligned(64), packed)) {
+    GeneralAllocator _allocator;
+    void *_objects;
+    void *_pages;
+    unsigned int _slabSize;
+    unsigned int _objectSize;
+    unsigned int _padding;
     unsigned int total;
+    unsigned int usage;
 } SlabMemory;
 
 SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSize);

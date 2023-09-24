@@ -6,12 +6,12 @@
 #define P2SLAB_MAX 32
 
 typedef struct __attribute__((aligned(512), packed)) {
-    GeneralAllocator allocator;
-    char pools[P2SLAB_MAX * 16];
+    GeneralAllocator _allocator;
+    char _pools[P2SLAB_MAX * 16];
+    unsigned short _n;
+    unsigned short _padding;
     unsigned int total;
     unsigned int usage;
-    unsigned short n;
-    unsigned short padding;
 } P2SlabMemory;
 
 P2SlabMemory *p2slab_create(void *m, unsigned int n);

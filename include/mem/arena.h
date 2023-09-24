@@ -5,9 +5,9 @@
 #include "mem/utils.h"
 
 typedef struct __attribute__((aligned(16), packed)) {
+    unsigned int _padding;
     unsigned int total;
     unsigned int usage;
-    unsigned int padding;
 } ArenaMemory;
 
 ArenaMemory *make_arena(unsigned int size);

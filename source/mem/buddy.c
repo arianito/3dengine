@@ -26,14 +26,14 @@ BuddyMemory *buddy_create(void *m, unsigned int order) {
 
     unsigned int size = 1 << order;
     BuddyMemory *self = (BuddyMemory *) (start + padding);
-    self->head = (BuddyBlock *) (start + padding + space);
-    ((BuddyBlock*)self->head)->size = size;
-    ((BuddyBlock*)self->head)->free = 1;
+    self->_head = (BuddyBlock *) (start + padding + space);
+    ((BuddyBlock*)self->_head)->size = size;
+    ((BuddyBlock*)self->_head)->free = 1;
     self->usage = 0;
     self->total = 1 << order;
 
-    self->tail = buddy_next(self->head);
-    self->padding = padding;
+    self->_tail = buddy_next(self->_head);
+    self->_padding = padding;
     return self;
 }
 
@@ -51,7 +51,7 @@ void buddy_destroy(BuddyMemory **self) {
         printf("buddy: destroy failed, invalid instance\n");
         return;
     }
-    size_t op = (size_t) (*self) - (*self)->padding;
+    size_t op = (size_t) (*self) - (*self)->_padding;
     free((void *) (op));
     (*self) = NULL;
 }
@@ -145,11 +145,11 @@ void *buddy_alloc(BuddyMemory *self, unsigned int size) {
     const unsigned int space = MEMORY_SPACE_STD(BuddyBlock);
     size += space;
 
-    BuddyBlock *found = buddy_best(self->head, self->tail, size);
+    BuddyBlock *found = buddy_best(self->_head, self->_tail, size);
 
     if (found == NULL) {
-        buddy_merge(self->head, self->tail);
-        found = buddy_best(self->head, self->tail, size);
+        buddy_merge(self->_head, self->_tail);
+        found = buddy_best(self->_head, self->_tail, size);
     }
 
     if (found == NULL) {
@@ -172,8 +172,8 @@ char buddy_free(BuddyMemory *self, void **ptr) {
         return 0;
     }
 
-    size_t head_address = (size_t) (self->head);
-    size_t tail_address = (size_t) (self->tail);
+    size_t head_address = (size_t) (self->_head);
+    size_t tail_address = (size_t) (self->_tail);
     size_t ptr_address = (size_t) (*ptr);
 
     if (ptr_address < head_address || ptr_address >= tail_address) {

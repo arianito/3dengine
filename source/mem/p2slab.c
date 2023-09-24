@@ -23,6 +23,8 @@ typedef struct __attribute__((aligned(16), packed)) {
 } P2SlabPage;
 
 
+#define P2SLAB_POOL(pools) ((P2SlabPool *) (&pools))
+
 void p2slab_enqueue(P2SlabPool *pool, P2SlabObject *node, unsigned char order) {
     node->next = BYTE6AB((size_t) pool->objects, 0, order);
     pool->objects = node;
@@ -41,16 +43,16 @@ P2SlabObject *p2slab_dequeue(P2SlabPool *pool) {
 P2SlabPage *create_p2slab(P2SlabMemory *self, unsigned int order) {
     unsigned int objectSize = 1 << order;
 
-    unsigned int size = self->n * objectSize;
+    unsigned int size = self->_n * objectSize;
     size += MEMORY_SPACE_STD(P2SlabPage);
-    size += self->n * MEMORY_SPACE_STD(P2SlabObject);
+    size += self->_n * MEMORY_SPACE_STD(P2SlabObject);
     size += sizeof(size_t);
 
     self->total += size;
 
     void *m = NULL;
-    if (self->allocator.alloc != NULL)
-        m = self->allocator.alloc(size);
+    if (self->_allocator.alloc != NULL)
+        m = self->_allocator.alloc(size);
     else
         m = malloc(size);
     if (m == NULL) {
@@ -75,7 +77,8 @@ P2SlabPage *create_p2slab(P2SlabMemory *self, unsigned int order) {
         if (cursor > size)
             break;
 
-        p2slab_enqueue(&self->pools[order], (P2SlabObject *) (address + padding - space), order);
+        P2SlabPool *pools = P2SLAB_POOL(self->_pools);
+        p2slab_enqueue(&pools[order], (P2SlabObject *) (address + padding - space), order);
     }
     return slab;
 }
@@ -85,16 +88,17 @@ P2SlabMemory *p2slab_create(void *m, unsigned int n) {
     const unsigned int padding = MEMORY_PADDING_STD(start);
 
     P2SlabMemory *self = (P2SlabMemory *) (start + padding);
-    self->allocator.alloc = NULL;
-    self->allocator.free = NULL;
-    self->n = n;
-    self->padding = padding;
+    self->_allocator.alloc = NULL;
+    self->_allocator.free = NULL;
+    self->_n = n;
+    self->_padding = padding;
     self->usage = 0;
     self->total = padding + sizeof(P2SlabMemory);
 
     for (int i = 0; i < P2SLAB_MAX; i++) {
-        self->pools[i].objects = NULL;
-        self->pools[i].pages = NULL;
+        P2SlabPool *pools = P2SLAB_POOL(self->_pools);
+        pools[i].objects = NULL;
+        pools[i].pages = NULL;
     }
     return self;
 }
@@ -106,7 +110,7 @@ P2SlabMemory *p2slab_create_alloc(GeneralAllocator allocator, unsigned int n) {
         exit(EXIT_FAILURE);
     }
     P2SlabMemory *slab = p2slab_create(m, n);
-    slab->allocator = allocator;
+    slab->_allocator = allocator;
     return slab;
 }
 
@@ -126,13 +130,14 @@ void p2slab_destroy(P2SlabMemory **self) {
     }
 
     for (int i = 0; i < P2SLAB_MAX; i++) {
-        P2SlabPage *slab = (*self)->pools[i].pages;
+        P2SlabPool *pools = P2SLAB_POOL((*self)->_pools);
+        P2SlabPage *slab = pools[i].pages;
         while (slab != NULL) {
             void *next = slab->next;
 
             size_t op = (size_t) slab - slab->padding;
-            if ((*self)->allocator.free != NULL)
-                (*self)->allocator.free((void *) (op));
+            if ((*self)->_allocator.free != NULL)
+                (*self)->_allocator.free((void *) (op));
             else
                 free((void *) (op));
 
@@ -140,10 +145,10 @@ void p2slab_destroy(P2SlabMemory **self) {
         }
     }
 
-    size_t op = (size_t) (*self) - (*self)->padding;
+    size_t op = (size_t) (*self) - (*self)->_padding;
 
-    if ((*self)->allocator.free != NULL)
-        (*self)->allocator.free((void *) (op));
+    if ((*self)->_allocator.free != NULL)
+        (*self)->_allocator.free((void *) (op));
     else
         free((void *) (op));
     (*self) = NULL;
@@ -175,7 +180,8 @@ void *p2slab_alloc(P2SlabMemory *self, unsigned int size) {
         order++;
     }
 
-    P2SlabPool *pool = &self->pools[order];
+    P2SlabPool *pools = P2SLAB_POOL(self->_pools);
+    P2SlabPool *pool = &pools[order];
 
     if (pool->objects == NULL) {
         P2SlabPage *slab = create_p2slab(self, order);
@@ -211,8 +217,8 @@ char p2slab_free(P2SlabMemory *self, void **ptr) {
         return 0;
     }
     unsigned int order = BYTE6AB_GET_B(node->next);
-    P2SlabPool *pool = &self->pools[order];
-    p2slab_enqueue(pool, node, order);
+    P2SlabPool *pools = P2SLAB_POOL(self->_pools);
+    p2slab_enqueue(&pools[order], node, order);
     self->usage -= (1 << order);
     return 1;
 }

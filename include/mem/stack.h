@@ -3,28 +3,21 @@
 
 #include <stddef.h>
 
-typedef struct {
-    void *head;
-    size_t size;
-    size_t offset;
-    size_t peak;
-    size_t padding;
+typedef struct __attribute__((aligned(32), packed)) {
+    void *_head;
+    unsigned int _padding;
+    unsigned int total;
+    unsigned int usage;
 } StackMemory;
 
-typedef struct {
-    size_t data; // 7bytes offset 1byte padding
-} StackMemoryNode;
+StackMemory *stack_create(void *m, unsigned int size);
 
-void *stack_alloc(StackMemory *self, size_t size, unsigned int alignment);
-
-unsigned char stack_free(StackMemory *self, void **ptr);
+StackMemory *make_stack(unsigned int size);
 
 void stack_reset(StackMemory *self);
 
 void stack_destroy(StackMemory **self);
 
-StackMemory *stack_create(void *m, size_t size);
+void *stack_alloc(StackMemory *self, unsigned int size, unsigned int alignment);
 
-StackMemory *make_stack(size_t size);
-
-StackMemory *make_stack_exact(size_t size);
+char stack_free(StackMemory *self, void **ptr);

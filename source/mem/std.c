@@ -4,11 +4,10 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 
 #include "mem/utils.h"
 
-void *std_alloc(size_t size, unsigned int alignment) {
+void *std_alloc(unsigned int size, unsigned int alignment) {
     if (!ISPOW2(alignment)) {
         printf("std: alloc failed, invalid alignment\n");
         return NULL;

@@ -13,12 +13,12 @@
 #include "mem/utils.h"
 
 typedef struct {
-    size_t boot;
-    size_t global;
-    size_t stack;
-    size_t freelist;
-    size_t string;
-    size_t buddy;
+    unsigned int boot;
+    unsigned int global;
+    unsigned int stack;
+    unsigned int freelist;
+    unsigned int string;
+    unsigned int buddy;
 } MemoryMetadata;
 
 typedef struct {

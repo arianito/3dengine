@@ -21,7 +21,7 @@ Debugging complex applications can be challenging. To ease the process, we've in
 
 ### Custom Memory Allocator
 
-Efficient memory management is crucial for high-performance applications. This project includes a custom memory allocator designed to efficiently manage memory within the engine. It provides features like memory pooling, alignment control, and optimized allocation strategies, helping you reduce memory fragmentation and improve overall performance.
+Efficient memory management is crucial for high-performance applications. This project includes a custom memory _allocator designed to efficiently manage memory within the engine. It provides features like memory pooling, alignment control, and optimized allocation strategies, helping you reduce memory fragmentation and improve overall performance.
 
 ### Basic Boilerplate for Experimental Projects
 
