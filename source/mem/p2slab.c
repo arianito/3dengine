@@ -123,6 +123,14 @@ P2SlabMemory *make_p2slab(unsigned int n) {
     return p2slab_create(m, n);
 }
 
+void destroy_p2slab(P2SlabMemory *self, P2SlabPage *slab) {
+    size_t op = (size_t) slab - slab->padding;
+    if (self->_allocator.free != NULL)
+        self->_allocator.free((void *) (op));
+    else
+        free((void *) (op));
+}
+
 void p2slab_destroy(P2SlabMemory **self) {
     if (self == NULL || *self == NULL) {
         printf("p2slab destroy failed, invalid instance\n");
@@ -134,13 +142,7 @@ void p2slab_destroy(P2SlabMemory **self) {
         P2SlabPage *slab = pools[i].pages;
         while (slab != NULL) {
             void *next = slab->next;
-
-            size_t op = (size_t) slab - slab->padding;
-            if ((*self)->_allocator.free != NULL)
-                (*self)->_allocator.free((void *) (op));
-            else
-                free((void *) (op));
-
+            destroy_p2slab(*self, slab);
             slab = next;
         }
     }
@@ -221,4 +223,75 @@ char p2slab_free(P2SlabMemory *self, void **ptr) {
     p2slab_enqueue(&pools[order], node, order);
     self->usage -= (1 << order);
     return 1;
+}
+
+char p2slab_is_free(P2SlabPage *slab, unsigned int objectSize) {
+    unsigned int space = MEMORY_SPACE_STD(P2SlabPage);
+    const size_t start = (size_t) slab - slab->padding;
+    size_t cursor = slab->padding + space;
+    while (1) {
+        size_t address = start + cursor;
+        space = MEMORY_SPACE_STD(P2SlabObject);
+        unsigned int padding = MEMORY_ALIGNMENT_STD(address, P2SlabObject);
+        cursor += padding + objectSize;
+        if (cursor > slab->size)
+            break;
+        P2SlabObject *obj = (P2SlabObject *) (address + padding - space);
+        if (BYTE6AB_GET_A(obj->next)) return 0;
+    }
+    return 1;
+}
+
+void p2slab_fit_pool(P2SlabMemory *self, P2SlabPool *pool, unsigned int order) {
+    if (pool->pages == NULL)
+        return;
+    unsigned int objectSize = 1 << order;
+    P2SlabPage *slab = pool->pages;
+    pool->pages = NULL;
+    pool->objects = NULL;
+    while (slab != NULL) {
+        P2SlabPage *next = slab->next;
+
+        if (p2slab_is_free(slab, objectSize)) {
+
+            unsigned int size = self->_n * objectSize;
+            size += MEMORY_SPACE_STD(P2SlabPage);
+            size += self->_n * MEMORY_SPACE_STD(P2SlabObject);
+            size += sizeof(size_t);
+
+            self->total -= size;
+            destroy_p2slab(self, slab);
+
+        } else {
+            unsigned int space = MEMORY_SPACE_STD(P2SlabPage);
+            const size_t start = (size_t) slab - slab->padding;
+            size_t cursor = slab->padding + space;
+            while (1) {
+                size_t address = start + cursor;
+                space = MEMORY_SPACE_STD(P2SlabObject);
+                unsigned int padding = MEMORY_ALIGNMENT_STD(address, P2SlabObject);
+                cursor += padding + objectSize;
+                if (cursor > slab->size)
+                    break;
+
+                P2SlabObject *obj = (P2SlabObject *) (address + padding - space);
+                if (!BYTE71_GET_1(obj->next)) { // is free
+                    p2slab_enqueue(pool, obj, order);
+                } else {
+                    self->usage += objectSize;
+                }
+            }
+            slab->next = pool->pages;
+            pool->pages = slab;
+        }
+        slab = next;
+    }
+}
+
+void p2slab_fit(P2SlabMemory *self) {
+    self->usage = 0;
+    P2SlabPool *pools = P2SLAB_POOL(self->_pools);
+    for (int i = 0; i < P2SLAB_MAX; i++) {
+        p2slab_fit_pool(self, &pools[i], i);
+    }
 }

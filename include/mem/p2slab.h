@@ -22,6 +22,8 @@ P2SlabMemory *make_p2slab(unsigned int n);
 
 void p2slab_destroy(P2SlabMemory **self);
 
+void p2slab_fit(P2SlabMemory *self);
+
 void *p2slab_alloc(P2SlabMemory *self, unsigned int size);
 
 char p2slab_free(P2SlabMemory *self, void **ptr);

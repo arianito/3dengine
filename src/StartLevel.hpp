@@ -164,6 +164,10 @@ class StartLevel : public Level {
         debug_color(color_yellow);
         Vec2 pos = vec2(game->width - 10, game->height - 10);
         debug_stringf(pos, "temp %d / %d", freelist_usage(CustomStartLevelAllocator::buddy), CustomStartLevelAllocator::buddy->total);
+
+        if (input_keydown(KEY_SPACE)) {
+            mDirector->Fit();
+        }
     }
 
     inline void Destroy() override {

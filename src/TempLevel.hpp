@@ -11,6 +11,36 @@ extern "C" {
 #include "engine/ECS.hpp"
 #include "engine/Memory.hpp"
 
+class CustomTempAllocator2 {
+
+public:
+    static FreeListMemory *slab;
+
+    static inline void create() {
+        slab = make_freelist(16*MEGABYTES);
+    }
+
+    static inline void destroy() {
+        freelist_destroy(&slab);
+    }
+
+    inline static void *Alloc(size_t size, unsigned int alignment) {
+        return freelist_alloc(slab, size, alignment);
+    }
+
+    inline static void Free(void **ptr) {
+        freelist_free(slab, ptr);
+    }
+
+    inline static size_t usage() {
+        return freelist_usage(slab);
+    }
+
+    inline static size_t size() {
+        return slab->total;
+    }
+};
+
 class CustomTempAllocator3 {
 
 public:
@@ -39,9 +69,14 @@ public:
     inline static size_t size() {
         return slab->total;
     }
+
+    inline static void fit() {
+        p2slab_fit(slab);
+    }
 };
 
 P2SlabMemory *CustomTempAllocator3::slab = nullptr;
+FreeListMemory *CustomTempAllocator2::slab = nullptr;
 
 
 class TempLevel : public Level {
@@ -247,6 +282,7 @@ public:
 
         if (input_keydown(KEY_SPACE)) {
             mDirector->Fit();
+            TAlloc::fit();
         }
     }
 

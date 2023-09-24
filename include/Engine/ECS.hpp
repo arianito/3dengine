@@ -189,6 +189,16 @@ protected:
 };
 
 
+template<class TAlloc>
+inline void *ecs_global_alloc(size_t size) {
+    return Alloc<TAlloc>(size);
+}
+
+template<class TAlloc>
+inline void ecs_global_free(void *ptr) {
+    Free<TAlloc>((void**) &ptr);
+}
+
 template<class TAlloc, class ...Types>
 class System : public BaseSystem<TAlloc> {
 protected:
@@ -239,6 +249,7 @@ private:
     using EntityIdStack = FixedStack<EntityId, TAlloc>;
     using PartialSlabMemory = ProbeHashTable<BaseType, SlabMemory *, TAlloc>;
 
+
     EntityId mEntityCounter{1};
     EntityMap mEntities;
     SystemMap mSystems;
@@ -248,20 +259,14 @@ private:
     PartialSlabMemory mComponentsSlab;
     PartialSlabMemory mSystemsSlab;
     EntityIdStack mDestroyStack;
+    unsigned int mSlabCount = 16;
 
-    inline static void *ecs_global_alloc(size_t size) {
-        return Alloc<TAlloc>(size, sizeof(size_t));
-    }
-
-    inline static void ecs_global_free(void *ptr) {
-        Free<TAlloc>((void**) &ptr);
-    }
 
     template<class T>
     inline SlabMemory *makeSlab(int length) {
         GeneralAllocator pAlloc;
-        pAlloc.alloc = ecs_global_alloc;
-        pAlloc.free = ecs_global_free;
+        pAlloc.alloc = ecs_global_alloc<TAlloc>;
+        pAlloc.free = ecs_global_free<TAlloc>;
         return slab_create_alloc(pAlloc, sizeof(T) * length, sizeof(T));
     }
 
@@ -269,7 +274,7 @@ private:
     inline SlabMemory *getComponentSlab() {
         ComponentId id = GetComponentTypeId<TAlloc, T>();
         if (mComponentsSlab.Contains(id)) return mComponentsSlab[id];
-        SlabMemory *slab = makeSlab<T>(16);
+        SlabMemory *slab = makeSlab<T>(mSlabCount);
         mComponentsSlab.Set(id, slab);
         return slab;
     }
@@ -278,7 +283,7 @@ private:
     inline SlabMemory *getSystemSlab() {
         SystemId id = GetSystemTypeId<TAlloc, T>();
         if (mSystemsSlab.Contains(id)) return mSystemsSlab[id];
-        SlabMemory *slab = makeSlab<T>(16);
+        SlabMemory *slab = makeSlab<T>(mSlabCount);
         mSystemsSlab.Set(id, slab);
         return slab;
     }
@@ -310,8 +315,10 @@ private:
     }
 
 public:
-    explicit inline Director() {
-        mEntitySlab = makeSlab<Entity<TAlloc>>(16);
+    explicit inline Director(): Director(16) {}
+
+    explicit inline Director(unsigned int slab): mSlabCount{slab} {
+        mEntitySlab = makeSlab<Entity<TAlloc>>(mSlabCount);
     }
 
     explicit inline Director(const Director &) = delete;
@@ -397,6 +404,10 @@ public:
         mSystems.Fit();
         for (auto p: mComponents) p.second->Fit();
         mComponents.Fit();
+
+        slab_fit(mEntitySlab);
+        for (auto p: mComponentsSlab) slab_fit(p.second);
+        for (auto p: mSystemsSlab) slab_fit(p.second);
     }
 
     template<class T, class... Args>

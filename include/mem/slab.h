@@ -22,6 +22,8 @@ SlabMemory *make_slab(unsigned int slabSize, unsigned short objectSize);
 
 void slab_destroy(SlabMemory **self);
 
+void slab_fit(SlabMemory *self);
+
 void *slab_alloc(SlabMemory *self);
 
 char slab_free(SlabMemory *self, void **ptr);

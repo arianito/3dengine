@@ -73,6 +73,14 @@ SlabPage *create_slab(SlabMemory *self) {
     return slab;
 }
 
+void destroy_slab(SlabMemory *self, SlabPage *slab) {
+    size_t op = (size_t) slab - slab->padding;
+    if (self->_allocator.free != NULL)
+        self->_allocator.free((void *) (op));
+    else
+        free((void *) (op));
+}
+
 SlabMemory *slab_create(void *m, unsigned int slabSize, unsigned short objectSize) {
     if (slabSize % objectSize != 0) {
         printf("slab: create failed, invalid chunk size\n");
@@ -124,13 +132,7 @@ void slab_destroy(SlabMemory **self) {
     SlabPage *slab = (*self)->_pages;
     while (slab != NULL) {
         void *next = slab->next;
-
-        size_t op = (size_t) slab - slab->padding;
-        if ((*self)->_allocator.free != NULL)
-            (*self)->_allocator.free((void *) (op));
-        else
-            free((void *) (op));
-
+        destroy_slab(*self, slab);
         slab = next;
     }
 
@@ -185,4 +187,66 @@ char slab_free(SlabMemory *self, void **ptr) {
     slab_enqueue(self, node);
     self->usage -= self->_objectSize;
     return 1;
+}
+
+char slab_is_free(SlabPage *slab, unsigned int objectSize) {
+    unsigned int space = MEMORY_SPACE_STD(SlabPage);
+    const size_t start = (size_t) slab - slab->padding;
+    size_t cursor = slab->padding + space;
+    while (1) {
+        size_t address = start + cursor;
+        space = MEMORY_SPACE_STD(SlabObject);
+        unsigned int padding = MEMORY_ALIGNMENT_STD(address, SlabObject);
+        cursor += padding + objectSize;
+        if (cursor > slab->size)
+            break;
+        SlabObject *obj = (SlabObject *) (address + padding - space);
+        if (BYTE71_GET_1(obj->next)) return 0;
+    }
+    return 1;
+}
+
+void slab_fit(SlabMemory *self) {
+
+    SlabPage *slab = self->_pages;
+    self->_pages = NULL;
+    self->_objects = NULL;
+    self->usage = 0;
+
+    while (slab != NULL) {
+        SlabPage *next = slab->next;
+
+        if (slab_is_free( slab, self->_objectSize)) {
+            unsigned int n = self->_slabSize / self->_objectSize;
+            unsigned int size = self->_slabSize;
+            size += MEMORY_SPACE_STD(SlabPage);
+            size += n * MEMORY_SPACE_STD(SlabObject);
+            size += sizeof(size_t);
+            self->total -= size;
+            destroy_slab(self, slab);
+
+        } else {
+            unsigned int space = MEMORY_SPACE_STD(SlabPage);
+            const size_t start = (size_t) slab - slab->padding;
+            size_t cursor = slab->padding + space;
+            while (1) {
+                size_t address = start + cursor;
+                space = MEMORY_SPACE_STD(SlabObject);
+                unsigned int padding = MEMORY_ALIGNMENT_STD(address, SlabObject);
+                cursor += padding + self->_objectSize;
+                if (cursor > slab->size)
+                    break;
+
+                SlabObject *obj = (SlabObject *) (address + padding - space);
+                if (!BYTE71_GET_1(obj->next)) { // is free
+                    slab_enqueue(self, obj);
+                } else {
+                    self->usage += self->_objectSize;
+                }
+            }
+            slab->next = self->_pages;
+            self->_pages = slab;
+        }
+        slab = next;
+    }
 }
