@@ -8,13 +8,13 @@
 #include "engine/Memory.hpp"
 
 template<class TAlloc = StringMemory>
-class String {
+class TString {
 private:
     char *mStr{nullptr};
     int mCapacity{0};
     int mLength{0};
 
-    inline void copy(const String &other) {
+    inline void copy(const TString &other) {
         if (other.mLength > 0) {
             Reserve(other.mLength);
             memcpy(mStr, other.mStr, other.mLength);
@@ -24,20 +24,20 @@ private:
     }
 
 public:
-    explicit inline String() {
+    explicit inline TString() {
         mLength = 0;
         mCapacity = 0;
         mStr = nullptr;
     }
 
-    [[maybe_unused]] explicit inline String(char value) {
+    [[maybe_unused]] explicit inline TString(char value) {
         Reserve(1);
         mStr[0] = value;
         mLength = 1;
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(unsigned char value) {
+    [[maybe_unused]] explicit inline TString(unsigned char value) {
         int len = snprintf(nullptr, 0, "%hhu", value);
         Reserve(len);
         sprintf_s(mStr, len + 1, "%hhu", value);
@@ -45,7 +45,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(short value) {
+    [[maybe_unused]] explicit inline TString(short value) {
         int len = snprintf(nullptr, 0, "%hd", value);
         Reserve(len);
         sprintf_s(mStr, len + 1, "%hd", value);
@@ -53,7 +53,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(unsigned short value) {
+    [[maybe_unused]] explicit inline TString(unsigned short value) {
         int len = snprintf(nullptr, 0, "%hu", value);
         Reserve(len);
         sprintf_s(mStr, len + 1, "%hu", value);
@@ -61,7 +61,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(int value) {
+    [[maybe_unused]] explicit inline TString(int value) {
         int len = snprintf(nullptr, 0, "%d", value);
         Reserve(len);
         sprintf_s(mStr, len + 1, "%d", value);
@@ -69,7 +69,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(unsigned int value) {
+    [[maybe_unused]] explicit inline TString(unsigned int value) {
         int len = snprintf(nullptr, 0, "%u", value);
         Reserve(len);
         sprintf_s(mStr, len + 1, "%u", value);
@@ -77,7 +77,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(long value) {
+    [[maybe_unused]] explicit inline TString(long value) {
         int len = snprintf(nullptr, 0, "%ld", value);
         Reserve(len);
         sprintf_s(mStr, len + 1, "%ld", value);
@@ -85,7 +85,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(unsigned long value) {
+    [[maybe_unused]] explicit inline TString(unsigned long value) {
         int len = snprintf(nullptr, 0, "%lu", value);
         Reserve(len);
         sprintf_s(mStr, len + 1, "%lu", value);
@@ -93,7 +93,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(long long value) {
+    [[maybe_unused]] explicit inline TString(long long value) {
         int len = snprintf(nullptr, 0, "%zd", value);
         Reserve(len);
         sprintf_s(mStr, len + 1, "%zd", value);
@@ -101,7 +101,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(unsigned long long value) {
+    [[maybe_unused]] explicit inline TString(unsigned long long value) {
         int len = snprintf(nullptr, 0, "%zu", value);
         Reserve(len);
         sprintf_s(mStr, len + 1, "%zu", value);
@@ -109,7 +109,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(float value) {
+    [[maybe_unused]] explicit inline TString(float value) {
         int len = snprintf(nullptr, 0, "%f", value);
         Reserve(len);
         sprintf_s(mStr, len + 1, "%f", value);
@@ -117,7 +117,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(double value) {
+    [[maybe_unused]] explicit inline TString(double value) {
         int len = snprintf(nullptr, 0, "%f", value);
         Reserve(len);
         sprintf_s(mStr, len + 1, "%f", value);
@@ -125,7 +125,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] explicit inline String(bool value) {
+    [[maybe_unused]] explicit inline TString(bool value) {
         if (value) {
             Reserve(4);
             memcpy(mStr, "true", 4);
@@ -139,7 +139,7 @@ public:
         }
     }
 
-    [[maybe_unused]] explicit inline String(const char *str) {
+    [[maybe_unused]] explicit inline TString(const char *str) {
         int len = (int) strlen(str);
         Reserve(len);
         memcpy(mStr, str, len);
@@ -147,7 +147,7 @@ public:
         mStr[mLength] = '\0';
     }
 
-    [[maybe_unused]] inline String(const char *fmt, ...) {
+    [[maybe_unused]] inline TString(const char *fmt, ...) {
         if (fmt) {
             va_list args;
             va_start(args, fmt);
@@ -164,21 +164,21 @@ public:
         }
     }
 
-    [[maybe_unused]] inline String(const String &str) {
+    [[maybe_unused]] inline TString(const TString &str) {
         copy(str);
     }
 
-    [[maybe_unused]] inline String(String &&other) noexcept {
+    [[maybe_unused]] inline TString(TString &&other) noexcept {
         std::swap(mLength, other.mLength);
         std::swap(mCapacity, other.mCapacity);
         std::swap(mStr, other.mStr);
     }
 
-    inline ~String() {
+    inline ~TString() {
         mLength = 0;
         mCapacity = 0;
         if (mStr != nullptr) {
-            Free<TAlloc>((void **) (&mStr));
+            Free<TAlloc>(&mStr);
             mStr = nullptr;
         }
     }
@@ -189,7 +189,7 @@ public:
             mCapacity = 0;
 
             if (mStr != nullptr)
-                Free<TAlloc>((void **) (&mStr));
+                Free<TAlloc>(&mStr);
             return;
         }
 
@@ -201,7 +201,7 @@ public:
         mStr[mLength] = '\0';
 
         if (mStr != nullptr) {
-            Free<TAlloc>((void **) (&mStr));
+            Free<TAlloc>(&mStr);
         }
 
         mStr = newList;
@@ -218,7 +218,7 @@ public:
             mLength = 0;
             mCapacity = 0;
             if (mStr != nullptr)
-                Free<TAlloc>((void **) (&mStr));
+                Free<TAlloc>(&mStr);
             return;
         }
 
@@ -232,7 +232,7 @@ public:
             memcpy(newList, mStr, mLength);
             newList[mLength] = '\0';
 
-            Free<TAlloc>((void **) (&mStr));
+            Free<TAlloc>(&mStr);
         } else {
             mLength = 0;
             newList[mLength] = '\0';
@@ -242,20 +242,20 @@ public:
     }
 
 
-    String &operator=(const String &other) {
+    TString &operator=(const TString &other) {
         if (this != &other)
             copy(other);
         return *this;
     }
 
-    String &operator=(String &&other) noexcept {
+    TString &operator=(TString &&other) noexcept {
         std::swap(mLength, other.mLength);
         std::swap(mCapacity, other.mCapacity);
         std::swap(mStr, other.mStr);
         return *this;
     }
 
-    String &operator=(const char *other) {
+    TString &operator=(const char *other) {
         if (other) {
             int n = (int) strlen(other);
             Reserve(n);
@@ -271,9 +271,9 @@ public:
     }
 
     [[maybe_unused]] [[nodiscard]]
-    inline friend String operator+(const String &lhs, const char *rhs) {
+    inline friend TString operator+(const TString &lhs, const char *rhs) {
         int len = (int) strlen(rhs);
-        String out;
+        TString out;
         out.Reserve(lhs.mLength + len);
         out.mLength = out.mCapacity - 1;
 
@@ -284,9 +284,9 @@ public:
     }
 
     [[maybe_unused]] [[nodiscard]]
-    inline friend String operator+(const char *lhs, const String &rhs) {
+    inline friend TString operator+(const char *lhs, const TString &rhs) {
         int len = (int) strlen(lhs);
-        String out;
+        TString out;
         out.Reserve(len + rhs.mLength);
         out.mLength = out.mCapacity - 1;
 
@@ -297,8 +297,8 @@ public:
     }
 
     [[maybe_unused]] [[nodiscard]]
-    inline friend String operator+(const String &lhs, const String &rhs) {
-        String out;
+    inline friend TString operator+(const TString &lhs, const TString &rhs) {
+        TString out;
         out.Reserve(lhs.mLength + rhs.mLength);
         out.mLength = out.mCapacity - 1;
 
@@ -308,7 +308,7 @@ public:
         return out;
     }
 
-    inline String operator+=(const char *rhs) {
+    inline TString operator+=(const char *rhs) {
         int len = (int) strlen(rhs);
         Reserve(mLength + len);
         memcpy(&mStr[mLength], rhs, len);
@@ -317,7 +317,7 @@ public:
         return *this;
     }
 
-    inline String operator+=(const String &rhs) {
+    inline TString operator+=(const TString &rhs) {
         Reserve(mLength + rhs.mLength);
         memcpy(&mStr[mLength], rhs.mStr, rhs.mLength);
         mLength += rhs.mLength;
@@ -329,7 +329,7 @@ public:
         return Compare(other) == 0;
     }
 
-    inline bool operator==(const String &other) const {
+    inline bool operator==(const TString &other) const {
         return operator==(other.mStr);
     }
 
@@ -337,7 +337,7 @@ public:
         return Compare(other) != 0;
     }
 
-    inline bool operator!=(const String &other) const {
+    inline bool operator!=(const TString &other) const {
         return operator!=(other.mStr);
     }
 
@@ -345,7 +345,7 @@ public:
         return Compare(other) > 0;
     }
 
-    inline bool operator>(const String &other) const {
+    inline bool operator>(const TString &other) const {
         return operator>(other.mStr);
     }
 
@@ -353,7 +353,7 @@ public:
         return Compare(other) < 0;
     }
 
-    inline bool operator<(const String &other) const {
+    inline bool operator<(const TString &other) const {
         return operator<(other.mStr);
     }
 
@@ -361,7 +361,7 @@ public:
         return Compare(other) >= 0;
     }
 
-    inline bool operator>=(const String &other) const {
+    inline bool operator>=(const TString &other) const {
         return operator>=(other.mStr);
     }
 
@@ -369,7 +369,7 @@ public:
         return Compare(other) <= 0;
     }
 
-    inline bool operator<=(const String &other) const {
+    inline bool operator<=(const TString &other) const {
         return operator<=(other.mStr);
     }
 
@@ -393,7 +393,7 @@ public:
         return strcmp(mStr, other);
     }
 
-    [[maybe_unused]] [[nodiscard]] inline int Compare(const String &other) const {
+    [[maybe_unused]] [[nodiscard]] inline int Compare(const TString &other) const {
         if (mStr == nullptr)
             return other == nullptr ? 0 : -1;
         if (other.mStr == nullptr)

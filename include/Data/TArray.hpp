@@ -10,7 +10,7 @@ extern "C" {
 #include "engine/Memory.hpp"
 
 template<typename T, class TAlloc = FreeListMemory>
-class Array {
+class TArray {
 private:
     T *mList;
     int mCapacity{8};
@@ -56,16 +56,16 @@ private:
 
 
 public:
-    explicit inline Array() : Array(8) {}
+    explicit inline TArray() : TArray(8) {}
 
-    inline Array(int capacity) : mCapacity(capacity), mLength(0) {
+    inline TArray(int capacity) : mCapacity(capacity), mLength(0) {
         mList = Alloc<TAlloc, T>(mCapacity);
     }
 
-    explicit inline Array(const Array &) = delete;
+    explicit inline TArray(const TArray &) = delete;
 
-    inline ~Array() {
-        Free<TAlloc>((void **) (&mList));
+    inline ~TArray() {
+        Free<TAlloc>(&mList);
     }
 
     inline void Clear() {
@@ -88,7 +88,7 @@ public:
         assert(newList != nullptr && "Array: Insufficient memory.\n");
 
         memcpy(newList, mList, nBytes);
-        Free<TAlloc>((void **) &mList);
+        Free<TAlloc>(&mList);
 
         mList = newList;
         mCapacity = newCapacity;

@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include "mem/utils.h"
 
-#define P2SLAB_MAX 32
+#define P2SLAB_MAX 29
 
 typedef struct __attribute__((aligned(512), packed)) {
     GeneralAllocator _allocator;

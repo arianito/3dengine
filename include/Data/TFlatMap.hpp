@@ -8,11 +8,11 @@ extern "C" {
 #include "mem/utils.h"
 }
 
-#include "data/String.hpp"
+#include "data/TString.hpp"
 #include "engine/Memory.hpp"
 
 template<typename K, typename V, class TAlloc = FreeListMemory>
-class ProbeHashTable {
+class TFlatMap {
 private:
     struct Node {
         K key;
@@ -21,16 +21,16 @@ private:
     };
 
 public:
-    explicit inline ProbeHashTable() : ProbeHashTable(8) {}
+    explicit inline TFlatMap() : TFlatMap(8) {}
 
-    explicit inline ProbeHashTable(int capacity) : mCapacity(capacity) {
+    explicit inline TFlatMap(int capacity) : mCapacity(capacity) {
         mProbes = Alloc<TAlloc, Node, true>(mCapacity);
     }
 
-    explicit inline ProbeHashTable(const ProbeHashTable &) = delete;
+    explicit inline TFlatMap(const TFlatMap &) = delete;
 
-    inline ~ProbeHashTable() {
-        Free<TAlloc>((void **) &mProbes);
+    inline ~TFlatMap() {
+        Free<TAlloc>(&mProbes);
     }
 
     inline void Reserve(int newCapacity) {
@@ -147,8 +147,8 @@ private:
                     hsh = (hsh << 5) + (*kw++);
                 }
             }
-        } else if constexpr (std::is_same_v<K, String<>>) {
-            auto keyO = (String<>) key;
+        } else if constexpr (std::is_same_v<K, TString<>>) {
+            auto keyO = (TString<>) key;
             unsigned int sz = keyO.Length();
             const char *kw = keyO.Str();
             for (int i = 0; i < sz; i++) {

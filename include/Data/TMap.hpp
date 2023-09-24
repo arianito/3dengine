@@ -3,52 +3,88 @@
 
 #include <cassert>
 
-#include "engine/Object.hpp"
+#include "data/TString.hpp"
 #include "engine/Memory.hpp"
 
-template<typename K, typename V>
-class HashTable {
-public:
+template<typename K, typename V, class TAlloc>
+class TMap {
+private:
     struct Node {
         Node *next;
         K key;
         V value;
     };
-//private:
+private:
     static constexpr size_t mPrimeA{492366587};
     static constexpr size_t mPrimeB{1645333507};
     static constexpr size_t mPrimeC{6692367337};
     unsigned int mDefaultStart{8};
     unsigned int mBucketCount{mDefaultStart};
     Node **mBuckets;
-    Allocator *mAllocator{nullptr};
     unsigned int mLength = 0;
     Node dummy;
-public:
-    explicit inline HashTable(Allocator *a) : mAllocator(a) {
-        unsigned int nBytes = mBucketCount * sizeof(Node *);
-        mBuckets = (Node **) mAllocator->Alloc(nBytes);
-        memset(mBuckets, 0, nBytes);
+private:
+    inline void expand() {
+        float ratio = (float) mLength / mBucketCount;
+        if (ratio < 0.5f)
+            return;
+        Reserve(mBucketCount << 1);
     }
 
-    explicit inline HashTable(const HashTable &) = delete;
 
-    ~HashTable() {
+    inline unsigned int hash(const K &key, unsigned int size) {
+        unsigned int hsh = 0;
+        if constexpr (std::is_pointer_v<K>) {
+            unsigned int sz = sizeof(*key);
+            if constexpr (sizeof(*key) == 1) {
+                K kw = key;
+                while (*kw != '\0') {
+                    hsh = (hsh << 5) + (*kw++);
+                }
+            } else {
+                const char *kw = ((char *) key);
+                for (int i = 0; i < sz; i++) {
+                    hsh = (hsh << 5) + (*kw++);
+                }
+            }
+        } else if constexpr (std::is_same_v<K, TString<>>) {
+            auto keyO = (TString<>) key;
+            unsigned int sz = keyO.Length();
+            const char *kw = keyO.Str();
+            for (int i = 0; i < sz; i++) {
+                hsh = (hsh << 5) + (*kw++);
+            }
+        } else {
+            unsigned int sz = sizeof(key);
+            const char *kw = ((char *) (&key));
+            for (int i = 0; i < sz; i++) {
+                hsh = (hsh << 5) + (*kw++);
+            }
+        }
+        return ((mPrimeA * hsh + mPrimeB) % mPrimeC) & (size - 1);
+    }
+
+public:
+    explicit inline TMap() {
+        mBuckets = Alloc<TAlloc, Node *, true>(mBucketCount);
+    }
+
+    explicit inline TMap(const TMap &) = delete;
+
+    ~TMap() {
         for (int i = 0; i < mBucketCount; i++) {
             Node *it = (Node *) mBuckets[i];
             while (it != nullptr) {
                 Node *tmp = it;
                 it = it->next;
-                mAllocator->Free((void **) &tmp);
+                Free<TAlloc>(&tmp);
             }
         }
-        mAllocator->Free((void **) &mBuckets);
+        Free<TAlloc>(&mBuckets);
     }
 
-    inline void reserve(int newCapacity) {
-        unsigned int nBytes = newCapacity * sizeof(Node *);
-        Node **newList = (Node **) mAllocator->Alloc(nBytes);
-        memset(newList, 0, nBytes);
+    inline void Reserve(int newCapacity) {
+        Node **newList = Alloc<TAlloc, Node *, true>(newCapacity);
         for (int i = 0; i < mBucketCount; i++) {
             auto it = mBuckets[i];
             while (it != nullptr) {
@@ -60,21 +96,13 @@ public:
             }
         }
 
-        mAllocator->Free((void **) &mBuckets);
+        Free<TAlloc>(&mBuckets);
         mBuckets = newList;
         mBucketCount = newCapacity;
     }
 
 
-    inline void expand() {
-        float ratio = (float) mLength / mBucketCount;
-        if (ratio < 0.75)
-            return;
-
-        reserve(mBucketCount << 1);
-    }
-
-    inline void set(const K &key, const V &value) {
+    inline void Set(const K &key, const V &value) {
         expand();
         unsigned int hsh = hash(key, mBucketCount);
         Node *node = mBuckets[hsh];
@@ -90,7 +118,7 @@ public:
             return;
         }
 
-        Node *newNode = (Node *) mAllocator->Alloc(sizeof(Node));
+        Node *newNode = Alloc<TAlloc, Node>();
         newNode->next = nullptr;
         newNode->key = key;
         newNode->value = value;
@@ -100,8 +128,7 @@ public:
         mLength++;
     }
 
-    inline void remove(const K &key) {
-
+    inline void Remove(const K &key) {
         unsigned int hsh = hash(key, mBucketCount);
 
         Node *node = mBuckets[hsh],
@@ -120,38 +147,13 @@ public:
         if (prev == nullptr) {
             Node *tmp = mBuckets[hsh];
             mBuckets[hsh] = tmp->next;
-            mAllocator->Free((void **) &tmp);
+            Free<TAlloc>(&tmp);
             mLength--;
             return;
         }
         prev->next = node->next;
-        mAllocator->Free((void **) &node);
+        Free<TAlloc>(&node);
         mLength--;
-    }
-
-    inline unsigned int hash(const K &key, unsigned int size) {
-        unsigned int hsh = 0;
-        if constexpr (std::is_pointer_v<K>) {
-            unsigned int sz = sizeof(*key);
-            if constexpr (sizeof(*key) == 1) {
-                K kw = key;
-                while (*kw != '\0') {
-                    hsh = (hsh << 5) + (*kw++);
-                }
-            } else {
-                const char *kw = ((char *) key);
-                for (int i = 0; i < sz; i++) {
-                    hsh = (hsh << 5) + (*kw++);
-                }
-            }
-        } else {
-            unsigned int sz = sizeof(key);
-            const char *kw = ((char *) (&key));
-            for (int i = 0; i < sz; i++) {
-                hsh = (hsh << 5) + (*kw++);
-            }
-        }
-        return ((mPrimeA * hsh + mPrimeB) % mPrimeC) & (size - 1);
     }
 
     inline V &operator[](const K &key) {
@@ -168,24 +170,22 @@ public:
         return node->value;
     }
 
-    inline const unsigned int &size() {
+    inline const unsigned int &Length() {
         return mLength;
     }
 
-    inline void clear() {
+    inline void Clear() {
         for (int i = 0; i < mBucketCount; i++) {
             auto it = mBuckets[i];
             while (it != nullptr) {
                 Node *tmp = it;
                 it = it->next;
-                mAllocator->Free((void **) &tmp);
+                Free<TAlloc>(&tmp);
             }
         }
-        mAllocator->Free((void **) &mBuckets);
+        Free<TAlloc>(&mBuckets);
         mBucketCount = mDefaultStart;
-        int nBytes = mBucketCount * sizeof(Node *);
-        mBuckets = (Node **) mAllocator->Alloc(nBytes);
-        memset(mBuckets, 0, nBytes);
+        mBuckets = Alloc<TAlloc, Node*, true>(mBucketCount);
         mLength = 0;
     }
 };

@@ -6,7 +6,7 @@ extern "C" {
 #include "mem/p2slab.h"
 }
 
-#include "data/Heap.hpp"
+#include "data/THeap.hpp"
 #include "engine/Level.hpp"
 #include "engine/ECS.hpp"
 #include "engine/Memory.hpp"

@@ -13,9 +13,9 @@ extern "C" {
 #include <cassert>
 
 #include "engine/Memory.hpp"
-#include "data/Array.hpp"
-#include "data/ProbeHashTable.hpp"
-#include "data/FixedStack.hpp"
+#include "data/TArray.hpp"
+#include "data/TFlatMap.hpp"
+#include "data/TArrayStack.hpp"
 
 
 template<class TAlloc>
@@ -66,7 +66,7 @@ class Entity {
     friend class Director<TAlloc>;
 
 private:
-    using ComponentMap = ProbeHashTable<ComponentId, Component<TAlloc> *, TAlloc>;
+    using ComponentMap = TFlatMap<ComponentId, Component<TAlloc> *, TAlloc>;
     ComponentMap mComponents;
     EntityId mEntityId;
 
@@ -160,9 +160,9 @@ public:
 protected:
     friend class Director<TAlloc>;
 
-    using EntityIdStack = FixedStack<EntityId, TAlloc>;
-    using EntityPtrStack = FixedStack<Entity<TAlloc> *, TAlloc>;
-    using EntityIndexMap = ProbeHashTable<EntityId, int, TAlloc>;
+    using EntityIdStack = TArrayStack<EntityId, TAlloc>;
+    using EntityPtrStack = TArrayStack<Entity<TAlloc> *, TAlloc>;
+    using EntityIndexMap = TFlatMap<EntityId, int, TAlloc>;
 
     EntityIdStack mDestroyStack;
     EntityPtrStack mCreateStack;
@@ -203,7 +203,7 @@ template<class TAlloc, class ...Types>
 class System : public BaseSystem<TAlloc> {
 protected:
     using CTuple = std::tuple<std::add_pointer_t<Types>...>;
-    Array<CTuple, TAlloc> mComponents;
+    TArray<CTuple, TAlloc> mComponents;
 
     template<int Index, class Type, class... Args>
     inline bool hasComponent(ComponentId id, Component<TAlloc> *component, CTuple &tuple) {
@@ -234,7 +234,7 @@ public:
     template<class T>
     inline static T *Get(const CTuple &tuple) { return std::get<T *>(tuple); };
 
-    inline Array<CTuple, TAlloc> &Components() { return mComponents; }
+    inline TArray<CTuple, TAlloc> &Components() { return mComponents; }
 };
 
 template<class TAlloc>
@@ -242,12 +242,12 @@ class Director {
 private:
     friend class BaseSystem<TAlloc>;
 
-    using EntityMap = ProbeHashTable<EntityId, Entity<TAlloc> *, TAlloc>;
-    using SystemMap = ProbeHashTable<SystemId, BaseSystem<TAlloc> *, TAlloc>;
-    using EntityComponentMap = ProbeHashTable<EntityId, Component<TAlloc> *, TAlloc>;
-    using ComponentEntityComponentMap = ProbeHashTable<ComponentId, EntityComponentMap *, TAlloc>;
-    using EntityIdStack = FixedStack<EntityId, TAlloc>;
-    using PartialSlabMemory = ProbeHashTable<BaseType, SlabMemory *, TAlloc>;
+    using EntityMap = TFlatMap<EntityId, Entity<TAlloc> *, TAlloc>;
+    using SystemMap = TFlatMap<SystemId, BaseSystem<TAlloc> *, TAlloc>;
+    using EntityComponentMap = TFlatMap<EntityId, Component<TAlloc> *, TAlloc>;
+    using ComponentEntityComponentMap = TFlatMap<ComponentId, EntityComponentMap *, TAlloc>;
+    using EntityIdStack = TArrayStack<EntityId, TAlloc>;
+    using PartialSlabMemory = TFlatMap<BaseType, SlabMemory *, TAlloc>;
 
 
     EntityId mEntityCounter{1};

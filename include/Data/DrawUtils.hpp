@@ -5,8 +5,8 @@
 #include "camera.h"
 #include "input.h"
 #include "debug.h"
-#include "data/BinarySearchTree.hpp"
-#include "data/Heap.hpp"
+#include "data/TBinaryTree.hpp"
+#include "data/THeap.hpp"
 
 class DrawUtils {
 public:

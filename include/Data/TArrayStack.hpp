@@ -9,81 +9,31 @@ extern "C" {
 #include "engine/Memory.hpp"
 
 template<typename T, class TAlloc = FreeListMemory>
-class FixedStack {
+class TArrayStack {
 private:
     T *mStack{nullptr};
     int mLength{0};
     int mCapacity{8};
     bool allowExpansion{true};
-
-public:
-
-    class Iterator {
-    private:
-        T *ptr;
-
-    public:
-        explicit inline Iterator(T *ptr) : ptr(ptr) {}
-
-        inline Iterator &operator++() {
-            ++ptr;
-            return *this;
-        }
-
-        inline bool operator!=(const Iterator &other) const {
-            return ptr != other.ptr;
-        }
-
-        inline const T &operator*() const {
-            return *ptr;
-        }
-    };
-
-    Iterator begin() {
-        return Iterator(mStack);
-    }
-
-    Iterator end() {
-        return Iterator(mStack + mLength);
-    }
-
 private:
-
     inline void expand() {
         if (mLength < mCapacity - 1)
             return;
         Reserve(mCapacity << 1);
     }
-
-    inline void shrink() {
-        float ratio = (float) mLength / mCapacity;
-        if ((ratio) > 0.25f)
-            return;
-        Reserve(mCapacity >> 1);
-    }
-
-    inline void copy(const FixedStack &other) {
-        if (other.mLength > 0) {
-            Reserve(other.mLength);
-            memcpy(mStack, other.mStack, other.mLength);
-            mLength = other.mLength;
-        }
-    }
-
 public:
-    explicit inline FixedStack() : FixedStack(8) { allowExpansion = true; }
+    explicit inline TArrayStack() : TArrayStack(8) { allowExpansion = true; }
 
-    explicit inline FixedStack(int capacity) {
+    explicit inline TArrayStack(int capacity) {
         mCapacity = capacity;
         mStack = Alloc<TAlloc, T>(mCapacity);
         allowExpansion = false;
     }
 
+    explicit inline TArrayStack(const TArrayStack &) = delete;
 
-    explicit inline FixedStack(const FixedStack &) = delete;
-
-    inline ~FixedStack() {
-        Free<TAlloc>((void **) &mStack);
+    inline ~TArrayStack() {
+        Free<TAlloc>(&mStack);
     }
 
     inline void Fit() {
@@ -100,7 +50,7 @@ public:
         assert(newList != nullptr && "Array: Insufficient memory.\n");
 
         memcpy(newList, mStack, nBytes);
-        Free<TAlloc>((void **) &mStack);
+        Free<TAlloc>(&mStack);
 
         mStack = newList;
         mCapacity = newCapacity;

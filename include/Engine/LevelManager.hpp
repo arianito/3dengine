@@ -4,14 +4,14 @@
 
 #include "mem/alloc.h"
 #include "engine/Memory.hpp"
-#include "data/String.hpp"
-#include "data/ProbeHashTable.hpp"
+#include "data/TString.hpp"
+#include "data/TFlatMap.hpp"
 #include "engine/Level.hpp"
 
 template<class TAlloc = FreeListMemory>
 class LevelManager {
 private:
-    ProbeHashTable<LevelId, Level *, TAlloc> mLevels;
+    TFlatMap<LevelId, Level *, TAlloc> mLevels;
     Level *mPreviousLevel = nullptr;
     Level *mCurrentLevel = nullptr;
 public:
@@ -19,7 +19,7 @@ public:
         if (mCurrentLevel)
             mCurrentLevel->Destroy();
         for (const auto &level: mLevels) {
-            Free<FreeListMemory>((void **) &level.second);
+            Free<FreeListMemory>(&level.second);
         }
     }
 

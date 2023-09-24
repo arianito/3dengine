@@ -2,39 +2,34 @@
 
 
 #include "cassert"
-#include "engine/Object.hpp"
 #include "engine/Memory.hpp"
 
-template<typename T>
-class CircularQueue {
+template<typename T, class TAlloc>
+class TArrayQueue {
 private:
-    Allocator *mAllocator{nullptr};
-public:
+    T *mQueue{nullptr};
     int mTail{0};
     int mHead{0};
-    T *mQueue{nullptr};
     int mCapacity{8};
 public:
-    explicit inline CircularQueue(Allocator *a, int capacity) :
-            mAllocator(a),
-            mCapacity(capacity + 1) {
-        mQueue = (T *) mAllocator->Alloc(mCapacity * sizeof(T));
+    explicit inline TArrayQueue(int capacity) : mCapacity(capacity + 1) {
+        mQueue = Alloc<TAlloc, T>(mCapacity);
     }
 
-    explicit inline CircularQueue(const CircularQueue &) = delete;
+    explicit inline TArrayQueue(const TArrayQueue &) = delete;
 
-    ~CircularQueue() {
-        mAllocator->Free((void **) &mQueue);
+    ~TArrayQueue() {
+        Free<TAlloc>(&mQueue);
     }
 
-    inline void enqueue(const T &value) {
+    inline void Enqueue(const T &value) {
         if (((mTail + 1) % mCapacity) == mHead)
             return;
         mQueue[mTail] = value;
         mTail = (mTail + 1) % mCapacity;
     }
 
-    inline T dequeue() {
+    inline T Dequeue() {
         assert(mTail != mHead && "Circular Queue: is empty");
         T value = mQueue[mHead];
         memset(&mQueue[mHead], 0, sizeof(T));
@@ -43,7 +38,7 @@ public:
     }
 
 
-    inline int size() {
+    inline int Length() {
         if (mHead == mTail)
             return 0;
         int d = mTail - mHead;
@@ -52,12 +47,12 @@ public:
         return d;
     }
 
-    inline void clear() {
+    inline void Clear() {
         mHead = 0;
         mTail = 0;
     }
 
-    inline bool empty() {
+    inline bool Empty() {
         return mTail == mHead;
     }
 };

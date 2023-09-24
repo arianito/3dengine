@@ -2,31 +2,29 @@
 
 
 #include "engine/Memory.hpp"
-#include "engine/Object.hpp"
 
-template<typename T>
-class SinglyLinkedList {
-public:
+template<typename T, class TAlloc>
+class TSinglyLinkedList {
+private:
     struct Node {
         Node *next;
         T value;
     };
 private:
     Node *mHead{nullptr};
-    Allocator *mAllocator{nullptr};
     int mLength{0};
 public:
-    explicit inline SinglyLinkedList(Allocator *a) : mAllocator(a) {}
+    explicit inline TSinglyLinkedList() = default;
 
-    explicit inline SinglyLinkedList(const SinglyLinkedList &) = delete;
+    explicit inline TSinglyLinkedList(const TSinglyLinkedList &) = delete;
 
-    inline ~SinglyLinkedList() {
-        clear();
+    inline ~TSinglyLinkedList() {
+        Clear();
     }
 
 
-    inline void insertAfter(Node *node, const T &value) {
-        Node *newNode = (Node *) mAllocator->Alloc(sizeof(Node));
+    inline void PushAfter(Node *node, const T &value) {
+        Node *newNode = Alloc<TAlloc, Node>();
         newNode->next = nullptr;
         newNode->value = value;
         mLength++;
@@ -40,7 +38,7 @@ public:
         node->next = newNode;
     }
 
-    inline void remove(Node *node) {
+    inline void Remove(Node *node) {
         Node *it = mHead, *prev = nullptr;
         while (it != nullptr) {
             if (it == node)
@@ -55,16 +53,16 @@ public:
         mLength--;
         if (prev == nullptr) {
             mHead = it->next;
-            mAllocator->Free((void **) &it);
+            Free<TAlloc>(&it);
             return;
         }
 
         prev->next = it->next;
-        mAllocator->Free((void **) &it);
+        Free<TAlloc>(&it);
     }
 
 
-    inline void remove(const T &value) {
+    inline void Remove(const T &value) {
         Node *it = mHead, *prev = nullptr;
         while (it != nullptr) {
             if (it->value == value)
@@ -79,19 +77,19 @@ public:
         mLength--;
         if (prev == nullptr) {
             mHead = it->next;
-            mAllocator->Free((void **) &it);
+            Free<TAlloc>(&it);
             return;
         }
 
         prev->next = it->next;
-        mAllocator->Free((void **) &it);
+        Free<TAlloc>(&it);
     }
 
-    inline void pushFront(const T &value) {
+    inline void PushFront(const T &value) {
         insertAfter(nullptr, value);
     }
 
-    inline void pushBack(const T &value) {
+    inline void PushBack(const T &value) {
 
         Node *it = mHead, *prev = nullptr;
         while (it != nullptr) {
@@ -101,14 +99,14 @@ public:
         insertAfter(prev, value);
     }
 
-    inline T popFront() {
+    inline T PopFront() {
         assert(mHead != nullptr && "LinkedList: is empty.\n");
         T value = mHead->value;
         remove(mHead);
         return value;
     }
 
-    inline T popBack() {
+    inline T PopBack() {
         assert(mHead != nullptr && "LinkedList: is empty.\n");
         Node *it = mHead, *prev = nullptr;
         while (it != nullptr) {
@@ -122,12 +120,12 @@ public:
     }
 
 
-    inline void clear() {
+    inline void Clear() {
         Node *it = mHead;
         while (it != nullptr) {
             Node *tmp = it;
             it = it->next;
-            mAllocator->Free((void **) &tmp);
+            Free<TAlloc>(&tmp);
         }
         mHead = nullptr;
         mLength = 0;
@@ -147,21 +145,12 @@ public:
         }
     }
 
-    inline bool isEmpty() {
+    inline bool Empty() {
         return mHead == nullptr;
     }
 
 
-    inline const int &size() {
+    inline const int &Length() {
         return mLength;
     }
-
-    inline Node *head() const {
-        return mHead;
-    }
-
-    inline Node *tail() const {
-        return nullptr;
-    }
-
 };

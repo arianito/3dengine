@@ -1,45 +1,41 @@
 #pragma  once
 
 #include "engine/Memory.hpp"
-#include "engine/Object.hpp"
 
 
-template<typename T>
-class DoublyLinkedList {
-public:
+template<typename T, class TAlloc>
+class TDoublyLinkedList {
+private:
     struct Node {
         Node *next;
         Node *prev;
         T value;
     };
 private:
-    Allocator *mAllocator{nullptr};
     Node *mHead{nullptr};
     Node *mTail{nullptr};
     int mLength{0};
 
 public:
-    explicit inline DoublyLinkedList(Allocator *a) : mAllocator(a) {
-        printf("sizeof: : %zu\n", sizeof(Node));
-
-        mHead = (Node *) mAllocator->Alloc(sizeof(Node));
-        mTail = (Node *) mAllocator->Alloc(sizeof(Node));
+    explicit inline TDoublyLinkedList() {
+        mHead = Alloc<TAlloc, Node>();
+        mTail = Alloc<TAlloc, Node>();
         mHead->prev = nullptr;
         mHead->next = mTail;
         mTail->prev = mHead;
         mTail->next = nullptr;
     }
 
-    explicit inline DoublyLinkedList(const DoublyLinkedList &) = delete;
+    explicit inline TDoublyLinkedList(const TDoublyLinkedList &) = delete;
 
-    inline ~DoublyLinkedList() {
-        clear();
-        mAllocator->Free((void **) &mHead);
-        mAllocator->Free((void **) &mTail);
+    inline ~TDoublyLinkedList() {
+        Clear();
+        Free<TAlloc>(&mHead);
+        Free<TAlloc>(&mTail);
     }
 
-    inline void insertAfter(Node *node, const T &value) {
-        Node *newNode = (Node *) mAllocator->Alloc(sizeof(Node));
+    inline void InsertAfter(Node *node, const T &value) {
+        Node *newNode = Alloc<TAlloc, Node>();
         newNode->value = value;
         Node *next = node->next;
         newNode->prev = node;
@@ -50,8 +46,8 @@ public:
 
     }
 
-    inline void insertBefore(Node *node, const T &value) {
-        Node *newNode = (Node *) mAllocator->Alloc(sizeof(Node));
+    inline void InsertBefore(Node *node, const T &value) {
+        Node *newNode = Alloc<TAlloc, Node>();
         newNode->value = value;
         Node *prev = node->prev;
         newNode->next = node;
@@ -61,7 +57,7 @@ public:
         mLength++;
     }
 
-    inline void remove(Node *node) {
+    inline void Remove(Node *node) {
         assert(node->next != nullptr && node->prev != nullptr &&
                "DoublyLinkedList: node not exist");
 
@@ -69,21 +65,21 @@ public:
         Node *next = node->next;
         prev->next = node->next;
         next->prev = node->prev;
-        mAllocator->Free((void **) &node);
+        Free<TAlloc>(&node);
         mLength--;
 
     }
 
-    inline void remove(const T &value) {
+    inline void Remove(const T &value) {
         Node *it = mHead->next;
         while (it != mTail) {
             if (it->value == value) break;
             it = it->next;
         }
-        remove(it);
+        Remove(it);
     }
 
-    inline bool search(const T &value) {
+    inline bool Search(const T &value) {
         Node *it = mHead->next;
         while (it != mTail) {
             if (it->value == value) return true;
@@ -92,16 +88,16 @@ public:
         return false;
     }
 
-    inline void pushFront(const T &value) {
+    inline void PushFront(const T &value) {
         insertAfter(mHead, value);
     }
 
-    inline void pushBack(const T &value) {
+    inline void PushBack(const T &value) {
 
         insertBefore(mTail, value);
     }
 
-    inline T popFront() {
+    inline T PopFront() {
         assert(mHead->next != nullptr && mHead->next != mTail &&
                "DoublyLinkedList: is empty");
         T value = mHead->next->value;
@@ -109,7 +105,7 @@ public:
         return value;
     }
 
-    inline T popBack() {
+    inline T PopBack() {
         assert(mTail->prev != nullptr && mTail->prev != mHead &&
                "DoublyLinkedList: is empty");
         T value = mTail->prev->value;
@@ -133,31 +129,19 @@ public:
     }
 
 
-    inline const int &size() {
+    inline const int &Length() {
         return mLength;
     }
 
-    inline Node *head() const {
-        return mHead->next;
-    }
-
-    inline Node *tail() const {
-        return mTail;
-    }
-
-    inline void clear() {
-
+    inline void Clear() {
         Node *it = mHead->next;
         while (it != mTail) {
             Node *tmp = it;
             it = it->next;
-            mAllocator->Free((void **) &tmp);
+            Free<TAlloc>(&tmp);
         }
         mHead->next = mTail;
         mTail->prev = mHead;
         mLength = 0;
-
     }
-
-
 };

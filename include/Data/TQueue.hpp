@@ -2,29 +2,30 @@
 
 #include <cassert>
 
-template<typename T>
-class Queue {
+#include "engine/Memory.hpp"
+
+template<typename T, class TAlloc>
+class TQueue {
 public:
     struct Node {
         Node *next;
         T value;
     };
 private:
-    Allocator *mAllocator{nullptr};
     Node *mHead{nullptr};
     Node *mTail{nullptr};
     int mLength{0};
 public:
-    explicit inline Queue(Allocator *a) : mAllocator(a) {}
+    explicit inline TQueue() {}
 
-    explicit inline Queue(const Queue &) = delete;
+    explicit inline TQueue(const TQueue &) = delete;
 
-    inline ~Queue() {
-        clear();
+    inline ~TQueue() {
+        Clear();
     }
 
-    inline void enqueue(const T &value) {
-        Node *newNode = (Node *) mAllocator->Alloc(sizeof(Node));
+    inline void Enqueue(const T &value) {
+        Node *newNode = Alloc<TAlloc, Node>();
         newNode->next = nullptr;
         newNode->value = value;
         mLength++;
@@ -38,7 +39,7 @@ public:
         mTail = newNode;
     }
 
-    inline T dequeue() {
+    inline T Dequeue() {
         assert(mHead != nullptr && "Queue: is empty");
         mLength--;
         Node *tmp = mHead;
@@ -46,39 +47,31 @@ public:
         if (mHead == nullptr)
             mTail = nullptr;
         T value = tmp->value;
-        mAllocator->Free((void **) &tmp);
+        Free<TAlloc>(&tmp);
         return value;
     }
 
-    inline Node *head() const {
-        return mHead;
-    }
-
-    inline Node *tail() const {
-        return nullptr;
-    }
-
-    inline const T &current() {
+    inline const T &Front() {
         assert(mHead != nullptr && "Queue: is empty");
         return mHead->value;
     }
 
 
-    inline bool empty() {
+    inline bool Empty() {
         return mHead == nullptr;
     }
 
-    inline const int &size() {
+    inline const int &Length() {
         return mLength;
     }
 
 
-    inline void clear() {
+    inline void Clear() {
         Node *it = mHead;
         while (it != nullptr) {
             Node *tmp = it;
             it = it->next;
-            mAllocator->Free((void **) &tmp);
+            Free<TAlloc>(&tmp);
         }
     }
 

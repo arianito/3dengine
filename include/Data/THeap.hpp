@@ -6,13 +6,12 @@
 static constexpr int MAX_HEAP = 1;
 static constexpr int MIN_HEAP = 2;
 
-template<typename T, class TAlloc>
-class Heap {
+template<typename T, int Policy, class TAlloc>
+class THeap {
 private:
     T *mHeap{nullptr};
     int mCapacity{8};
     int mLength{0};
-    int mPolicy{MAX_HEAP};
 
     inline void swap(int i, int j) {
 
@@ -49,7 +48,7 @@ private:
         while (index > 0) {
             int parent = index / 2;
 
-            if ((mPolicy == MAX_HEAP) ?
+            if ((Policy == MAX_HEAP) ?
                 (mHeap[parent - 1] > mHeap[index - 1]) :
                 (mHeap[parent - 1] < mHeap[index - 1]))
                 return;
@@ -73,14 +72,14 @@ private:
             int next = leftIndex;
             //  check whether right node is greater or not
             if (rightIndex <= mLength &&
-                ((mPolicy == MAX_HEAP) ?
+                ((Policy == MAX_HEAP) ?
                  (mHeap[rightIndex - 1] > mHeap[leftIndex - 1]) :
                  (mHeap[rightIndex - 1] < mHeap[leftIndex - 1]))) {
                 next = rightIndex;
             }
 
             // check if placed correctly
-            if ((mPolicy == MAX_HEAP) ?
+            if ((Policy == MAX_HEAP) ?
                 (mHeap[index - 1] > mHeap[next - 1]) :
                 (mHeap[index - 1] < mHeap[next - 1]))
                 return;
@@ -94,7 +93,7 @@ private:
 
     inline bool compare(int index, const T &value) {
         if (index > mLength)return true;
-        if ((mPolicy == MAX_HEAP) ?
+        if ((Policy == MAX_HEAP) ?
             (mHeap[index - 1] > value) :
             (mHeap[index - 1] < value))
             return false;
@@ -102,14 +101,14 @@ private:
     }
 
 public:
-    explicit inline Heap(int policy) : mPolicy(policy) {
+    explicit inline THeap() {
         mHeap = Alloc<TAlloc, T>(mCapacity);
     }
 
-    explicit inline Heap(const Heap &) = delete;
+    explicit inline THeap(const THeap &) = delete;
 
-    inline ~Heap() {
-        Free<TAlloc>((void**) &mHeap);
+    inline ~THeap() {
+        Free<TAlloc>((void **) &mHeap);
     }
 
     inline void Reserve(int newCapacity) {
@@ -117,7 +116,7 @@ public:
         assert(newList != nullptr && "Heap: Insufficient memory.\n");
         int oldBytes = mCapacity * sizeof(T);
         memcpy(newList, mHeap, oldBytes);
-        Free<TAlloc>((void**) &mHeap);
+        Free<TAlloc>((void **) &mHeap);
         mHeap = newList;
         mCapacity = newCapacity;
     }
@@ -131,7 +130,7 @@ public:
             int newCapacity = nextPowerOfTwo(n);
             T *newList = Alloc<TAlloc, T>(newCapacity);
             assert(newList != nullptr && "Heap: Insufficient memory.\n");
-            Free<TAlloc>((void**) &mHeap);
+            Free<TAlloc>((void **) &mHeap);
             mCapacity = newCapacity;
             mHeap = newList;
         }

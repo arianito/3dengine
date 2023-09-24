@@ -3,76 +3,63 @@
 
 #include "cassert"
 
-#include "engine/Object.hpp"
 #include "engine/Memory.hpp"
 
 
-template<typename T>
-class Stack : Object<Stack<T>> {
-public:
+template<typename T, class TAlloc>
+class TStack {
+private:
     struct Node {
         Node *next;
         T value;
     };
 private:
-    Allocator *mAllocator{nullptr};
     Node *mHead;
     int mLength{0};
 public:
-    explicit  inline Stack(Allocator *a) : mAllocator(a) {}
+    explicit  inline TStack() = default;
 
-    explicit inline Stack(const Stack &) = delete;
+    explicit inline TStack(const TStack &) = delete;
 
-    inline ~Stack() {
-        clear();
-    }
+    inline ~TStack() { Clear(); }
 
-    inline void push(const T &value) {
-        Node *newNode = (Node *) mAllocator->Alloc(sizeof(Node));
+    inline void Push(const T &value) {
+        Node *newNode = Alloc<TAlloc, Node>();
         newNode->next = mHead;
         newNode->value = value;
         mHead = newNode;
         mLength++;
     }
 
-    inline T pop() {
+    inline T Pop() {
         assert(mHead != nullptr && "Stack: is empty");
         Node *tmp = mHead;
         mHead = mHead->next;
         T value = tmp->value;
-        mAllocator->Free((void **) &tmp);
+        Free<TAlloc>(&tmp);
         mLength--;
         return value;
     }
 
-
-    inline Node *head() const {
-        return mHead;
-    }
-
-    inline Node *tail() const {
-        return nullptr;
-    }
-
-    inline bool empty() {
+    inline bool Empty() {
         return mHead == nullptr;
     }
 
-    inline const T &current() {
+    inline const T &Front() {
         assert(mHead != nullptr && "Stack: is empty");
         return mHead->value;
     }
 
-    inline const int &size() {
+    inline const int &Length() {
         return mLength;
     }
 
-    inline void clear() {
+    inline void Clear() {
         Node *it = mHead;
         while (it != nullptr) {
             Node *tmp = it;
             it = it->next;
-            mAllocator->Free((void **) &tmp);
+            Free<TAlloc>(&tmp);
         }
         mHead = nullptr;
         mLength = 0;
