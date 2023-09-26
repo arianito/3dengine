@@ -2,11 +2,9 @@
 #include "shader.h"
 
 #include <stdio.h>
-#include <assert.h>
 
 #define GLFW_INCLUDE_NONE
 
-#include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
 #include "file.h"
@@ -23,7 +21,6 @@ Shader shader_create(const char *vs, const char *fs) {
     if (status != GL_TRUE) {
         glGetShaderInfoLog(vsp, 1024, &read, error_msg);
         printf("vs error: %s", error_msg);
-        exit(1);
         return 0;
     }
     GLuint fsp = glCreateShader(GL_FRAGMENT_SHADER);
@@ -33,7 +30,6 @@ Shader shader_create(const char *vs, const char *fs) {
     if (status != GL_TRUE) {
         glGetShaderInfoLog(fsp, 1024, &read, error_msg);
         printf("fs error: %s", error_msg);
-        exit(1);
         return 0;
     }
     GLint programId = glCreateProgram();
@@ -44,7 +40,6 @@ Shader shader_create(const char *vs, const char *fs) {
     if (status != GL_TRUE) {
         glGetProgramInfoLog(programId, 1024, &read, error_msg);
         printf("compile error: %s", error_msg);
-        exit(1);
         return 0;
     }
     glDetachShader(programId, vsp);

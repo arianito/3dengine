@@ -134,6 +134,10 @@ public:
         return -1;
     }
 
+    inline T *Ptr() const {
+        return mList;
+    }
+
     inline bool Empty() {
         return mLength == 0;
     }

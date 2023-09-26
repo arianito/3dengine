@@ -27,19 +27,19 @@ static inline void shader_int(Shader p, const char *name, int a) {
 }
 
 static inline void shader_vec2(Shader p, const char *name, const void *v) {
-    glUniform2fv(glGetUniformLocation(p, name), 1, v);
+    glUniform2fv(glGetUniformLocation(p, name), 1, (const float*)v);
 }
 
 static inline void shader_vec3(Shader p, const char *name, const void *v) {
-    glUniform3fv(glGetUniformLocation(p, name), 1, v);
+    glUniform3fv(glGetUniformLocation(p, name), 1, (const float*)v);
 }
 
 static inline void shader_vec4(Shader p, const char *name, const void *v) {
-    glUniform4fv(glGetUniformLocation(p, name), 1, v);
+    glUniform4fv(glGetUniformLocation(p, name), 1, (const float*)v);
 }
 
 static inline void shader_mat4(Shader p, const char *name, const void *v) {
-    glUniformMatrix4fv(glGetUniformLocation(p, name), 1, GL_FALSE, v);
+    glUniformMatrix4fv(glGetUniformLocation(p, name), 1, GL_FALSE, (const float*)v);
 }
 
 static inline void shader_float(Shader p, const char *name, float f) {

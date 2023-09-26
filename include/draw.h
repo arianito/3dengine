@@ -10,6 +10,8 @@ void draw_render();
 
 void draw_terminate();
 
+void add_vertex(int type, Vertex v);
+
 void draw_point(Vec3 pos, float size, Color c);
 
 void draw_line(Vec3 a, Vec3 b, Color c);
@@ -19,9 +21,11 @@ void draw_bbox(BBox bbox, Color c);
 void fill_bbox(BBox bbox, Color c);
 
 void draw_cube(Vec3 a, Vec3 s, Color c);
+
 void fill_cube(Vec3 a, Vec3 s, Color c);
 
 void draw_cubef(Vec3 a, float s, Color c);
+
 void fill_cubef(Vec3 a, float s, Color c);
 
 void draw_edge(Edge e, Color c);
@@ -29,6 +33,7 @@ void draw_edge(Edge e, Color c);
 void draw_triangle(Triangle t, Color c);
 
 void draw_tetrahedron(Tetrahedron t, Color c);
+
 
 void fill_tetrahedron(Tetrahedron t, Color c);
 

@@ -52,6 +52,11 @@ typedef struct __attribute__((aligned(64), packed)) {
     Vec3 scale;
 } Transform;
 
+typedef struct __attribute__((aligned(32), packed)) {
+    Vec3 position;
+    float radius;
+} Sphere;
+
 typedef struct __attribute__((aligned(64), packed)) {
     Vec3 a;
     Vec3 b;
@@ -153,12 +158,17 @@ static const Color color_gray = {0.5f, 0.5f, 0.5f, 1};
 
 static const Quat quat_identity = {0, 0, 0, 1};
 static const Rot rot_zero = {0, 0, 0};
-static const Mat4 mat4_identity = {
-        {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
+static const Mat4 mat4_identity = {{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}};
 
 static const Transform transform_identity = {{0, 0, 0},
                                              {0, 0, 0},
                                              {1, 1, 1}};
+
+static const BBox bbox_empty = {{MAX, MAX, MAX},
+                                {MIN, MIN, MIN}};
+
+static const BBox bbox_zero = {{0, 0, 0},
+                               {0, 0, 0}};
 
 // math
 static inline void seedf(unsigned int seed) {
@@ -458,6 +468,7 @@ static inline Color color_fromHSLf(float h, float s, float l, float a) {
     rgb.b = B + m;
     return rgb;
 }
+
 static inline Color color_fromHSL(ColorHSL hsl) {
     return color_fromHSLf(hsl.h, hsl.s, hsl.l, hsl.a);
 }
@@ -739,6 +750,7 @@ static inline Vec3 vec3_rand(float x, float y, float z) {
     a.z = randf() * z - z * 0.5f;
     return a;
 }
+
 static inline Vec3 vec3f(float a) {
     Vec3 v;
     v.x = v.y = v.z = a;
@@ -972,11 +984,12 @@ static inline Vec3 vec3_snap(Vec3 a, float size) {
     a.z = snap(a.z, size);
     return a;
 }
+
 static inline Vec3 vec3_snapCube(Vec3 a, float size) {
     float hs = size / 2;
     a.x = snap(-hs + a.x, size) + hs;
-    a.y = snap(-hs + a.y, size)+ hs;
-    a.z = snap(-hs + a.z, size)+ hs;
+    a.y = snap(-hs + a.y, size) + hs;
+    a.z = snap(-hs + a.z, size) + hs;
     return a;
 }
 
@@ -1053,6 +1066,14 @@ static inline Plane plane(float x, float y, float z, float w) {
     return p;
 }
 
+//
+static inline Edge edge(Vec3 a, Vec3 b) {
+    Edge e;
+    e.a = a;
+    e.b = b;
+    return e;
+}
+
 // bbox
 
 static inline BBox bbox(Vec3 a, Vec3 b) {
@@ -1062,15 +1083,214 @@ static inline BBox bbox(Vec3 a, Vec3 b) {
     return bb;
 }
 
-static inline void bbox_vertices(const BBox *bbox, Vec3 out_vertices[8]) {
-    out_vertices[0] = bbox->min;
-    out_vertices[1] = vec3(bbox->min.x, bbox->max.y, bbox->min.z);
-    out_vertices[2] = vec3(bbox->max.x, bbox->max.y, bbox->min.z);
-    out_vertices[3] = vec3(bbox->max.x, bbox->min.y, bbox->min.z);
-    out_vertices[4] = vec3(bbox->min.x, bbox->min.y, bbox->max.z);
-    out_vertices[5] = vec3(bbox->min.x, bbox->max.y, bbox->max.z);
-    out_vertices[6] = bbox->max;
-    out_vertices[7] = vec3(bbox->max.x, bbox->min.y, bbox->max.z);
+static inline void bbox_vertices(BBox b, Vec3 *vertices) {
+    vertices[0] = b.min;
+    vertices[1] = vec3(b.min.x, b.max.y, b.min.z);
+    vertices[2] = vec3(b.max.x, b.max.y, b.min.z);
+    vertices[3] = vec3(b.max.x, b.min.y, b.min.z);
+    vertices[4] = vec3(b.min.x, b.min.y, b.max.z);
+    vertices[5] = vec3(b.min.x, b.max.y, b.max.z);
+    vertices[6] = b.max;
+    vertices[7] = vec3(b.max.x, b.min.y, b.max.z);
+}
+
+static inline void bbox_edges(BBox b, Edge *edges) {
+    Vec3 vertices[8];
+    bbox_vertices(b, vertices);
+
+    edges[0] = edge(vertices[0], vertices[1]);
+    edges[1] = edge(vertices[1], vertices[2]);
+    edges[2] = edge(vertices[2], vertices[3]);
+    edges[3] = edge(vertices[3], vertices[0]);
+
+    edges[4] = edge(vertices[4], vertices[5]);
+    edges[5] = edge(vertices[5], vertices[6]);
+    edges[6] = edge(vertices[6], vertices[7]);
+    edges[7] = edge(vertices[7], vertices[4]);
+
+    edges[8] = edge(vertices[0], vertices[4]);
+    edges[9] = edge(vertices[1], vertices[5]);
+    edges[10] = edge(vertices[2], vertices[6]);
+    edges[11] = edge(vertices[3], vertices[7]);
+}
+
+static inline BBox bbox_projectXY(BBox b) {
+    b.min.z = 0;
+    b.max.z = 0;
+    return b;
+}
+
+static inline BBox bbox_projectXZ(BBox b) {
+    b.min.y = 0;
+    b.max.y = 0;
+    return b;
+}
+
+static inline BBox bbox_projectYZ(BBox b) {
+    b.min.x = 0;
+    b.max.x = 0;
+    return b;
+}
+
+__attribute__((unused)) static inline BBox bbox_projectAxis(BBox b, int axis) {
+    if (axis == 0) {
+        b.min.x = 0;
+        b.max.x = 0;
+    } else if (axis == 1) {
+        b.min.y = 0;
+        b.max.y = 0;
+    } else if (axis == 2) {
+        b.min.z = 0;
+        b.max.z = 0;
+    }
+    return b;
+}
+
+static inline float bbox_depth(BBox b) {
+    return b.max.x - b.min.x;
+}
+
+static inline float bbox_height(BBox b) {
+    return b.max.z - b.min.z;
+}
+
+static inline float bbox_width(BBox b) {
+    return b.max.y - b.min.y;
+}
+
+static inline Vec3 bbox_center(BBox b) {
+    Vec3 a;
+    a.x = (b.max.x + b.min.x) * 0.5f;
+    a.y = (b.max.y + b.min.y) * 0.5f;
+    a.z = (b.max.z + b.min.z) * 0.5f;
+    return a;
+}
+
+static inline Vec3 bbox_size(BBox b) {
+    Vec3 a;
+    a.x = (b.max.x - b.min.x);
+    a.y = (b.max.y - b.min.y);
+    a.z = (b.max.z - b.min.z);
+    return a;
+}
+
+static inline BBox bbox_snap(BBox b, float s) {
+    Vec3 a;
+    b.min = vec3_snap(b.min, s);
+    b.max = vec3_snap(b.max, s);
+    return b;
+}
+
+static inline BBox bbox_snapCube(BBox b, float s) {
+    Vec3 a;
+    b.min = vec3_snapCube(b.min, s);
+    b.max = vec3_snapCube(b.max, s);
+    return b;
+}
+
+static inline float bbox_area(BBox b) {
+    return fmaxf(0, b.max.x - b.min.x) * fmaxf(0, b.max.y - b.min.y) * fmaxf(0, b.max.z - b.min.z);
+}
+
+static inline float bbox_margin(BBox b) {
+    return fmaxf(0, b.max.x - b.min.x) + fmaxf(0, b.max.y - b.min.y) + fmaxf(0, b.max.z - b.min.z);
+}
+
+static inline BBox bbox_expand(BBox b, float offset) {
+    b.min.x -= offset;
+    b.min.y -= offset;
+    b.min.z -= offset;
+    b.max.x += offset;
+    b.max.y += offset;
+    b.max.z += offset;
+    return b;
+}
+
+static inline BBox bbox_extend(BBox a, BBox b) {
+    a.min = vec3_min(a.min, b.min);
+    a.max = vec3_max(a.max, b.max);
+    return a;
+}
+
+static inline BBox bbox_intersection(BBox a, BBox b) {
+    a.min = vec3_max(a.min, b.min);
+    a.max = vec3_min(a.max, b.max);
+    return a;
+}
+
+static inline int bbox_contains(BBox a, BBox b) {
+    return a.min.x <= b.min.x &&
+           a.min.y <= b.min.y &&
+           a.min.z <= b.min.z &&
+           a.max.x >= b.max.x &&
+           a.max.y >= b.max.y &&
+           a.max.z >= b.max.z;
+}
+
+static inline int bbox_containsPoint(BBox a, Vec3 b) {
+    return a.min.x <= b.x &&
+           a.min.y <= b.y &&
+           a.min.z <= b.z &&
+           a.max.x >= b.x &&
+           a.max.y >= b.y &&
+           a.max.z >= b.z;
+}
+
+static inline int bbox_intersects(BBox a, BBox b) {
+    return a.min.x <= b.max.x &&
+           a.min.y <= b.max.y &&
+           a.min.z <= b.max.z &&
+           a.max.x >= b.min.x &&
+           a.max.y >= b.min.y &&
+           a.max.z >= b.min.z;
+}
+
+static inline float axisDist(float p, float min, float max) {
+    return p < min ? min - p : p > max ? p - max : 0;
+}
+
+static inline float bbox_distance(BBox a, Vec3 b) {
+    float dX = axisDist(b.x, a.min.x, a.max.x);
+    float dY = axisDist(b.y, a.min.y, a.max.y);
+    float dZ = axisDist(b.z, a.min.z, a.max.z);
+    return sqrtf(dX * dX + dY * dY + dZ * dZ);
+}
+
+static inline int bbox_isPlane(BBox b) {
+    return near0(bbox_width(b)) || near0(bbox_height(b)) || near0(bbox_depth(b));
+}
+
+static inline int bbox_isEdge(BBox b) {
+    return (near0(bbox_width(b)) && near0(bbox_height(b))) ||
+           (near0(bbox_height(b)) && near0(bbox_depth(b))) ||
+           (near0(bbox_width(b)) && near0(bbox_depth(b)));
+}
+
+static inline int bbox_isPoint(BBox b) {
+    return near0(bbox_width(b)) && near0(bbox_height(b)) && near0(bbox_depth(b));
+}
+
+static inline Vec3 bbox_planeDirection(BBox b) {
+
+    if (near0(bbox_width(b))) return vec3_right;
+    if (near0(bbox_height(b))) return vec3_up;
+    if (near0(bbox_depth(b))) return vec3_forward;
+    return vec3_zero;
+}
+
+
+static inline BBox bbox_calculate(Vec3 *arr, int n) {
+    if (n == 0) return bbox_zero;
+    Vec3 min = arr[0];
+    Vec3 max = arr[0];
+    for (int i = 1; i < n; i++) {
+        min = vec3_min(min, arr[i]);
+        max = vec3_max(max, arr[i]);
+    }
+    BBox b;
+    b.min = min;
+    b.max = max;
+    return b;
 }
 
 // vec4
@@ -1946,7 +2166,7 @@ static inline Mat4 mat4_invRot(Rot a) {
                }};
     Mat4 m = mat4_mul3(ma, mb, mc);
 
-    
+
     return m;
 }
 
@@ -1992,6 +2212,26 @@ static inline Mat4 mat4_transform(Transform t) {
     Mat4 a = mat4_scale(t.scale);
     a = mat4_mul(a, rot_matrix(t.rotation, t.position));
     return a;
+}
+
+static inline float mat4_det(Mat4 m) {
+    return m.m[0][0] * (
+            m.m[1][1] * (m.m[2][2] * m.m[3][3] - m.m[2][3] * m.m[3][2]) -
+            m.m[2][1] * (m.m[1][2] * m.m[3][3] - m.m[1][3] * m.m[3][2]) +
+            m.m[3][1] * (m.m[1][2] * m.m[2][3] - m.m[1][3] * m.m[2][2])
+    ) - m.m[1][0] * (
+            m.m[0][1] * (m.m[2][2] * m.m[3][3] - m.m[2][3] * m.m[3][2]) -
+            m.m[2][1] * (m.m[0][2] * m.m[3][3] - m.m[0][3] * m.m[3][2]) +
+            m.m[3][1] * (m.m[0][2] * m.m[2][3] - m.m[0][3] * m.m[2][2])
+    ) + m.m[2][0] * (
+            m.m[0][1] * (m.m[1][2] * m.m[3][3] - m.m[1][3] * m.m[3][2]) -
+            m.m[1][1] * (m.m[0][2] * m.m[3][3] - m.m[0][3] * m.m[3][2]) +
+            m.m[3][1] * (m.m[0][2] * m.m[1][3] - m.m[0][3] * m.m[1][2])
+    ) - m.m[3][0] * (
+            m.m[0][1] * (m.m[1][2] * m.m[2][3] - m.m[1][3] * m.m[2][2]) -
+            m.m[1][1] * (m.m[0][2] * m.m[2][3] - m.m[0][3] * m.m[2][2]) +
+            m.m[2][1] * (m.m[0][2] * m.m[1][3] - m.m[0][3] * m.m[1][2])
+    );
 }
 
 static inline Mat4 mat4_inv(Mat4 m) {
@@ -2126,13 +2366,13 @@ static inline Ray ray_move(Ray r, float distance) {
 }
 
 
-static inline char ray_hitSphere(Ray r, Vec3 pos, float rad, Vec3 *hit) {
-    Vec3 oc = vec3_sub(pos, r.origin);
+static inline char ray_hitSphere(Ray r, Sphere s, Vec3 *hit) {
+    Vec3 oc = vec3_sub(s.position, r.origin);
     float a = vec3_sqrMag(r.direction);
     float b = 2.0f * (oc.x * r.direction.x +
                       oc.y * r.direction.y +
                       oc.z * r.direction.z);
-    float c = vec3_sqrMag(oc) - square(rad);
+    float c = vec3_sqrMag(oc) - square(s.radius);
     float dis = square(b) - (4 * a * c);
     if (dis < 0)
         return 0;
@@ -2145,19 +2385,19 @@ static inline char ray_hitSphere(Ray r, Vec3 pos, float rad, Vec3 *hit) {
 }
 
 static inline char
-ray_hitCircle(Ray r, Vec3 pos, float rad, Vec3 normal, Vec3 *hit) {
-    Vec3 v = vec3_sub(pos, r.origin);
+ray_hitCircle(Ray r, Sphere s, Vec3 normal, Vec3 *hit) {
+    Vec3 v = vec3_sub(s.position, r.origin);
     float de = vec3_dot(r.direction, normal);
     if (de > EPSILON) {
 
         float t = vec3_dot(v, normal) / de;
         Vec3 itp = vec3_add(r.origin, vec3_mulf(r.direction,
                                                 t));//ray_origin + t * ray_direction
-        float dist = vec3_mag(vec3_sub(itp, pos));
+        float dist = vec3_mag(vec3_sub(itp, s.position));
 
         if (hit != NULL)
             *hit = vec3_add(r.origin, vec3_mulf(r.direction, t));
-        return (char) (dist <= rad);
+        return (char) (dist <= s.radius);
     }
     return 0;
 }
@@ -2190,4 +2430,96 @@ static inline char ray_hitBBox(Ray r, BBox b, Vec3 *hit) {
         *hit = vec3_add(r.origin, vec3_mulf(r.direction, int_max));
 
     return 1;
+}
+
+//
+
+static inline Sphere triangle_circumsphereSqr(Triangle t) {
+    Sphere s;
+
+    float ap = mat4_det((Mat4) {1, 0, 0, 0,
+                                0, t.a.x, t.b.x, t.c.x,
+                                0, t.a.y, t.b.y, t.c.y,
+                                0, 1, 1, 1});
+    float a2 = vec3_sqrMag(t.a);
+    float b2 = vec3_sqrMag(t.b);
+    float c2 = vec3_sqrMag(t.c);
+
+    float bx = -mat4_det((Mat4) {1, 0, 0, 0,
+                                 0, a2, b2, c2,
+                                 0, t.a.y, t.b.y, t.c.y,
+                                 0, 1, 1, 1});
+
+    float by = mat4_det((Mat4) {1, 0, 0, 0,
+                                0, a2, b2, c2,
+                                0, t.a.x, t.b.x, t.c.x,
+                                0, 1, 1, 1});
+
+    float cp = -mat4_det((Mat4) {1, 0, 0, 0,
+                                 0, a2, b2, c2,
+                                 0, t.a.x, t.b.x, t.c.x,
+                                 0, t.a.y, t.b.y, t.c.y});
+
+    s.position = vec3(-bx / (2 * ap), -by / (2 * ap), 0);
+    s.radius = ((bx * bx) + (by * by) - (4 * (ap * cp))) / (4 * (ap * ap));
+    return s;
+}
+
+static inline int triangle_circumference(Triangle t, Vec3 p) {
+    Sphere s = triangle_circumsphereSqr(t);
+    return vec3_sqrMag(vec3_sub(s.position, p)) <= s.radius;
+}
+
+static inline int triangle_eq(Triangle a, Triangle b) {
+    return (vec3_eq(a.a, b.a) && vec3_eq(a.b, b.b) && vec3_eq(a.c, b.c)) ||
+           vec3_eq(a.a, b.b) && vec3_eq(a.b, b.c) && vec3_eq(a.c, b.a) ||
+           vec3_eq(a.a, b.c) && vec3_eq(a.b, b.a) && vec3_eq(a.c, b.b);
+}
+
+static inline int triangle_nearEq(Triangle a, Triangle b) {
+    return (vec3_nearEq(a.a, b.a) && vec3_nearEq(a.b, b.b) && vec3_nearEq(a.c, b.c)) ||
+           vec3_nearEq(a.a, b.b) && vec3_nearEq(a.b, b.c) && vec3_nearEq(a.c, b.a) ||
+           vec3_nearEq(a.a, b.c) && vec3_nearEq(a.b, b.a) && vec3_nearEq(a.c, b.b);
+}
+
+static inline int triangle_hasVertex(Triangle a, Vec3 p) {
+    return (vec3_nearEq(a.a, p) || vec3_nearEq(a.b, p) || vec3_nearEq(a.c, p));
+}
+
+static inline int triangle_hasEdge(Triangle a, Edge p) {
+    return (vec3_nearEq(a.a, p.a) && vec3_nearEq(a.b, p.b)) ||
+           (vec3_nearEq(a.a, p.b) && vec3_nearEq(a.b, p.a)) ||
+           (vec3_nearEq(a.b, p.a) && vec3_nearEq(a.c, p.b)) ||
+           (vec3_nearEq(a.b, p.b) && vec3_nearEq(a.c, p.a)) ||
+           (vec3_nearEq(a.a, p.a) && vec3_nearEq(a.c, p.b)) ||
+           (vec3_nearEq(a.a, p.b) && vec3_nearEq(a.c, p.a));
+}
+
+static inline Triangle triangle_supra(Vec3 *vertices, int n, float offset) {
+    BBox b = bbox_calculate(vertices, n);
+    b = bbox_expand(b, offset);
+    float max = fmaxf(bbox_width(b), bbox_depth(b)) * 2;
+
+    Vec3 d = vec3_norm(vec3_sub(b.min, b.max));
+
+    Triangle t;
+    t.a = b.min;
+    t.b = b.min;
+    t.c = b.min;
+    t.b.y += max;
+    t.c.x += max;
+
+    return t;
+}
+
+static inline Vec3 triangle_norm(Triangle t) {
+    return vec3_cross(vec3_sub(t.b, t.a), vec3_sub(t.c, t.a));
+}
+
+static inline Triangle triangle(Vec3 a, Vec3 b, Vec3 c) {
+    Triangle  t;
+    t.a = a;
+    t.b = b;
+    t.c = c;
+    return t;
 }

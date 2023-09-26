@@ -128,7 +128,7 @@ void draw_line(Vec3 a, Vec3 b, Color c) {
 
 void draw_bbox(BBox bbox, Color c) {
     Vec3 vertices[8];
-    bbox_vertices(&bbox, vertices);
+    bbox_vertices(bbox, vertices);
 
     Vertex va;
     va.color = c;
@@ -170,7 +170,7 @@ void fill_face(Vertex *va, const Vec3 *a, const Vec3 *b, const Vec3 *c, const Ve
 
 void fill_bbox(BBox bbox, Color c) {
     Vec3 vertices[8];
-    bbox_vertices(&bbox, vertices);
+    bbox_vertices(bbox, vertices);
 
     Vertex va;
     va.color = c;

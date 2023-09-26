@@ -38,16 +38,15 @@ template<class TAlloc>
 struct CMeshGroup {
 
     TString<TAlloc> Name;
-    TFlatMap<TString<TAlloc>, CMesh<TAlloc> *, TAlloc> Meshes;
+    TArray<CMesh<TAlloc> *, TAlloc> Meshes;
 
     explicit inline CMeshGroup() = default;
 
     explicit inline CMeshGroup(const CMeshGroup &) = delete;
 
     inline ~CMeshGroup() {
-        for (auto p: Meshes) {
-            p.first.~TString<TAlloc>();
-            Free<TAlloc>(&p.second);
+        for (auto mesh: Meshes) {
+            Free<TAlloc>(&mesh);
         }
     }
 
@@ -75,56 +74,62 @@ public:
             TArray<Vec2, TAlloc> coords;
             while ((line = readline_stack(f, &cursor)) != nullptr) {
                 auto token = firstToken(line);
-                if (token == "#") {
-                    stack_pop(alloc->stack);
-                    continue;
-                }
-
                 if (token == "o") {
                     auto name = lastToken(line);
-                    if (group->Meshes.Contains(name))
-                        mesh = group->Meshes[name];
-                    else {
-                        mesh = AllocNew<TAlloc, CMesh<TAlloc>>();
-                        mesh->Name = name;
-                        group->Meshes.Set(name, mesh);
-                    }
-                    printf("name: %s \n", name.begin());
+                    mesh = AllocNew<TAlloc, CMesh<TAlloc>>();
+                    mesh->Name = name;
+                    group->Meshes.Add(mesh);
                 }
 
                 if (token == "v") {
                     TStringView *split = split_stack(lastToken(line), ' ');
                     unsigned int n = stack_n(alloc->stack) / sizeof(TStringView);
                     if (n == 3) positions.Add(vec3(stof(split[0]), stof(split[1]), stof(split[2])));
-                    stack_pop(alloc->stack);
+                    stack_free(alloc->stack, (void **) &split);
                 } else if (token == "vn") {
                     TStringView *split = split_stack(lastToken(line), ' ');
                     unsigned int n = stack_n(alloc->stack) / sizeof(TStringView);
                     if (n == 3) normals.Add(vec3(stof(split[0]), stof(split[1]), stof(split[2])));
-                    stack_pop(alloc->stack);
+                    stack_free(alloc->stack, (void **) &split);
                 } else if (token == "vt") {
                     TStringView *split = split_stack(lastToken(line), ' ');
                     unsigned int n = stack_n(alloc->stack) / sizeof(TStringView);
                     if (n == 2) coords.Add(vec2(stof(split[0]), stof(split[1])));
-                    stack_pop(alloc->stack);
+                    stack_free(alloc->stack, (void **) &split);
                 } else if (token == "f") {
                     TStringView *faces = split_stack(lastToken(line), ' ');
                     unsigned int nFaces = stack_n(alloc->stack) / sizeof(TStringView);
-                    TMeshVertex *vertices;
-                    if (!(vertices = generateVertices_stack(faces, nFaces, positions, normals, coords))) {
-                        stack_pop(alloc->stack);
-                        stack_pop(alloc->stack);
-                        Free<TAlloc>(&group);
-                        return nullptr;
+                    {
+                        TMeshVertex *vertices;
+                        if (!(vertices = generateVertices_stack(faces, nFaces, positions, normals, coords))) {
+                            stack_free(alloc->stack, (void **) &vertices);
+                            stack_free(alloc->stack, (void **) &faces);
+                            stack_free(alloc->stack, (void **) &line);
+                            Free<TAlloc>(&group);
+                            return nullptr;
+                        }
+
+                        unsigned int nVertices = stack_n(alloc->stack) / sizeof(TMeshVertex);
+
+                        for (int i = 0; i < nVertices; i++) {
+                            mesh->Vertices.Add(vertices[i]);
+                        }
+
+                        int *indices;
+                        if ((indices = triangulate_stack(vertices, nVertices))) {
+                            unsigned int nIndices = stack_n(alloc->stack) / sizeof(int);
+                            for (int i = 0; i < nIndices; i++) {
+                                int ind = (mesh->Vertices.Length() - nVertices) + indices[i];
+                                mesh->Indices.Add(ind);
+                            }
+                            stack_free(alloc->stack, (void **) &indices);
+                        }
+
+                        stack_free(alloc->stack, (void **) &vertices);
                     }
-                    unsigned int nVertices = stack_n(alloc->stack) / sizeof(TMeshVertex);
-
-                    triangulate(vertices, nVertices, mesh);
-
-                    stack_pop(alloc->stack);
-                    stack_pop(alloc->stack);
+                    stack_free(alloc->stack, (void **) &faces);
                 }
-                stack_pop(alloc->stack);
+                stack_free(alloc->stack, (void **) &line);
             }
             fclose(f);
         }
@@ -133,18 +138,18 @@ public:
 
 private:
 
-    static inline bool triangulate(TMeshVertex *vertices, unsigned int nFaces, CMesh<TAlloc> *mesh) {
-        if (nFaces < 3)
-            return false;
-        if (nFaces == 3) {
-            for (int i = 0; i < 3; i++) {
-                mesh->Vertices.Add(vertices[i]);
-                mesh->Indices.Add(i);
-            }
-            return true;
+    static inline int *triangulate_stack(TMeshVertex *vertices, unsigned int nVertices) {
+        if (nVertices < 3)
+            return nullptr;
+        if (nVertices == 3) {
+            auto indices = (int *) stack_alloc(alloc->stack, 3 * sizeof(int), sizeof(size_t));
+            indices[0] = 0;
+            indices[1] = 1;
+            indices[2] = 2;
+            return indices;
         }
 
-        return false;
+        return nullptr;
     }
 
     static inline TMeshVertex *generateVertices_stack(
@@ -168,6 +173,7 @@ private:
             vert.Position = element(positions, vertices[0]);
             vert.TexCoord = element(coords, vertices[1]);
             vert.Normal = element(normals, vertices[2]);
+
             meshVertices[i] = vert;
             stack_pop(alloc->stack);
         }

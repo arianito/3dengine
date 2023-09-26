@@ -49,10 +49,12 @@ int main(int argc, const char *argv[]) {
 
             input_update();
 
+
+            window.Update();
+
             draw_render();
             debug_render();
 
-            window.Update();
         }
     }
 
