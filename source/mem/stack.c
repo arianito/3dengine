@@ -8,7 +8,7 @@
 #include "mem/utils.h"
 
 typedef struct {
-    size_t data; // 7bytes offset 1byte padding
+    size_t next; // 7bytes offset 1byte padding
 } StackMemoryNode;
 
 void *stack_alloc(StackMemory *self, unsigned int size, unsigned int alignment) {
@@ -31,12 +31,7 @@ void *stack_alloc(StackMemory *self, unsigned int size, unsigned int alignment) 
     self->usage += padding + size;
 
     StackMemoryNode *node = (StackMemoryNode *) (address + padding - space);
-
-    if (self->_head == NULL)
-        node->data = BYTE71(0, padding);
-    else
-        node->data = BYTE71((size_t) self->_head - start, padding);
-
+    node->next = BYTE71((size_t) self->_head, padding);
     self->_head = node;
 
     return (void *) (address + padding);
@@ -53,15 +48,7 @@ char stack_free(StackMemory *self, void **p) {
     }
     size_t start = (size_t) self - self->_padding;
     size_t address = (size_t) (*p);
-    size_t end = start + self->total;
-    if (!(address >= start && address < end)) {
-        printf("stack: free failed, out of boundary\n");
-        return 0;
-    }
-    if (address >= start + self->usage) {
-        printf("stack: free failed, invalid order of free\n");
-        return 0;
-    }
+
     const unsigned int space = MEMORY_SPACE_STD(StackMemoryNode);
     StackMemoryNode *node = (StackMemoryNode *) (address - space);
     if (node != self->_head) {
@@ -69,19 +56,38 @@ char stack_free(StackMemory *self, void **p) {
         return 0;
     }
 
-    size_t offset = BYTE71_GET_7(node->data);
-    unsigned char padding = BYTE71_GET_1(node->data);
+    void *next = (void *) BYTE71_GET_7(node->next);
+    unsigned char padding = BYTE71_GET_1(node->next);
 
     self->usage = (address - padding) - start;
-    StackMemoryNode *head = (StackMemoryNode *) self->_head;
-
-    offset = BYTE71_GET_7(head->data);
-
-    if (offset == 0)
-        self->_head = NULL;
-    else
-        self->_head = (StackMemoryNode *) (start + offset);
+    self->_head = next;
     *p = NULL;
+    return 1;
+}
+
+char stack_pop(StackMemory *self) {
+
+    if (self == NULL) {
+        printf("stack: free failed, invalid instance\n");
+        return 0;
+    }
+    if (self->_head == NULL) {
+        printf("stack: free failed, invalid pointer\n");
+        return 0;
+    }
+
+    const unsigned int space = MEMORY_SPACE_STD(StackMemoryNode);
+    StackMemoryNode *node = (StackMemoryNode *) self->_head;
+
+
+    size_t start = (size_t) self - self->_padding;
+    size_t address = (size_t) node + space;
+
+    void *next = (void *) BYTE71_GET_7(node->next);
+    unsigned char padding = BYTE71_GET_1(node->next);
+
+    self->usage = (address - padding) - start;
+    self->_head = next;
     return 1;
 }
 
@@ -124,4 +130,28 @@ StackMemory *make_stack(unsigned int size) {
         exit(EXIT_FAILURE);
     }
     return stack_create(m, size);
+}
+
+char stack_expand(StackMemory *self, unsigned int newSize) {
+    if (self == NULL) {
+        printf("stack: expand failed, invalid instance\n");
+        return 0;
+    }
+    if (self->_head == NULL) {
+        printf("stack: expand failed, no prior alloc\n");
+        return 0;
+    }
+    const unsigned int space = MEMORY_SPACE_STD(StackMemoryNode);
+    size_t start = (size_t) self - self->_padding;
+    unsigned int prevSize = self->usage - ((size_t) self->_head + space - start);
+    self->usage += (newSize - prevSize);
+    return 1;
+}
+
+unsigned int stack_n(StackMemory *self) {
+    if (self->_head == NULL)
+        return 0;
+    const unsigned int space = MEMORY_SPACE_STD(StackMemoryNode);
+    size_t start = (size_t) self - self->_padding;
+    return self->usage - ((size_t) self->_head + space - start);
 }

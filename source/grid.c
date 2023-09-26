@@ -52,24 +52,24 @@ void grid_init() {
     c = color_alpha(color_white, 0.1f);
     for (i = -n; i < n + 1; i++) {
         a.color = c;
-        a.pos.x = (float) i * gap;
-        a.pos.y = -size;
-        a.pos.z = 0;
+        a.position.x = (float) i * gap;
+        a.position.y = -size;
+        a.position.z = 0;
         gridData->vertices[k++] = a;
-        a.pos.x = (float) i * gap;
-        a.pos.y = size;
-        a.pos.z = 0;
+        a.position.x = (float) i * gap;
+        a.position.y = size;
+        a.position.z = 0;
         gridData->vertices[k++] = a;
     }
     for (i = -n; i < n + 1; i++) {
         a.color = c;
-        a.pos.x = -size;
-        a.pos.y = (float) i * gap;
-        a.pos.z = 0;
+        a.position.x = -size;
+        a.position.y = (float) i * gap;
+        a.position.z = 0;
         gridData->vertices[k++] = a;
-        a.pos.x = size;
-        a.pos.y = (float) i * gap;
-        a.pos.z = 0;
+        a.position.x = size;
+        a.position.y = (float) i * gap;
+        a.position.z = 0;
         gridData->vertices[k++] = a;
     }
 }

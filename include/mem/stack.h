@@ -18,6 +18,12 @@ void stack_reset(StackMemory *self);
 
 void stack_destroy(StackMemory **self);
 
+
 void *stack_alloc(StackMemory *self, unsigned int size, unsigned int alignment);
 
+char stack_expand(StackMemory *self, unsigned int newSize);
+
 char stack_free(StackMemory *self, void **ptr);
+char stack_pop(StackMemory *self);
+
+unsigned int stack_n(StackMemory *self);

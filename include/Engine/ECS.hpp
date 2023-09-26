@@ -19,67 +19,81 @@ extern "C" {
 
 
 template<class TAlloc>
-class Entity;
+class CEntity;
 
 template<class TAlloc>
-class Component;
+class CComponent;
 
 template<class TAlloc>
-class BaseSystem;
+class CBaseSystem;
 
 template<class TAlloc>
-class Director;
+class CDirector;
+
+typedef size_t CECSIdType;
+
+typedef CECSIdType CComponentId;
+typedef CECSIdType CSystemId;
+typedef CECSIdType CEntityId;
+
+namespace ECSInternals {
+
+    static inline CComponentId nextComponentId() {
+        static CComponentId lastID{1};
+        return lastID++;
+    }
+
+    static inline CSystemId nextSystemId() {
+        static CSystemId lastID{1};
+        return lastID++;
+    }
+
+    template<class TAlloc, class T>
+    static inline CComponentId GetComponentTypeId() noexcept {
+        static_assert(std::is_base_of_v<CComponent<TAlloc>, T>, "T must be a base class of Component");
+        static CComponentId id{nextComponentId()};
+        return id;
+    }
+
+    template<class TAlloc, class T>
+    static inline CSystemId GetSystemTypeId() noexcept {
+        static_assert(std::is_base_of_v<CBaseSystem<TAlloc>, T>, "T must be a base class of System");
+        static CSystemId id{nextSystemId()};
+        return id;
+    }
 
 
-typedef size_t BaseType;
-typedef BaseType ComponentId;
-typedef BaseType SystemId;
-typedef BaseType EntityId;
+    template<class TAlloc>
+    inline void *ecs_global_alloc(size_t size) {
+        return Alloc<TAlloc>(size);
+    }
 
+    template<class TAlloc>
+    inline void ecs_global_free(void *ptr) {
+        Free<TAlloc>((void **) &ptr);
+    }
 
-static inline ComponentId nextComponentId() {
-    static ComponentId lastID{1};
-    return lastID++;
-}
-
-static inline SystemId nextSystemId() {
-    static SystemId lastID{1};
-    return lastID++;
-}
-
-template<class TAlloc, class T>
-static inline ComponentId GetComponentTypeId() noexcept {
-    static_assert(std::is_base_of_v<Component<TAlloc>, T>, "T must be a base class of Component");
-    static ComponentId id{nextComponentId()};
-    return id;
-}
-
-template<class TAlloc, class T>
-static inline SystemId GetSystemTypeId() noexcept {
-    static_assert(std::is_base_of_v<BaseSystem<TAlloc>, T>, "T must be a base class of System");
-    static SystemId id{nextSystemId()};
-    return id;
 }
 
 template<class TAlloc>
-class Entity {
-    friend class Director<TAlloc>;
+class CEntity {
+    friend class CDirector<TAlloc>;
 
 private:
-    using ComponentMap = TFlatMap<ComponentId, Component<TAlloc> *, TAlloc>;
+    using ComponentMap = TFlatMap<CComponentId, CComponent<TAlloc> *, TAlloc>;
     ComponentMap mComponents;
-    EntityId mEntityId;
+    CEntityId mEntityId;
 
 public:
-    explicit inline Entity(EntityId id) : mEntityId(id) {}
+    explicit inline CEntity(CEntityId id) : mEntityId(id) {}
 
-    explicit inline Entity(const Entity &) = delete;
+    explicit inline CEntity(const CEntity &) = delete;
 
-    virtual ~Entity() = default;
+    virtual ~CEntity() = default;
 
     template<class T>
     inline void AddComponent(T *component) {
-        ComponentId id = GetComponentTypeId<TAlloc, T>();
+        CComponentId id = ECSInternals::GetComponentTypeId<TAlloc, T>();
         if (mComponents.Contains(id)) {
             printf("Entity: Component %s already assigned to entity.\n", typeid(T).name());
             return;
@@ -89,7 +103,7 @@ public:
 
     template<class T>
     inline T *GetComponent() {
-        ComponentId id = GetComponentTypeId<TAlloc, T>();
+        CComponentId id = ECSInternals::GetComponentTypeId<TAlloc, T>();
         if (!mComponents.Contains(id)) {
             printf("Entity: Component %s not found.\n", typeid(T).name());
             return nullptr;
@@ -99,29 +113,31 @@ public:
 
     template<class T>
     inline bool HasComponent() {
-        ComponentId id = GetComponentTypeId<TAlloc, T>();
+        CComponentId id = ECSInternals::GetComponentTypeId<TAlloc, T>();
         return mComponents.Contains(id);
     }
 
-    [[nodiscard]] inline ComponentMap &Components() { return mComponents; }
+    [[nodiscard]]
+    inline ComponentMap &Components() { return mComponents; }
 
-    [[nodiscard]] inline EntityId Id() const { return mEntityId; }
+    [[nodiscard]]
+    inline CEntityId Id() const { return mEntityId; }
 };
 
 template<class TAlloc>
-class Component {
-    friend class Director<TAlloc>;
+class CComponent {
+    friend class CDirector<TAlloc>;
 
 public:
-    EntityId mEntityId{0};
-    Entity<TAlloc> *mEntity{nullptr};
-    Director<TAlloc> *mDirector{nullptr};
+    CEntityId mEntityId{0};
+    CEntity<TAlloc> *mEntity{nullptr};
+    CDirector<TAlloc> *mDirector{nullptr};
 
-    explicit inline Component() = default;
+    explicit inline CComponent() = default;
 
-    explicit inline Component(const Component &) = delete;
+    explicit inline CComponent(const CComponent &) = delete;
 
-    virtual ~Component() = default;
+    virtual ~CComponent() = default;
 
     virtual void Create() {};
 
@@ -135,7 +151,7 @@ public:
     inline bool HasComponent() { return mEntity->template HasComponent<T>(); }
 
 protected:
-    inline void SetEntity(Director<TAlloc> *director, const EntityId &id, Entity<TAlloc> *entity) {
+    inline void SetEntity(CDirector<TAlloc> *director, const CEntityId &id, CEntity<TAlloc> *entity) {
         mEntityId = id;
         mEntity = entity;
         mDirector = director;
@@ -144,13 +160,13 @@ protected:
 };
 
 template<class TAlloc>
-class BaseSystem {
+class CBaseSystem {
 public:
-    explicit inline BaseSystem() = default;
+    explicit inline CBaseSystem() = default;
 
-    explicit inline BaseSystem(const BaseSystem &) = delete;
+    explicit inline CBaseSystem(const CBaseSystem &) = delete;
 
-    virtual ~BaseSystem() = default;
+    virtual ~CBaseSystem() = default;
 
     virtual void Create() {}
 
@@ -158,16 +174,16 @@ public:
 
 
 protected:
-    friend class Director<TAlloc>;
+    friend class CDirector<TAlloc>;
 
-    using EntityIdStack = TArrayStack<EntityId, TAlloc>;
-    using EntityPtrStack = TArrayStack<Entity<TAlloc> *, TAlloc>;
-    using EntityIndexMap = TFlatMap<EntityId, int, TAlloc>;
+    using EntityIdStack = TArrayStack<CEntityId, TAlloc>;
+    using EntityPtrStack = TArrayStack<CEntity<TAlloc> *, TAlloc>;
+    using EntityIndexMap = TFlatMap<CEntityId, int, TAlloc>;
 
     EntityIdStack mDestroyStack;
     EntityPtrStack mCreateStack;
     EntityIndexMap mEntityIndex;
-    Director<TAlloc> *mDirector{nullptr};
+    CDirector<TAlloc> *mDirector{nullptr};
     bool mShouldUpdate = false;
 
     virtual void Process() = 0;
@@ -178,36 +194,25 @@ protected:
         mEntityIndex.Fit();
     }
 
-    inline void OnEntityCreated(Entity<TAlloc> *entity) {
+    inline void OnEntityCreated(CEntity<TAlloc> *entity) {
         mCreateStack.Push(entity);
     }
 
-    inline void OnEntityDestroyed(EntityId entityId) {
+    inline void OnEntityDestroyed(CEntityId entityId) {
         if (!mEntityIndex.Contains(entityId)) return;
         mDestroyStack.Push(entityId);
     }
 };
 
-
-template<class TAlloc>
-inline void *ecs_global_alloc(size_t size) {
-    return Alloc<TAlloc>(size);
-}
-
-template<class TAlloc>
-inline void ecs_global_free(void *ptr) {
-    Free<TAlloc>((void**) &ptr);
-}
-
 template<class TAlloc, class ...Types>
-class System : public BaseSystem<TAlloc> {
+class CSystem : public CBaseSystem<TAlloc> {
 protected:
     using CTuple = std::tuple<std::add_pointer_t<Types>...>;
     TArray<CTuple, TAlloc> mComponents;
 
     template<int Index, class Type, class... Args>
-    inline bool hasComponent(ComponentId id, Component<TAlloc> *component, CTuple &tuple) {
-        if (GetComponentTypeId<TAlloc, Type>() == id) {
+    inline bool hasComponent(CComponentId id, CComponent<TAlloc> *component, CTuple &tuple) {
+        if (ECSInternals::GetComponentTypeId<TAlloc, Type>() == id) {
             std::get<Index>(tuple) = static_cast<Type *>(component);
             return true;
         }
@@ -215,21 +220,21 @@ protected:
     }
 
     template<int Index>
-    inline bool hasComponent([[maybe_unused]] ComponentId id, [[maybe_unused]]  Component<TAlloc> *component, [[maybe_unused]]  CTuple &tuple) {
+    inline bool hasComponent([[maybe_unused]] CComponentId id, [[maybe_unused]]  CComponent<TAlloc> *component, [[maybe_unused]]  CTuple &tuple) {
         return false;
     }
 
     inline void Process() override;
 
     inline void Fit() override {
-        BaseSystem<TAlloc>::Fit();
+        CBaseSystem<TAlloc>::Fit();
         mComponents.Fit();
     }
 
 public:
-    explicit inline System() = default;
+    explicit inline CSystem() = default;
 
-    explicit inline System(const System &) = delete;
+    explicit inline CSystem(const CSystem &) = delete;
 
     template<class T>
     inline static T *Get(const CTuple &tuple) { return std::get<T *>(tuple); };
@@ -238,24 +243,24 @@ public:
 };
 
 template<class TAlloc>
-class Director {
+class CDirector {
 private:
-    friend class BaseSystem<TAlloc>;
+    friend class CBaseSystem<TAlloc>;
 
-    using EntityMap = TFlatMap<EntityId, Entity<TAlloc> *, TAlloc>;
-    using SystemMap = TFlatMap<SystemId, BaseSystem<TAlloc> *, TAlloc>;
-    using EntityComponentMap = TFlatMap<EntityId, Component<TAlloc> *, TAlloc>;
-    using ComponentEntityComponentMap = TFlatMap<ComponentId, EntityComponentMap *, TAlloc>;
-    using EntityIdStack = TArrayStack<EntityId, TAlloc>;
-    using PartialSlabMemory = TFlatMap<BaseType, SlabMemory *, TAlloc>;
+    using EntityMap = TFlatMap<CEntityId, CEntity<TAlloc> *, TAlloc>;
+    using SystemMap = TFlatMap<CSystemId, CBaseSystem<TAlloc> *, TAlloc>;
+    using EntityComponentMap = TFlatMap<CEntityId, CComponent<TAlloc> *, TAlloc>;
+    using ComponentEntityComponentMap = TFlatMap<CComponentId, EntityComponentMap *, TAlloc>;
+    using EntityIdStack = TArrayStack<CEntityId, TAlloc>;
+    using PartialSlabMemory = TFlatMap<CECSIdType, SlabMemory *, TAlloc>;
 
 
-    EntityId mEntityCounter{1};
+    CEntityId mEntityCounter{1};
     EntityMap mEntities;
     SystemMap mSystems;
     ComponentEntityComponentMap mComponents;
 
-    SlabMemory *mEntitySlab;
+    SlabMemory *mEntitySlab{nullptr};
     PartialSlabMemory mComponentsSlab;
     PartialSlabMemory mSystemsSlab;
     EntityIdStack mDestroyStack;
@@ -265,14 +270,14 @@ private:
     template<class T>
     inline SlabMemory *makeSlab(int length) {
         GeneralAllocator pAlloc;
-        pAlloc.alloc = ecs_global_alloc<TAlloc>;
-        pAlloc.free = ecs_global_free<TAlloc>;
+        pAlloc.alloc = ECSInternals::ecs_global_alloc<TAlloc>;
+        pAlloc.free = ECSInternals::ecs_global_free<TAlloc>;
         return slab_create_alloc(pAlloc, sizeof(T) * length, sizeof(T));
     }
 
     template<class T>
     inline SlabMemory *getComponentSlab() {
-        ComponentId id = GetComponentTypeId<TAlloc, T>();
+        CComponentId id = ECSInternals::GetComponentTypeId<TAlloc, T>();
         if (mComponentsSlab.Contains(id)) return mComponentsSlab[id];
         SlabMemory *slab = makeSlab<T>(mSlabCount);
         mComponentsSlab.Set(id, slab);
@@ -281,58 +286,59 @@ private:
 
     template<class T>
     inline SlabMemory *getSystemSlab() {
-        SystemId id = GetSystemTypeId<TAlloc, T>();
+        CSystemId id = ECSInternals::GetSystemTypeId<TAlloc, T>();
         if (mSystemsSlab.Contains(id)) return mSystemsSlab[id];
         SlabMemory *slab = makeSlab<T>(mSlabCount);
         mSystemsSlab.Set(id, slab);
         return slab;
     }
 
-    inline SlabMemory *getComponentSlab(ComponentId id) {
+    inline SlabMemory *getComponentSlab(CComponentId id) {
         if (mComponentsSlab.Contains(id)) return mComponentsSlab[id];
         return nullptr;
     }
 
-    inline void performDelete(EntityId entityId) {
+    inline void performDelete(CEntityId entityId) {
         if (!mEntities.Contains(entityId))
             return;
-        Entity<TAlloc> *entity = mEntities[entityId];
+        CEntity<TAlloc> *entity = mEntities[entityId];
 
         for (auto p: mComponents) {
-            ComponentId componentId = p.first;
+            CComponentId componentId = p.first;
             auto entityComponents = p.second;
             if (entityComponents->Contains(entityId)) {
                 auto component = (*entityComponents)[entityId];
-                component->~Component<TAlloc>();
+                component->~CComponent<TAlloc>();
                 auto slab = getComponentSlab(componentId);
                 slab_free(slab, (void **) &component);
                 entityComponents->Remove(entityId);
             }
         }
-        entity->~Entity<TAlloc>();
+        entity->~CEntity<TAlloc>();
         slab_free(mEntitySlab, (void **) &entity);
         mEntities.Remove(entityId);
     }
 
 public:
-    explicit inline Director(): Director(16) {}
+    explicit inline CDirector() : CDirector(16) {}
 
-    explicit inline Director(unsigned int slab): mSlabCount{slab} {
-        mEntitySlab = makeSlab<Entity<TAlloc>>(mSlabCount);
+    explicit inline CDirector(unsigned int slab) : mSlabCount{slab} {
+        mEntitySlab = makeSlab<CEntity<TAlloc>>(mSlabCount);
     }
 
-    explicit inline Director(const Director &) = delete;
 
-    inline ~Director() {
-        for (auto entity: mEntities) (entity.second)->~Entity<TAlloc>();
+    explicit inline CDirector(const CDirector &) = delete;
+
+    inline ~CDirector() {
+        for (auto entity: mEntities) (entity.second)->~CEntity<TAlloc>();
 
         for (auto p: mComponents) {
             for (auto c: *(p.second))
-                c.second->~Component<TAlloc>();
+                c.second->~CComponent<TAlloc>();
             Free<TAlloc>(&p.second);
         }
 
-        for (auto entity: mSystems) (entity.second)->~BaseSystem<TAlloc>();
+        for (auto entity: mSystems) (entity.second)->~CBaseSystem<TAlloc>();
 
         slab_destroy(&mEntitySlab);
         for (auto p: mComponentsSlab) slab_destroy(&(p.second));
@@ -340,13 +346,13 @@ public:
 
     }
 
-    inline EntityId CreateEntity() {
-        auto entity = new(slab_alloc(mEntitySlab)) Entity<TAlloc>(mEntityCounter++);
+    inline CEntityId CreateEntity() {
+        auto entity = new(slab_alloc(mEntitySlab)) CEntity<TAlloc>(mEntityCounter++);
         mEntities.Set(entity->Id(), entity);
         return entity->Id();
     }
 
-    inline void DestroyEntity(EntityId entityId) {
+    inline void DestroyEntity(CEntityId entityId) {
         if (!mEntities.Contains(entityId))
             return;
 
@@ -360,19 +366,19 @@ public:
 
     template<class T>
     inline EntityComponentMap *Query() {
-        ComponentId id = GetComponentTypeId<TAlloc, T>();
+        CComponentId id = ECSInternals::GetComponentTypeId<TAlloc, T>();
         if (!mComponents.Contains(id))
             return nullptr;
         return mComponents[id];
     }
 
     template<class T, class... Args>
-    inline T *AddComponent(EntityId entityId, Args &&...args) {
+    inline T *AddComponent(CEntityId entityId, Args &&...args) {
         if (!mEntities.Contains(entityId))
             return nullptr;
         EntityComponentMap *entityComponents;
         auto entity = mEntities[entityId];
-        ComponentId id = GetComponentTypeId<TAlloc, T>();
+        CComponentId id = ECSInternals::GetComponentTypeId<TAlloc, T>();
         if (mComponents.Contains(id)) {
             entityComponents = mComponents[id];
             if (entityComponents->Contains(entityId)) { return (T *) ((*entityComponents)[entityId]); }
@@ -387,7 +393,7 @@ public:
         return component;
     }
 
-    inline void Commit(EntityId entityId) {
+    inline void Commit(CEntityId entityId) {
         assert(mEntities.Contains(entityId) && "ECS: entity not found");
         auto entity = mEntities[entityId];
         for (auto sys: mSystems) {
@@ -412,7 +418,7 @@ public:
 
     template<class T, class... Args>
     inline T *AddSystem(Args &&...args) {
-        SystemId id = GetSystemTypeId<TAlloc, T>();
+        CSystemId id = ECSInternals::GetSystemTypeId<TAlloc, T>();
         if (mSystems.Contains(id)) return (T *) (mSystems[id]);
         T *sys = new(slab_alloc(getSystemSlab<T>())) T(std::forward<Args>(args)...);
         sys->mDirector = this;
@@ -441,7 +447,7 @@ public:
 
 
 template<class TAlloc, class... Types>
-inline void System<TAlloc, Types...>::Process() {
+inline void CSystem<TAlloc, Types...>::Process() {
     while (!this->mDestroyStack.Empty()) {
         auto entityId = this->mDestroyStack.Pop();
         if (this->mEntityIndex.Contains(entityId)) {

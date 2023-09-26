@@ -4,11 +4,14 @@
 #include <cassert>
 #include <cstring>
 #include <cstdarg>
+#include <sstream>
 
 #include "engine/Memory.hpp"
 
+using TStringView = std::string_view;
+
 template<class TAlloc = StringMemory>
-class TString {
+struct TString {
 private:
     char *mStr{nullptr};
     int mCapacity{0};
@@ -140,12 +143,34 @@ public:
     }
 
     [[maybe_unused]] explicit inline TString(const char *str) {
-        int len = (int) strlen(str);
-        Reserve(len);
-        memcpy(mStr, str, len);
-        mLength = len;
-        mStr[mLength] = '\0';
+        if (str) {
+            int len = (int) strlen(str);
+            if (len) {
+                Reserve(len);
+                memcpy(mStr, str, len);
+                mLength = len;
+                mStr[mLength] = '\0';
+                return;
+            }
+        }
+        Reserve(0);
+        mLength = 0;
+        mStr[0] = '\0';
     }
+
+
+    [[maybe_unused]] inline TString(TStringView other) {
+        int n = (int) other.length();
+        if (n) {
+            Reserve(n);
+            other.copy(mStr, n);
+            mLength = n;
+            mStr[mLength] = '\0';
+        } else {
+            Reserve(0);
+        }
+    }
+
 
     [[maybe_unused]] inline TString(const char *fmt, ...) {
         if (fmt) {
@@ -184,15 +209,6 @@ public:
     }
 
     [[maybe_unused]] inline void Fit() {
-        if (mLength == 0) {
-            mLength = 0;
-            mCapacity = 0;
-
-            if (mStr != nullptr)
-                Free<TAlloc>(&mStr);
-            return;
-        }
-
         int newCapacity = mLength + 1;
         char *newList = Alloc<TAlloc, char>(newCapacity);
         assert(newList != nullptr && "String: Insufficient memory.\n");
@@ -214,14 +230,6 @@ public:
     }
 
     inline void Reserve(int newCapacity) {
-        if (newCapacity == 0 && mCapacity == 0) {
-            mLength = 0;
-            mCapacity = 0;
-            if (mStr != nullptr)
-                Free<TAlloc>(&mStr);
-            return;
-        }
-
         newCapacity++;
         if (newCapacity <= mCapacity)
             return;
@@ -242,20 +250,35 @@ public:
     }
 
 
-    TString &operator=(const TString &other) {
+    inline TString &operator=(const TString &other) {
         if (this != &other)
             copy(other);
         return *this;
     }
 
-    TString &operator=(TString &&other) noexcept {
+    inline TString &operator=(TStringView other) {
+        int n = (int) other.length();
+        if (n) {
+            Reserve(n);
+            other.copy(mStr, n);
+            mLength = n;
+            mStr[mLength] = '\0';
+        } else {
+            Reserve(0);
+            mLength = 0;
+            mStr[0] = '\0';
+        }
+        return *this;
+    }
+
+    inline TString &operator=(TString &&other) noexcept {
         std::swap(mLength, other.mLength);
         std::swap(mCapacity, other.mCapacity);
         std::swap(mStr, other.mStr);
         return *this;
     }
 
-    TString &operator=(const char *other) {
+    inline TString &operator=(const char *other) {
         if (other) {
             int n = (int) strlen(other);
             Reserve(n);
@@ -308,7 +331,7 @@ public:
         return out;
     }
 
-    inline TString operator+=(const char *rhs) {
+    inline TString &operator+=(const char *rhs) {
         int len = (int) strlen(rhs);
         Reserve(mLength + len);
         memcpy(&mStr[mLength], rhs, len);
@@ -317,7 +340,7 @@ public:
         return *this;
     }
 
-    inline TString operator+=(const TString &rhs) {
+    inline TString &operator+=(const TString &rhs) {
         Reserve(mLength + rhs.mLength);
         memcpy(&mStr[mLength], rhs.mStr, rhs.mLength);
         mLength += rhs.mLength;
@@ -377,15 +400,18 @@ public:
         return !mStr || mLength == 0;
     }
 
-    [[maybe_unused]] [[nodiscard]] inline const int &Length() const {
+    [[maybe_unused]] [[nodiscard]]
+    inline const int &Length() const {
         return mLength;
     }
 
-    [[maybe_unused]] [[nodiscard]] inline const int &Capacity() const {
+    [[maybe_unused]] [[nodiscard]]
+    inline const int &Capacity() const {
         return mCapacity;
     }
 
-    [[maybe_unused]] [[nodiscard]] inline int Compare(const char *other) const {
+    [[maybe_unused]] [[nodiscard]]
+    inline int Compare(const char *other) const {
         if (mStr == nullptr)
             return other == nullptr ? 0 : -1;
         if (other == nullptr)
@@ -393,7 +419,8 @@ public:
         return strcmp(mStr, other);
     }
 
-    [[maybe_unused]] [[nodiscard]] inline int Compare(const TString &other) const {
+    [[maybe_unused]] [[nodiscard]]
+    inline int Compare(const TString &other) const {
         if (mStr == nullptr)
             return other == nullptr ? 0 : -1;
         if (other.mStr == nullptr)
@@ -406,5 +433,9 @@ public:
         if (!mStr)
             return nullptr;
         return const_cast<const char *>(mStr);
+    }
+
+    inline void Stream(std::ostream &os) const {
+        os << "TString(" << mStr << ")";
     }
 };

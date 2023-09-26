@@ -6,16 +6,43 @@
 #include "engine/Memory.hpp"
 #include "data/TString.hpp"
 #include "data/TFlatMap.hpp"
-#include "engine/Level.hpp"
+
+
+typedef unsigned int CLevelId;
+
+class CLevel {
+protected:
+public:
+    virtual void Create() {};
+
+    virtual void Update() {};
+
+    virtual void Destroy() {};
+};
+
+
+namespace CLevelInternals {
+    static inline CLevelId nextLevelId() {
+        static CLevelId lastID{1};
+        return lastID++;
+    }
+
+    template<class T>
+    static inline CLevelId GetLevelTypeId() noexcept {
+        static_assert(std::is_base_of_v<CLevel, T>, "T must be a base class of Level");
+        static CLevelId id{nextLevelId()};
+        return id;
+    }
+}
 
 template<class TAlloc = FreeListMemory>
-class LevelManager {
+class CLevelManager {
 private:
-    TFlatMap<LevelId, Level *, TAlloc> mLevels;
-    Level *mPreviousLevel = nullptr;
-    Level *mCurrentLevel = nullptr;
+    TFlatMap<CLevelId, CLevel *, TAlloc> mLevels;
+    CLevel *mPreviousLevel = nullptr;
+    CLevel *mCurrentLevel = nullptr;
 public:
-    inline ~LevelManager() {
+    inline ~CLevelManager() {
         if (mCurrentLevel)
             mCurrentLevel->Destroy();
         for (const auto &level: mLevels) {
@@ -25,16 +52,16 @@ public:
 
     template<typename T>
     inline void Add() {
-        static_assert(std::is_base_of_v<Level, T>, "Level Manager: class must be type of Level");
-        auto id = GetLevelTypeId<T>();
+        static_assert(std::is_base_of_v<CLevel, T>, "Level Manager: class must be type of Level");
+        auto id = CLevelInternals::GetLevelTypeId<T>();
         if (mLevels.Contains(id)) return;
-        Level *level = AllocNew<TAlloc, T>();
+        CLevel *level = AllocNew<TAlloc, T>();
         mLevels.Set(id, level);
     }
 
     template<typename T>
     inline void Load() {
-        auto id = GetLevelTypeId<T>();
+        auto id = CLevelInternals::GetLevelTypeId<T>();
         if (!mLevels.Contains(id)) return;
         mCurrentLevel = mLevels[id];
     }

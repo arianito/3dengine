@@ -92,14 +92,14 @@ typedef struct __attribute__((aligned(16), packed)) {
 } ColorHSL;
 
 typedef struct __attribute__((aligned(64), packed)) {
-    Vec3 pos;
+    Vec3 position;
     Color color;
     float size;
 } Vertex;
 
 typedef struct __attribute__((aligned(32), packed)) {
-    Vec3 a;
-    Vec3 b;
+    Vec3 min;
+    Vec3 max;
 } BBox;
 
 typedef struct __attribute__((aligned(64), packed)) {
@@ -1057,20 +1057,20 @@ static inline Plane plane(float x, float y, float z, float w) {
 
 static inline BBox bbox(Vec3 a, Vec3 b) {
     BBox bb;
-    bb.a = a;
-    bb.b = b;
+    bb.min = a;
+    bb.max = b;
     return bb;
 }
 
 static inline void bbox_vertices(const BBox *bbox, Vec3 out_vertices[8]) {
-    out_vertices[0] = bbox->a;
-    out_vertices[1] = vec3(bbox->a.x, bbox->b.y, bbox->a.z);
-    out_vertices[2] = vec3(bbox->b.x, bbox->b.y, bbox->a.z);
-    out_vertices[3] = vec3(bbox->b.x, bbox->a.y, bbox->a.z);
-    out_vertices[4] = vec3(bbox->a.x, bbox->a.y, bbox->b.z);
-    out_vertices[5] = vec3(bbox->a.x, bbox->b.y, bbox->b.z);
-    out_vertices[6] = bbox->b;
-    out_vertices[7] = vec3(bbox->b.x, bbox->a.y, bbox->b.z);
+    out_vertices[0] = bbox->min;
+    out_vertices[1] = vec3(bbox->min.x, bbox->max.y, bbox->min.z);
+    out_vertices[2] = vec3(bbox->max.x, bbox->max.y, bbox->min.z);
+    out_vertices[3] = vec3(bbox->max.x, bbox->min.y, bbox->min.z);
+    out_vertices[4] = vec3(bbox->min.x, bbox->min.y, bbox->max.z);
+    out_vertices[5] = vec3(bbox->min.x, bbox->max.y, bbox->max.z);
+    out_vertices[6] = bbox->max;
+    out_vertices[7] = vec3(bbox->max.x, bbox->min.y, bbox->max.z);
 }
 
 // vec4
@@ -1945,6 +1945,8 @@ static inline Mat4 mat4_invRot(Rot a) {
                        {0.f, 0.f, 0.f, 1.f},
                }};
     Mat4 m = mat4_mul3(ma, mb, mc);
+
+    
     return m;
 }
 
@@ -1988,8 +1990,7 @@ static inline Mat4 mat4_view(Vec3 a, Rot b) {
 
 static inline Mat4 mat4_transform(Transform t) {
     Mat4 a = mat4_scale(t.scale);
-    a = mat4_mul(a, rot_matrix(t.rotation, vec3_zero));
-    a = mat4_mul(a, mat4_origin(t.position));
+    a = mat4_mul(a, rot_matrix(t.rotation, t.position));
     return a;
 }
 
@@ -2167,14 +2168,14 @@ static inline char ray_hitBBox(Ray r, BBox b, Vec3 *hit) {
     re.y = 1.0f / r.direction.y;
     re.z = 1.0f / r.direction.z;
 
-    float t1 = (b.a.x - r.origin.x) * re.x;
-    float t2 = (b.b.x - r.origin.x) * re.x;
+    float t1 = (b.min.x - r.origin.x) * re.x;
+    float t2 = (b.max.x - r.origin.x) * re.x;
 
-    float t3 = (b.a.y - r.origin.y) * re.y;
-    float t4 = (b.b.y - r.origin.y) * re.y;
+    float t3 = (b.min.y - r.origin.y) * re.y;
+    float t4 = (b.max.y - r.origin.y) * re.y;
 
-    float t5 = (b.a.z - r.origin.z) * re.z;
-    float t6 = (b.b.z - r.origin.z) * re.z;
+    float t5 = (b.min.z - r.origin.z) * re.z;
+    float t6 = (b.max.z - r.origin.z) * re.z;
 
     float int_min = fmaxf(fmaxf(fminf(t1, t2), fminf(t3, t4)), fminf(t5, t6));
     float int_max = fminf(fminf(fmaxf(t1, t2), fmaxf(t3, t4)), fmaxf(t5, t6));

@@ -1,17 +1,8 @@
 #pragma once
 
-extern "C" {
-#include "mathf.h"
-#include "debug.h"
-#include "sort.h"
-#include "mem/buddy.h"
-}
+#include "engine/CLevelManager.hpp"
 
-#include "engine/Level.hpp"
-
-static constexpr int nPool = 1000;
-
-class BuddyLevel : public Level {
+class BuddyLevel : public CLevel {
 
     inline void Create() override {
     }

@@ -7,7 +7,7 @@ extern "C" {
 }
 
 #include "data/THeap.hpp"
-#include "engine/Level.hpp"
+#include "engine/CLevelManager.hpp"
 #include "engine/ECS.hpp"
 #include "engine/Memory.hpp"
 
@@ -78,17 +78,16 @@ public:
 P2SlabMemory *CustomTempAllocator3::slab = nullptr;
 FreeListMemory *CustomTempAllocator2::slab = nullptr;
 
-
-class TempLevel : public Level {
+class TempLevel : public CLevel {
     using TAlloc = CustomTempAllocator3;
 
-    struct TransformComponent : public Component<TAlloc> {
+    struct TransformComponent : public CComponent<TAlloc> {
         Vec3 position;
 
         explicit inline TransformComponent(Vec3 position) : position(position) {}
     };
 
-    struct MovementComponent : public Component<TAlloc> {
+    struct MovementComponent : public CComponent<TAlloc> {
         Vec3 destination{0, 0, 0};
         float speed{20.0f};
 
@@ -103,13 +102,13 @@ class TempLevel : public Level {
 
     };
 
-    struct ShapeComponent : public Component<TAlloc> {
+    struct ShapeComponent : public CComponent<TAlloc> {
         explicit inline ShapeComponent() = default;
     };
 
     struct EmitterComponent;
 
-    struct ParticleComponent : public Component<TAlloc> {
+    struct ParticleComponent : public CComponent<TAlloc> {
         EmitterComponent *emitter{nullptr};
         Vec3 position{0.0f, 0.0f, 0.0f};
         Vec3 velocity{0.0f, 0.0f, 0.0f};
@@ -120,7 +119,7 @@ class TempLevel : public Level {
         float damping{0};
     };
 
-    struct EmitterComponent : public Component<TAlloc> {
+    struct EmitterComponent : public CComponent<TAlloc> {
         float delay{0.01f};
         float lastSpawn{0};
         Color color1{};
@@ -132,7 +131,7 @@ class TempLevel : public Level {
         explicit inline EmitterComponent() = default;
     };
 
-    struct RenderSystem : public System<TAlloc, ShapeComponent, TransformComponent> {
+    struct RenderSystem : public CSystem<TAlloc, ShapeComponent, TransformComponent> {
         inline void Update() override {
             for (const auto &bucket: Components()) {
                 auto pTransform = Get<TransformComponent>(bucket);
@@ -141,7 +140,7 @@ class TempLevel : public Level {
         }
     };
 
-    struct EmitterSystem : public System<TAlloc, EmitterComponent, TransformComponent> {
+    struct EmitterSystem : public CSystem<TAlloc, EmitterComponent, TransformComponent> {
         inline void Update() override {
             for (const auto &bucket: Components()) {
                 auto pTransform = Get<TransformComponent>(bucket);
@@ -172,7 +171,7 @@ class TempLevel : public Level {
         }
     };
 
-    struct ParticleSystem : public System<TAlloc, ParticleComponent> {
+    struct ParticleSystem : public CSystem<TAlloc, ParticleComponent> {
         inline void Update() override {
             for (const auto &bucket: Components()) {
                 auto pParticle = Get<ParticleComponent>(bucket);
@@ -193,7 +192,7 @@ class TempLevel : public Level {
         }
     };
 
-    struct MovementSystem : public System<TAlloc, MovementComponent, TransformComponent> {
+    struct MovementSystem : public CSystem<TAlloc, MovementComponent, TransformComponent> {
         inline void Update() override {
             Ray r = camera_screenToWorld(input->position);
             Vec3 dest = vec3_intersectPlane(r.origin, vec3_add(r.origin, r.direction), vec3_zero, vec3_up);
@@ -214,7 +213,7 @@ class TempLevel : public Level {
         }
     };
 
-    struct ParticleRenderSystem : public System<TAlloc, ParticleComponent> {
+    struct ParticleRenderSystem : public CSystem<TAlloc, ParticleComponent> {
         inline void Update() override {
             for (const auto &bucket: Components()) {
                 auto pParticle = Get<ParticleComponent>(bucket);
@@ -224,10 +223,10 @@ class TempLevel : public Level {
         }
     };
 
-    struct DummyComponent : Component<TAlloc> {
+    struct DummyComponent : CComponent<TAlloc> {
     };
 
-    struct SpawnSystem : public System<TAlloc, DummyComponent> {
+    struct SpawnSystem : public CSystem<TAlloc, DummyComponent> {
         inline void Create() override {
             mShouldUpdate = true;
         }
@@ -258,12 +257,12 @@ class TempLevel : public Level {
     };
 
 public:
-    Director<TAlloc> *mDirector{nullptr};
+    CDirector<TAlloc> *mDirector{nullptr};
 
 
     inline void Create() override {
         TAlloc::create();
-        mDirector = AllocNew<TAlloc, Director<TAlloc>>();
+        mDirector = AllocNew<TAlloc, CDirector<TAlloc>>();
         mDirector->AddSystem<MovementSystem>();
         mDirector->AddSystem<RenderSystem>();
         mDirector->AddSystem<EmitterSystem>();

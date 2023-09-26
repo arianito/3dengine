@@ -33,7 +33,7 @@ inline void *Alloc(size_t size = -1, unsigned int alignment = sizeof(size_t)) {
     } else {
         m = T::Alloc(size, alignment);
     }
-    if(m == nullptr) {
+    if (m == nullptr) {
         printf("Alloc: allocation failed %s\n", typeid(T).name());
         return m;
     }

@@ -112,7 +112,7 @@ void add_vertex(int type, Vertex v) {
 void draw_point(Vec3 pos, float size, Color c) {
     Vertex v;
     v.color = c;
-    v.pos = pos;
+    v.position = pos;
     v.size = size;
     add_vertex(0, v);
 }
@@ -120,9 +120,9 @@ void draw_point(Vec3 pos, float size, Color c) {
 void draw_line(Vec3 a, Vec3 b, Color c) {
     Vertex va;
     va.color = c;
-    va.pos = a;
+    va.position = a;
     add_vertex(1, va);
-    va.pos = b;
+    va.position = b;
     add_vertex(1, va);
 }
 
@@ -134,37 +134,37 @@ void draw_bbox(BBox bbox, Color c) {
     va.color = c;
 
     for (int i = 0; i < 4; i++) {
-        va.pos = vertices[i];
+        va.position = vertices[i];
         add_vertex(1, va);
-        va.pos = vertices[(i + 1) % 4];
-        add_vertex(1, va);
-
-        va.pos = vertices[i + 4];
-        add_vertex(1, va);
-        va.pos = vertices[(i + 1) % 4 + 4];
+        va.position = vertices[(i + 1) % 4];
         add_vertex(1, va);
 
-        va.pos = vertices[i];
+        va.position = vertices[i + 4];
         add_vertex(1, va);
-        va.pos = vertices[i + 4];
+        va.position = vertices[(i + 1) % 4 + 4];
+        add_vertex(1, va);
+
+        va.position = vertices[i];
+        add_vertex(1, va);
+        va.position = vertices[i + 4];
         add_vertex(1, va);
     }
 }
 
 void fill_face(Vertex *va, const Vec3 *a, const Vec3 *b, const Vec3 *c, const Vec3 *d) {
 
-    va->pos = *a;
+    va->position = *a;
     add_vertex(2, *va);
-    va->pos = *b;
+    va->position = *b;
     add_vertex(2, *va);
-    va->pos = *c;
+    va->position = *c;
     add_vertex(2, *va);
 
-    va->pos = *a;
+    va->position = *a;
     add_vertex(2, *va);
-    va->pos = *c;
+    va->position = *c;
     add_vertex(2, *va);
-    va->pos = *d;
+    va->position = *d;
     add_vertex(2, *va);
 }
 
@@ -206,62 +206,62 @@ void fill_cubef(Vec3 a, float s, Color c) {
 void draw_edge(Edge e, Color c) {
     Vertex va;
     va.color = c;
-    va.pos = e.a;
+    va.position = e.a;
     add_vertex(1, va);
-    va.pos = e.b;
+    va.position = e.b;
     add_vertex(1, va);
 }
 
 void draw_triangle(Triangle t, Color c) {
     Vertex va;
     va.color = c;
-    va.pos = t.a;
+    va.position = t.a;
     add_vertex(1, va);
-    va.pos = t.b;
-    add_vertex(1, va);
-
-    va.pos = t.b;
-    add_vertex(1, va);
-    va.pos = t.c;
+    va.position = t.b;
     add_vertex(1, va);
 
-    va.pos = t.c;
+    va.position = t.b;
     add_vertex(1, va);
-    va.pos = t.a;
+    va.position = t.c;
+    add_vertex(1, va);
+
+    va.position = t.c;
+    add_vertex(1, va);
+    va.position = t.a;
     add_vertex(1, va);
 }
 
 void draw_tetrahedron(Tetrahedron t, Color c) {
     Vertex va;
     va.color = c;
-    va.pos = t.a;
+    va.position = t.a;
     add_vertex(1, va);
-    va.pos = t.b;
-    add_vertex(1, va);
-
-    va.pos = t.b;
-    add_vertex(1, va);
-    va.pos = t.c;
+    va.position = t.b;
     add_vertex(1, va);
 
-    va.pos = t.c;
+    va.position = t.b;
     add_vertex(1, va);
-    va.pos = t.a;
-    add_vertex(1, va);
-
-    va.pos = t.a;
-    add_vertex(1, va);
-    va.pos = t.d;
+    va.position = t.c;
     add_vertex(1, va);
 
-    va.pos = t.b;
+    va.position = t.c;
     add_vertex(1, va);
-    va.pos = t.d;
+    va.position = t.a;
     add_vertex(1, va);
 
-    va.pos = t.c;
+    va.position = t.a;
     add_vertex(1, va);
-    va.pos = t.d;
+    va.position = t.d;
+    add_vertex(1, va);
+
+    va.position = t.b;
+    add_vertex(1, va);
+    va.position = t.d;
+    add_vertex(1, va);
+
+    va.position = t.c;
+    add_vertex(1, va);
+    va.position = t.d;
     add_vertex(1, va);
 }
 
@@ -269,32 +269,32 @@ void fill_tetrahedron(Tetrahedron t, Color c) {
     Vertex va;
     va.color = c;
 
-    va.pos = t.a;
+    va.position = t.a;
     add_vertex(2, va);
-    va.pos = t.b;
+    va.position = t.b;
     add_vertex(2, va);
-    va.pos = t.c;
-    add_vertex(2, va);
-
-    va.pos = t.a;
-    add_vertex(2, va);
-    va.pos = t.c;
-    add_vertex(2, va);
-    va.pos = t.d;
+    va.position = t.c;
     add_vertex(2, va);
 
-    va.pos = t.b;
+    va.position = t.a;
     add_vertex(2, va);
-    va.pos = t.c;
+    va.position = t.c;
     add_vertex(2, va);
-    va.pos = t.d;
+    va.position = t.d;
     add_vertex(2, va);
 
-    va.pos = t.a;
+    va.position = t.b;
     add_vertex(2, va);
-    va.pos = t.b;
+    va.position = t.c;
     add_vertex(2, va);
-    va.pos = t.d;
+    va.position = t.d;
+    add_vertex(2, va);
+
+    va.position = t.a;
+    add_vertex(2, va);
+    va.position = t.b;
+    add_vertex(2, va);
+    va.position = t.d;
     add_vertex(2, va);
 }
 
@@ -314,9 +314,9 @@ void draw_circleXY(Vec3 a, float r, Color c, int s) {
 
         Vertex va;
         va.color = c;
-        va.pos = v1;
+        va.position = v1;
         add_vertex(1, va);
-        va.pos = v2;
+        va.position = v2;
         add_vertex(1, va);
 
         r1 = r2;
@@ -340,9 +340,9 @@ void draw_circleXZ(Vec3 a, float r, Color c, int s) {
 
         Vertex va;
         va.color = c;
-        va.pos = v1;
+        va.position = v1;
         add_vertex(1, va);
-        va.pos = v2;
+        va.position = v2;
         add_vertex(1, va);
 
         r1 = r2;
@@ -366,9 +366,9 @@ void draw_circleYZ(Vec3 a, float r, Color c, int s) {
 
         Vertex va;
         va.color = c;
-        va.pos = v1;
+        va.position = v1;
         add_vertex(1, va);
-        va.pos = v2;
+        va.position = v2;
         add_vertex(1, va);
 
         r1 = r2;

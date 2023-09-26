@@ -23,6 +23,7 @@ Shader shader_create(const char *vs, const char *fs) {
     if (status != GL_TRUE) {
         glGetShaderInfoLog(vsp, 1024, &read, error_msg);
         printf("vs error: %s", error_msg);
+        exit(1);
         return 0;
     }
     GLuint fsp = glCreateShader(GL_FRAGMENT_SHADER);
@@ -32,6 +33,7 @@ Shader shader_create(const char *vs, const char *fs) {
     if (status != GL_TRUE) {
         glGetShaderInfoLog(fsp, 1024, &read, error_msg);
         printf("fs error: %s", error_msg);
+        exit(1);
         return 0;
     }
     GLint programId = glCreateProgram();
@@ -42,6 +44,7 @@ Shader shader_create(const char *vs, const char *fs) {
     if (status != GL_TRUE) {
         glGetProgramInfoLog(programId, 1024, &read, error_msg);
         printf("compile error: %s", error_msg);
+        exit(1);
         return 0;
     }
     glDetachShader(programId, vsp);
@@ -53,13 +56,14 @@ Shader shader_create(const char *vs, const char *fs) {
 }
 
 Shader shader_load(const char *vs, const char *fs) {
-    File *vsf = file_read(vs);
-    File *fsf = file_read(fs);
+    char *vsf = readfile_stack(vs);
+    char *fsf = readfile_stack(fs);
 
-    Shader sh = shader_create(vsf->text, fsf->text);
+    Shader sh = shader_create(vsf, fsf);
 
-    alloc_free((void **) &fsf);
-    alloc_free((void **) &vsf);
+    stack_pop(alloc->stack);
+    stack_pop(alloc->stack);
+
     return sh;
 }
 

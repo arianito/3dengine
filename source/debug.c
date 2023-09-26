@@ -157,9 +157,9 @@ void debug_init() {
 
     // texture
     int width, height, nrChannels;
-    char *path = resolve("fonts/consolas.png");
+    char *path = resolve_stack("fonts/consolas.png");
     unsigned char *data = stbi_load(path, &width, &height, &nrChannels, 0);
-    alloc_free((void **) &path);
+    stack_free(alloc->stack, (void **) &path);
     if (data == NULL) {
         printf("debug: failed to load font \n");
         debugData->enabled = 0;
@@ -364,7 +364,7 @@ void debug_stringf(Vec2 pos, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     int len = vsnprintf(NULL, 0, fmt, args);
-    char *buffer = alloc_stack(char, len + 1);
+    char *buffer = (char *) stack_alloc(alloc->stack, len + 1, sizeof(size_t));
 
     if (buffer != NULL) {
         vsnprintf(buffer, len + 1, fmt, args);
@@ -372,7 +372,7 @@ void debug_stringf(Vec2 pos, const char *fmt, ...) {
         debug_string(pos, buffer, len + 1);
     }
 
-    alloc_free((void **) &buffer);
+    stack_pop(alloc->stack);
     va_end(args);
 }
 
@@ -380,14 +380,13 @@ void debug_string3df(Vec3 pos, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     int len = vsnprintf(NULL, 0, fmt, args);
-    char *buffer = alloc_stack(char, len + 1);
+    char *buffer = (char *) stack_alloc(alloc->stack, len + 1, sizeof(size_t));
 
     if (buffer != NULL) {
         vsnprintf(buffer, len + 1, fmt, args);
         buffer[len] = '\0';
         debug_string3d(pos, buffer, len + 1);
     }
-
-    alloc_free((void **) &buffer);
+    stack_pop(alloc->stack);
     va_end(args);
 }

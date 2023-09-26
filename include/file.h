@@ -3,13 +3,10 @@
 
 #include <stddef.h>
 
-typedef struct {
-    size_t length;
-    char *text;
-} File;
+char *resolve_stack(const char *fmt, ...);
 
-char *resolve(const char *fmt, ...);
+char *readfile_stack(const char *p);
+
+char *readline_stack(void *f, long *cursor);
 
 void file_init(const char *fmt, ...);
-
-File *file_read(const char *p);

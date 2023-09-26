@@ -5,7 +5,7 @@ extern "C" {
 #include "debug.h"
 }
 
-#include "engine/Level.hpp"
+#include "engine/CLevelManager.hpp"
 #include "engine/ECS.hpp"
 #include "engine/Memory.hpp"
 
@@ -25,16 +25,16 @@ public:
 
 FreeListMemory *CustomStartLevelAllocator::buddy = nullptr;
 
-class StartLevel : public Level {
+class StartLevel : public CLevel {
     using TAlloc = CustomStartLevelAllocator;
 
-    struct MovementComponent : public Component<TAlloc> {
+    struct MovementComponent : public CComponent<TAlloc> {
         float mSpeed;
 
         explicit inline MovementComponent(float speed) : mSpeed(speed) {}
     };
 
-    struct ShooterComponent : public Component<TAlloc> {
+    struct ShooterComponent : public CComponent<TAlloc> {
         float mRate{0.05f};
         float mSpeed{100.0f};
         float mLastShoot{0};
@@ -42,27 +42,27 @@ class StartLevel : public Level {
         ShooterComponent(float rate, float speed) : mRate(rate), mSpeed(speed) {}
     };
 
-    struct ShapeComponent : public Component<TAlloc> {
+    struct ShapeComponent : public CComponent<TAlloc> {
         int mType = 0;
 
         explicit inline ShapeComponent(int type) : mType(type) {}
     };
 
-    struct ProjectileComponent : public Component<TAlloc> {
+    struct ProjectileComponent : public CComponent<TAlloc> {
         Vec3 mInitialPosition;
         float mSpeed;
 
         explicit inline ProjectileComponent(Vec3 pos, float speed) : mInitialPosition(pos), mSpeed(speed) {}
     };
 
-    struct TransformComponent : public Component<TAlloc> {
+    struct TransformComponent : public CComponent<TAlloc> {
         Vec3 mPosition;
         Rot mRotation;
 
         explicit inline TransformComponent(Vec3 pos, Rot rot) : mPosition(pos), mRotation(rot) {}
     };
 
-    struct ProjectileSystem : public System<TAlloc, ProjectileComponent, TransformComponent> {
+    struct ProjectileSystem : public CSystem<TAlloc, ProjectileComponent, TransformComponent> {
         void Update() override {
             for (auto &compTuple: Components()) {
                 auto pTransform = Get<TransformComponent>(compTuple);
@@ -79,7 +79,7 @@ class StartLevel : public Level {
         }
     };
 
-    struct MovementSystem : public System<TAlloc, MovementComponent, TransformComponent> {
+    struct MovementSystem : public CSystem<TAlloc, MovementComponent, TransformComponent> {
         inline void Update() override {
             Ray r = camera_screenToWorld(input->position);
             Vec3 dest = vec3_intersectPlane(r.origin, vec3_add(r.origin, r.direction), vec3_zero, vec3_up);
@@ -99,7 +99,7 @@ class StartLevel : public Level {
         }
     };
 
-    struct ShooterSystem : public System<TAlloc, ShooterComponent, TransformComponent> {
+    struct ShooterSystem : public CSystem<TAlloc, ShooterComponent, TransformComponent> {
         void Update() override {
             auto down = input_mousepress(MOUSE_LEFT);
             for (auto &components: Components()) {
@@ -117,7 +117,7 @@ class StartLevel : public Level {
         }
     };
 
-    struct RenderSystem : public System<TAlloc, ShapeComponent, TransformComponent> {
+    struct RenderSystem : public CSystem<TAlloc, ShapeComponent, TransformComponent> {
         inline void Update() override {
             for (const auto &bucket: Components()) {
                 auto pShape = Get<ShapeComponent>(bucket);
@@ -136,12 +136,12 @@ class StartLevel : public Level {
         }
     };
 
-    Director<TAlloc> *mDirector{nullptr};
+    CDirector<TAlloc> *mDirector{nullptr};
 
     inline void Create() override {
 
         CustomStartLevelAllocator::buddy = make_freelist(16 * MEGABYTES);
-        mDirector = AllocNew<TAlloc, Director<TAlloc>>();
+        mDirector = AllocNew<TAlloc, CDirector<TAlloc>>();
 
         mDirector->AddSystem<MovementSystem>();
         mDirector->AddSystem<ShooterSystem>();
