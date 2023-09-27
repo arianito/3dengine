@@ -57,7 +57,6 @@ class MeshLevel : public CLevel {
     Shader bufferShader;
 
 
-
     inline void Create() override {
         TAlloc::create();
 
@@ -69,11 +68,10 @@ class MeshLevel : public CLevel {
 
         prepareMesh(group->Meshes[0]);
         prepareFrame();
-        prepareQuad();
     }
 
     inline void Update() override {
-        debug_origin(vec2(1, 1));
+        debug_origin(vec2_one);
         debug_color(color_white);
         Vec2 pos = vec2(game->width - 10, game->height - 10);
         debug_stringf(pos, "Alloc: %zu / %zu", TAlloc::usage(), TAlloc::size());
@@ -84,28 +82,30 @@ class MeshLevel : public CLevel {
             Mat4 world = mat4_scalef(20);
 
             Vec3 lightColor = vec3_one;
-            Vec3 objectColor = vec3(0.76f, 0.89f, 0.71f);
+            Vec3 objectColor = vec3(0.72f, 0.87f, 0.71f);
 
-            Vec3 lightPos = vec3(cosd(gameTime->time * 50.0f) * 500.0f, sind(gameTime->time * 50.0f) * 500.0f, 260);
-            Rot lightRot = rot_lookAt(lightPos, vec3_zero, vec3_up);
+            float t = gameTime->time * 10.0f;
 
+            Vec3 lightPos = vec3(cosd(t) * 400.0f, sind(t) * 400.0f, 100.0f);
 
-            Vec3 forward = rot_forward(lightRot);
-            Mat4 lightView = mat4_lookAt(vec3_neg(forward), vec3_zero, vec3_up);
-            Mat4 lightProj = mat4_orthographic(-40, 40, -40, 40, -40, 1000);
-            Mat4 depthMVP = mat4_mul(lightProj, lightView);
+            Rot lightRot = rot_lookAt(lightPos, vec3_zero, vec3_one);
+            lightRot.pitch += 180;
+            draw_axisRot(lightPos, 10, lightRot);
 
-            draw_axisRot(lightPos, 100, lightRot);
+            Mat4 lightView = mat4_view(lightPos, lightRot);
+            Mat4 lightProj = mat4_orthographic(-256, 256, 256, -256, 1.0f, 1000);
+            Mat4 depthMVP = mat4_mul(lightView, lightProj);
 
-            // Render to our framebuffer
-            shader_begin(depthShader);
-            glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
-            glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-            glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+            //
             glEnable(GL_DEPTH_TEST);
             glEnable(GL_CULL_FACE);
-            glCullFace(GL_FRONT);
+            glCullFace(GL_BACK);
             glFrontFace(GL_CW);
+            // Render to our framebuffer
+            glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+            glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
+            glClear(GL_DEPTH_BUFFER_BIT);
+            shader_begin(depthShader);
             shader_mat4(depthShader, "projection", &lightProj);
             shader_mat4(depthShader, "view", &lightView);
             shader_mat4(depthShader, "model", &world);
@@ -113,39 +113,26 @@ class MeshLevel : public CLevel {
             glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, nullptr);
             shader_end();
             //
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glViewport(0, 0, (int) game->width, (int) game->height);
-            glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
-            glFrontFace(GL_CW);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, depthTex);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
             //
             shader_begin(phongShader);
             shader_vec3(phongShader, "lightPos", &lightPos);
-            shader_vec3(phongShader, "viewPos", &camera->position);
             shader_vec3(phongShader, "lightColor", &lightColor);
             shader_vec3(phongShader, "objectColor", &objectColor);
+            shader_vec3(phongShader, "viewPos", &camera->position);
             shader_mat4(phongShader, "projection", &camera->projection);
             shader_mat4(phongShader, "view", &camera->view);
             shader_mat4(phongShader, "model", &world);
-            shader_int(phongShader, "shadowMap", 0);
-            shader_mat4(phongShader, "depthBias", &depthMVP);
+
+            shader_mat4(phongShader, "depthMVP", &depthMVP);
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, depthTex);
+
             glBindVertexArray(modelVAO);
             glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, nullptr);
             shader_end();
-            //
-            shader_begin(bufferShader);
-            shader_mat4(bufferShader, "projection", &camera->projection);
-            shader_mat4(bufferShader, "view", &camera->view);
-            shader_mat4(bufferShader, "model", &world);
-            shader_int(bufferShader, "shadowMap", 0);
-            glBindVertexArray(quadVAO);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-            shader_end();
-            //
         }
 
     }
@@ -161,6 +148,18 @@ class MeshLevel : public CLevel {
     }
 
 
+    void renderQuad() {
+        Mat4 world = mat4_scalef(20);
+        shader_begin(bufferShader);
+        shader_mat4(bufferShader, "projection", &camera->projection);
+        shader_mat4(bufferShader, "view", &camera->view);
+        shader_mat4(bufferShader, "model", &world);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, depthTex);
+        glBindVertexArray(quadVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        shader_end();
+    }
     //
     GLuint depthFBO, depthTex;
     const GLsizei SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
@@ -174,16 +173,13 @@ class MeshLevel : public CLevel {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, (const float *) &color_white);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTex, 0);
-        glDrawBuffer(GL_NONE); // No color buffer is drawn to.
-
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-            exit(1);
-        }
-
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     void deleteFrame() {
@@ -235,14 +231,14 @@ class MeshLevel : public CLevel {
         glGenBuffers(1, &quadEBO);
 
         float w = 5.0f;
-        float zo = 5.0f;
+        float zo = -10.0f;
         Quad vertices[] = {
-                {vec3(5, -w, -w+zo),   vec3(-1, 0, 0), vec2(0, 0)},
-                {vec3(5, -w, w+zo),  vec3(-1, 0, 0), vec2(0, 1)},
-                {vec3(5, w, w+zo), vec3(-1, 0, 0), vec2(1, 0)},
-                {vec3(5, w, -w+zo),  vec3(-1, 0, 0), vec2(1, 1)},
+                {vec3(-w, -w + zo, 0), vec3(0, 0, 1), vec2(0, 0)},
+                {vec3(-w, +w + zo, 0), vec3(0, 0, 1), vec2(1, 0)},
+                {vec3(+w, +w + zo, 0), vec3(0, 0, 1), vec2(1, 1)},
+                {vec3(+w, -w + zo, 0), vec3(0, 0, 1), vec2(0, 1)},
         };
-        unsigned int indices[] = {0, 1, 2, 0, 2, 3};
+        unsigned int indices[] = {2, 1, 0, 3, 2, 0};
 
         glBindVertexArray(quadVAO);
         glBindBuffer(GL_ARRAY_BUFFER, quadVBO);

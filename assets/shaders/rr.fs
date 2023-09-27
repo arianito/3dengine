@@ -9,5 +9,5 @@ void main()
 {
     vec4 p = texture(shadowMap, TexCoord);
 
-    FragColor = vec4(vec3(p), 1);
+    FragColor = vec4(vec3(p.r), 1);
 }

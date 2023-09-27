@@ -2030,12 +2030,12 @@ mat4_perspective(float fov, float aspect, float nr, float fr) {
 
     m.m[2][0] = 0.0f;
     m.m[2][1] = 0.0f;
-    m.m[2][2] = fr * inv;
+    m.m[2][2] = (fr + nr) * inv;
     m.m[2][3] = 1.0f;
 
     m.m[3][0] = 0.0f;
     m.m[3][1] = 0.0f;
-    m.m[3][2] = -(nr * fr * inv);
+    m.m[3][2] = -(2 * nr * fr) * inv;
     m.m[3][3] = 0.0f;
 
     return m;

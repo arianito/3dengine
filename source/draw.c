@@ -460,7 +460,7 @@ void draw_axisRot(Vec3 a, float s, Rot r) {
 
 void draw_frustum(Vec3 pos, Rot rt, float fov, float ratio, float nr, float fr, Color c) {
     Mat4 view = mat4_view(pos, rt);
-    Mat4 projection = mat4_perspective(fov, game->ratio, nr, fr);
+    Mat4 projection = mat4_perspective(fov, ratio, nr, fr);
 
     Mat4 projView = mat4_inv(mat4_mul(view, projection));
 
