@@ -8,7 +8,7 @@ extern "C" {
 #include "engine/TVector.hpp"
 #include "engine/Trace.hpp"
 
-struct TMeshVertex {
+struct __attribute__((aligned(64), packed)) TMeshVertex  {
     Vec3 Position{};
     Vec3 Normal{};
     Vec2 TexCoord{};

@@ -73,6 +73,9 @@ void draw_render() {
 
     glLineWidth(1);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CW);
 
     for (int i = 0; i < types_n; i++) {
         int count = drawData->counter[i];
@@ -269,18 +272,18 @@ void fill_tetrahedron(Tetrahedron t, Color c) {
     Vertex va;
     va.color = c;
 
-    va.position = t.a;
+    va.position = t.c;
     add_vertex(2, va);
     va.position = t.b;
     add_vertex(2, va);
-    va.position = t.c;
-    add_vertex(2, va);
-
     va.position = t.a;
     add_vertex(2, va);
+
+    va.position = t.d;
+    add_vertex(2, va);
     va.position = t.c;
     add_vertex(2, va);
-    va.position = t.d;
+    va.position = t.a;
     add_vertex(2, va);
 
     va.position = t.b;

@@ -29,6 +29,12 @@ typedef struct __attribute__((aligned(16), packed)) {
 } Vec4;
 
 typedef struct __attribute__((aligned(64), packed)) {
+    Vec3 position;
+    Vec3 normal;
+    Vec2 coord;
+} Quad;
+
+typedef struct __attribute__((aligned(64), packed)) {
     Vec3 origin;
     Vec3 direction;
 } Ray;
@@ -2517,7 +2523,7 @@ static inline Vec3 triangle_norm(Triangle t) {
 }
 
 static inline Triangle triangle(Vec3 a, Vec3 b, Vec3 c) {
-    Triangle  t;
+    Triangle t;
     t.a = a;
     t.b = b;
     t.c = c;

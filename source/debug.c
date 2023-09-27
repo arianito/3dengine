@@ -72,11 +72,6 @@ typedef struct {
 
 static DrawData *debugData;
 
-typedef struct {
-    Vec3 pos;
-    Vec2 coord;
-} Quad;
-
 void debug_init() {
     debugData = alloc_global(DrawData, sizeof(DrawData));
     clear(debugData, sizeof(DrawData));
@@ -101,28 +96,26 @@ void debug_init() {
         debugData->bound2d = vec2(w, h);
         float offset = (h - w) / (h * 2.0f);
         Quad vertices[] = {
-                {vec3(0, 0, 0), vec2(offset, 0)},
-                {vec3(w, 0, 0), vec2(1 - offset, 0)},
-                {vec3(w, h, 0), vec2(1 - offset, 1)},
-                {vec3(0, h, 0), vec2(offset, 1)},
+                {vec3(0, 0, 0), vec3(0, 0, 1), vec2(offset, 0)},
+                {vec3(w, 0, 0), vec3(0, 0, 1), vec2(1 - offset, 0)},
+                {vec3(w, h, 0), vec3(0, 0, 1), vec2(1 - offset, 1)},
+                {vec3(0, h, 0), vec3(0, 0, 1), vec2(offset, 1)},
         };
         unsigned int indices[] = {0, 1, 3, 1, 2, 3};
 
         glBindVertexArray(debugData->vaoIds[1]);
         glBindBuffer(GL_ARRAY_BUFFER, debugData->vboIds[1]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
-                     GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, debugData->eboIds[1]);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-                     GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Quad), BUFFER_OFFSET(0));
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Quad),
-                              BUFFER_OFFSET(0));
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Quad),
-                              BUFFER_OFFSET(16));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Quad), BUFFER_OFFSET(16));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Quad), BUFFER_OFFSET(32));
     }
 
     {
@@ -131,10 +124,10 @@ void debug_init() {
         debugData->bound3d = vec2(w, h);
         float offset = (h - w) / (h * 2.0f);
         Quad vertices[] = {
-                {vec3(0, 0, 0),   vec2(offset, 0)},
-                {vec3(0, -w, 0),  vec2(1 - offset, 0)},
-                {vec3(0, -w, -h), vec2(1 - offset, 1)},
-                {vec3(0, 0, -h),  vec2(offset, 1)},
+                {vec3(0, 0, 0),   vec3(1, 0, 0), vec2(offset, 0)},
+                {vec3(0, -w, 0),  vec3(1, 0, 0), vec2(1 - offset, 0)},
+                {vec3(0, -w, -h), vec3(1, 0, 0), vec2(1 - offset, 1)},
+                {vec3(0, 0, -h),  vec3(1, 0, 0), vec2(offset, 1)},
         };
         unsigned int indices[] = {0, 1, 3, 1, 2, 3};
 
@@ -148,11 +141,11 @@ void debug_init() {
                      GL_STATIC_DRAW);
 
         glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Quad), BUFFER_OFFSET(0));
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Quad),
-                              BUFFER_OFFSET(0));
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Quad),
-                              BUFFER_OFFSET(16));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Quad), BUFFER_OFFSET(16));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Quad), BUFFER_OFFSET(32));
     }
 
     // texture
@@ -213,6 +206,11 @@ void debug_render() {
     shader_begin(debugData->shader);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, debugData->fontTexture[0]);
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CW);
 
     if (debugData->count2d > 0) {
         Mat4 ortho = mat4_orthographic(0, game->width, game->height, 0, -1.0f,

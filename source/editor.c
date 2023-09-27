@@ -111,6 +111,8 @@ void editor_update() {
             Vec3 right = vec3_mulf(rot_right(camera->rotation), axisX);
 
             camera->position = vec3_add(camera->position, vec3_add(forward, right));
+            Vec3 fwd = vec3_mulf(rot_forward(camera->rotation), editor->distance);
+            editor->center = vec3_add(camera->position, fwd);
         }
 
         camera_update();
