@@ -10,6 +10,7 @@
 #include "mem/stack.h"
 #include "mem/freelist.h"
 #include "mem/buddy.h"
+#include "mem/p2slab.h"
 #include "mem/utils.h"
 
 typedef struct {
@@ -29,6 +30,7 @@ typedef struct {
     FreeListMemory *freelist;
     FreeListMemory *string;
     BuddyMemory *buddy;
+    P2SlabMemory *slab;
 } MemoryLayout;
 
 extern MemoryLayout *alloc;

@@ -43,10 +43,6 @@ int main(int argc, const char *argv[]) {
         window.Create();
 
         while (game_loop()) {
-
-
-
-
             grid_render();
 
             window.Update();

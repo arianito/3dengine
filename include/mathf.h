@@ -2533,3 +2533,11 @@ static inline Triangle triangle(Vec3 a, Vec3 b, Vec3 c) {
     t.c = c;
     return t;
 }
+
+static inline Sphere sphere(Vec3 position, float radius) {
+    Sphere s;
+    s.position = position;
+    s.radius = radius;
+    return s;
+}
+

@@ -65,7 +65,7 @@ class MeshLevel : public CLevel {
     inline void Create() override {
         TAlloc::create();
 
-        group = CWavefrontOBJ<TAlloc>::Load("models/cube.obj");
+        group = CWavefrontOBJ<TAlloc>::Load("models/simple.obj");
 
         phongShader = shader_load("shaders/default.vs", "shaders/default.fs");
         depthShader = shader_load("shaders/depth.vs", "shaders/depth.fs");
@@ -155,13 +155,12 @@ class MeshLevel : public CLevel {
         int n = group->Meshes[0]->Indices.Length();
         int c = 2;
         float ofc = 200.0f;
-        float scale = 20.0f;
+        float scale = 15.0f;
         for (int i = -c; i <= c; i++) {
 
             for (int j = -c; j <= c; j++) {
                 auto k = (float) (j * c + i);
-                Mat4 world = mat4_transformf(vec3((float) j * ofc, (float) i * ofc, sin(k * 7 + gameTime->time * 2) * 0), scale);
-                world = mat4_mul(rot_matrix(rot(0, k * gameTime->time * 0.1f * 90, 0), vec3_zero), world);
+                Mat4 world = mat4_transformf(vec3((float) j * ofc, (float) i * ofc, sin(k * 7) * 0), scale);
                 shader_mat4(sh, "model", &world);
                 glBindVertexArray(modelVAO);
                 glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, nullptr);

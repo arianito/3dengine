@@ -24,7 +24,7 @@ struct GameWindow {
         manager.Add<TempLevel>();
         manager.Add<MeshLevel>();
 
-        manager.Load<MeshLevel>();
+        manager.Load<BuddyLevel>();
     }
 
     inline void Update() {
@@ -54,12 +54,14 @@ struct GameWindow {
             debug_stringf(pos, "boot %d / %d\n"
                                "global %d / %d\n"
                                "freelist %d / %d\n"
+                               "slab %d / %d\n"
                                "string %d / %d\n"
                                "buddy %d / %d\n"
                                "stack %d / %d",
                           alloc->boot->usage, alloc->boot->total,
                           alloc->global->usage, alloc->global->total,
                           freelist_usage(alloc->freelist), alloc->freelist->total,
+                          alloc->slab->usage, alloc->slab->total,
                           freelist_usage(alloc->string), alloc->string->total,
                           alloc->buddy->usage, alloc->metadata.buddy,
                           alloc->stack->usage, alloc->stack->total

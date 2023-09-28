@@ -18,7 +18,7 @@
 #define BUFFER_OFFSET(x) ((const void *)(x))
 
 enum {
-    max_space = 10 * KILOBYTES,
+    max_space = 100 * KILOBYTES,
     max_elements = 2000,
 };
 
