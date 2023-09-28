@@ -2,6 +2,7 @@
 
 extern "C" {
 #include "shader.h"
+#include "mem/p2slab.h"
 }
 
 #include <cstddef>
@@ -19,35 +20,39 @@ extern "C" {
 class MeshAlloc {
 
 public:
-    static FreeListMemory *memory;
+    static P2SlabMemory *memory;
 
     static inline void create() {
-        memory = make_freelist(5 * MEGABYTES);
+        memory = make_p2slab(10);
     }
 
     static inline void destroy() {
-        freelist_destroy(&memory);
+        p2slab_destroy(&memory);
     }
 
     inline static void *Alloc(size_t size, unsigned int alignment) {
-        return freelist_alloc(memory, size, alignment);
+        return p2slab_alloc(memory, size);
     }
 
     inline static void Free(void **ptr) {
-        freelist_free(memory, ptr);
+        p2slab_free(memory, ptr);
     }
 
     inline static size_t usage() {
-        return freelist_usage(memory);
+        return memory->usage;
     }
 
     inline static size_t size() {
         return memory->total;
     }
 
+    inline static void fit() {
+        p2slab_fit(memory);
+    }
+
 };
 
-FreeListMemory *MeshAlloc::memory = nullptr;
+P2SlabMemory *MeshAlloc::memory = nullptr;
 
 class MeshLevel : public CLevel {
     using TAlloc = MeshAlloc;
@@ -68,6 +73,7 @@ class MeshLevel : public CLevel {
 
         prepareMesh(group->Meshes[0]);
         prepareFrame();
+        prepareQuad();
     }
 
     inline void Update() override {
@@ -76,24 +82,30 @@ class MeshLevel : public CLevel {
         Vec2 pos = vec2(game->width - 10, game->height - 10);
         debug_stringf(pos, "Alloc: %zu / %zu", TAlloc::usage(), TAlloc::size());
 
+        if (input_keydown(KEY_SPACE)) {
+            for (const auto &m: group->Meshes) {
+                m->Vertices.Fit();
+                m->Indices.Fit();
+            }
+            group->Meshes.Fit();
+            TAlloc::fit();
+        }
         if (group != nullptr) {
-            int n = group->Meshes[0]->Indices.Length();
 
-            Mat4 world = mat4_scalef(20);
+            Mat4 world = mat4_scalef(40);
 
             Vec3 lightColor = vec3_one;
-            Vec3 objectColor = vec3(0.72f, 0.87f, 0.71f);
+            Vec3 objectColor = vec3(0.87f, 0.21f, 0.54f);
 
-            float t = gameTime->time * 10.0f;
+            float t = gameTime->time * 30.0f;
 
-            Vec3 lightPos = vec3(cosd(t) * 400.0f, sind(t) * 400.0f, 100.0f);
+            Vec3 lightPos = vec3(cosd(t) * 500.0f, sind(t) * 500.0f, 200.0f);
 
             Rot lightRot = rot_lookAt(lightPos, vec3_zero, vec3_one);
-            lightRot.pitch += 180;
-            draw_axisRot(lightPos, 10, lightRot);
+            float zoom = camera->zoom;
 
             Mat4 lightView = mat4_view(lightPos, lightRot);
-            Mat4 lightProj = mat4_orthographic(-256, 256, 256, -256, 1.0f, 1000);
+            Mat4 lightProj = mat4_orthographic(-zoom, zoom, -zoom, zoom, 1.0f, 500);
             Mat4 depthMVP = mat4_mul(lightView, lightProj);
 
             //
@@ -106,11 +118,8 @@ class MeshLevel : public CLevel {
             glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
             glClear(GL_DEPTH_BUFFER_BIT);
             shader_begin(depthShader);
-            shader_mat4(depthShader, "projection", &lightProj);
-            shader_mat4(depthShader, "view", &lightView);
-            shader_mat4(depthShader, "model", &world);
-            glBindVertexArray(modelVAO);
-            glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, nullptr);
+            shader_mat4(depthShader, "viewProjection", &depthMVP);
+            renderMesh(depthShader, world);
             shader_end();
             //
             glViewport(0, 0, (int) game->width, (int) game->height);
@@ -121,17 +130,11 @@ class MeshLevel : public CLevel {
             shader_vec3(phongShader, "lightColor", &lightColor);
             shader_vec3(phongShader, "objectColor", &objectColor);
             shader_vec3(phongShader, "viewPos", &camera->position);
-            shader_mat4(phongShader, "projection", &camera->projection);
-            shader_mat4(phongShader, "view", &camera->view);
-            shader_mat4(phongShader, "model", &world);
-
-            shader_mat4(phongShader, "depthMVP", &depthMVP);
-
+            shader_mat4(phongShader, "viewProjection", &camera->viewProjection);
+            shader_mat4(phongShader, "depthViewProjection", &depthMVP);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, depthTex);
-
-            glBindVertexArray(modelVAO);
-            glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, nullptr);
+            renderMesh(phongShader, world);
             shader_end();
         }
 
@@ -140,6 +143,7 @@ class MeshLevel : public CLevel {
     inline void Destroy() override {
         deleteMesh();
         deleteFrame();
+        deleteQuad();
         shader_destroy(phongShader);
         shader_destroy(depthShader);
         shader_destroy(bufferShader);
@@ -147,6 +151,23 @@ class MeshLevel : public CLevel {
         TAlloc::destroy();
     }
 
+    void renderMesh(Shader sh, const Mat4 &space) const {
+        int n = group->Meshes[0]->Indices.Length();
+        int c = 2;
+        float ofc = 200.0f;
+        float scale = 20.0f;
+        for (int i = -c; i <= c; i++) {
+
+            for (int j = -c; j <= c; j++) {
+                auto k = (float) (j * c + i);
+                Mat4 world = mat4_transformf(vec3((float) j * ofc, (float) i * ofc, sin(k * 7 + gameTime->time * 2) * 0), scale);
+                world = mat4_mul(rot_matrix(rot(0, k * gameTime->time * 0.1f * 90, 0), vec3_zero), world);
+                shader_mat4(sh, "model", &world);
+                glBindVertexArray(modelVAO);
+                glDrawElements(GL_TRIANGLES, n, GL_UNSIGNED_INT, nullptr);
+            }
+        }
+    }
 
     void renderQuad() {
         Mat4 world = mat4_scalef(20);
@@ -160,6 +181,7 @@ class MeshLevel : public CLevel {
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         shader_end();
     }
+
     //
     GLuint depthFBO, depthTex;
     const GLsizei SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;

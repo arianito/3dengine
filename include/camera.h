@@ -40,10 +40,10 @@ static inline void camera_update() {
         camera->projection = mat4_perspective(camera->fov, game->ratio, 1.0f, farPlane);
     } else {
         Rot r = camera->rotation;
-        r.pitch += 180;
+//        r.pitch += 180;
         float height = camera->zoom * (camera->fov * 0.005556f);
         float width = height * game->ratio;
-        camera->projection = mat4_orthographic(-width, width, height, -height, -farPlane, farPlane);
+        camera->projection = mat4_orthographic(-width, width, -height, height, -farPlane, farPlane);
         camera->view = mat4_view(camera->position, r);
     }
     camera->viewProjection = mat4_mul(camera->view, camera->projection);
@@ -54,7 +54,6 @@ static inline void camera_init() {
     camera->rotation = rot(-15, 45, 0);
     Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -300);
     camera->position = vec3_add(backward, vec3_zero);
-    camera->position.z += 50;
     camera->fov = 80.0f;
     camera->zoom = 300.0f;
     camera->ortho = VIEW_INITIAL;

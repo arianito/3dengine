@@ -2001,7 +2001,7 @@ mat4_orthographic(float left, float right, float bottom, float top, float nr,
 
     m.m[2][0] = 0.0f;
     m.m[2][1] = 0.0f;
-    m.m[2][2] = -1.0f / fmd;
+    m.m[2][2] = 1.0f / fmd;
     m.m[2][3] = 0.0f;
 
     m.m[3][0] = -rpl / rml;
@@ -2214,10 +2214,14 @@ static inline Mat4 mat4_view(Vec3 a, Rot b) {
             mat4_mul(mat4_invRot(b), ma));
 }
 
-static inline Mat4 mat4_transform(Transform t) {
-    Mat4 a = mat4_scale(t.scale);
-    a = mat4_mul(a, rot_matrix(t.rotation, t.position));
-    return a;
+static inline Mat4 mat4_transformf(Vec3 origin, float scale) {
+    Mat4 mt = {
+            scale, 0, 0, 0,
+            0, scale, 0, 0,
+            0, 0, scale, 0,
+            origin.x, origin.y, origin.z, 1
+    };
+    return mt;
 }
 
 static inline float mat4_det(Mat4 m) {

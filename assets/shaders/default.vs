@@ -10,9 +10,8 @@ out vec4 ShadowCoord;
 out vec2 TexCoord;
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-uniform mat4 depthMVP;
+uniform mat4 viewProjection;
+uniform mat4 depthViewProjection;
 
 void main()
 {
@@ -22,7 +21,7 @@ void main()
 
     Normal = mat3(transpose(inverse(model))) * aNormal;
 
-    ShadowCoord = depthMVP * FragPosition;
+    ShadowCoord = depthViewProjection * FragPosition;
 
-    gl_Position = (projection * view) * FragPosition;
+    gl_Position = viewProjection * FragPosition;
 }

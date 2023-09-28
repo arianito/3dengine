@@ -39,13 +39,28 @@ void main()
 
     if (coords.z <= 1) {
         coords = (coords + 1.0f) / 2.0f;
-        float closestDepth = texture(shadowMap, coords.xy).r;
+
+
+
         float currentDepth = coords.z;
-        float bias = 0.005f;
-        if (currentDepth > closestDepth + bias) shadow = 1;
+        int samples = 1;
+        vec2 pix = 1.0f / textureSize(shadowMap, 0);
+        float bias = max((1.0f - dot(lightDir, norm)) * length(pix) * 2.0f, 0.005f);
+        for(int i = -samples; i <= samples; i++) {
+            for(int j = -samples; j <= samples; j++) {
+
+                float closestDepth = texture(shadowMap, coords.xy + vec2(i, j) * pix).r;
+                if (currentDepth > closestDepth + bias) shadow += 1.0f;
+
+            }
+        }
+        shadow /= pow((samples * 2 + 1.0), 2);
     }
 
-    vec3 result = (ambient + (diffuse + specular) * (1 - shadow)) * objectColor;
+
+    float fresnel = pow(1 - clamp(dot(norm, viewDir), 0, 1), 2) * dot(viewDir, norm) * 0.5f;
+
+    vec3 result = (ambient + fresnel + (diffuse + specular) * (1 - shadow)) * objectColor;
 
     FragColor = vec4(result, 1.0);
 }
