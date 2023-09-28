@@ -11,6 +11,8 @@ extern "C" {
 #include "mem/freelist.h"
 #include "mem/stack.h"
 #include "mem/arena.h"
+#include "mem/slab.h"
+#include "mem/p2slab.h"
 }
 
 class StringMemory;
@@ -30,6 +32,8 @@ inline void *Alloc(size_t size = -1, unsigned int alignment = sizeof(size_t)) {
         m = arena_alloc(alloc->global, size, alignment);
     } else if constexpr (std::is_same_v<T, BuddyMemory>) {
         m = buddy_alloc(alloc->buddy, size);
+    } else if constexpr (std::is_same_v<T, SlabMemory>) {
+        m = p2slab_alloc(alloc->slab, size);
     } else {
         m = T::Alloc(size, alignment);
     }
@@ -64,6 +68,9 @@ inline void Free(void **ptr) {
         return;
     } else if constexpr (std::is_same_v<T, BuddyMemory>) {
         buddy_free(alloc->buddy, ptr);
+        return;
+    } else if constexpr (std::is_same_v<T, SlabMemory>) {
+        p2slab_free(alloc->slab, ptr);
         return;
     } else if constexpr (std::is_same_v<T, ArenaMemory>) {
         return;

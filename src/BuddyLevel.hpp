@@ -17,8 +17,7 @@ class BuddyLevel : public CLevel {
             tree->Add(tree->Length());
         }
         if (input_keypress(KEY_M)) {
-            if (!tree->Empty())
-                tree->Remove(tree->Front());
+            if (!tree->Empty())                tree->Remove(tree->Front());
         }
         if (input_keydown(KEY_ENTER)) {
             tree->inorder(tree->mHead);
@@ -66,7 +65,7 @@ class BuddyLevel : public CLevel {
 
         debug_color(color_white);
         debug_origin(vec2(0.5f, 0.5f));
-        debug_string3df(pos, "%d\n%d", node->value, tree->balanceFactor(node));
+        debug_string3df(pos, "%d", node->value);
     }
 
 };

@@ -113,13 +113,14 @@ public:
     }
 
     inline Node *balance(Node *A) {
-        if (balanceFactor(A) == 2 && balanceFactor(A->left) == 1) {
+        int balance = balanceFactor(A);
+        if (balance == 2 && balanceFactor(A->left) == 1) {
             return rotateRight(A);
-        } else if (balanceFactor(A) == 2 && balanceFactor(A->left) == -1) {
+        } else if (balance == 2 && balanceFactor(A->left) == -1) {
             return rotateLeftThenRight(A);
-        } else if (balanceFactor(A) == -2 && balanceFactor(A->right) == 1) {
+        } else if (balance == -2 && balanceFactor(A->right) == 1) {
             return rotateRightThenLeft(A);
-        } else if (balanceFactor(A) == -2 && balanceFactor(A->right) == -1) {
+        } else if (balance == -2 && balanceFactor(A->right) == -1) {
             return rotateLeft(A);
         }
         return A;
