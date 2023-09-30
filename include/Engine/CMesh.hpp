@@ -7,6 +7,7 @@ extern "C" {
 #include <iostream>
 #include "engine/TVector.hpp"
 #include "engine/Trace.hpp"
+#include "data/TArray.hpp"
 
 struct __attribute__((aligned(64), packed)) TMeshVertex  {
     Vec3 Position{};

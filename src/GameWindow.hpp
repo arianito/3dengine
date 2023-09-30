@@ -8,6 +8,7 @@
 #include "./GraphLevel.hpp"
 #include "./MeshLevel.hpp"
 #include "./TestLevel.hpp"
+#include "./TempLevel.hpp"
 
 enum {
     nSamples = 200
@@ -21,6 +22,7 @@ struct GameWindow {
         manager.Add<GraphLevel>();
         manager.Add<TestLevel>();
         manager.Add<MeshLevel>();
+        manager.Add<TempLevel>();
 
         manager.Load<GraphLevel>();
     }
@@ -37,6 +39,10 @@ struct GameWindow {
         if (input_keydown(KEY_8)) {
             manager.Load<MeshLevel>();
         }
+        if (input_keydown(KEY_7)) {
+            manager.Load<TempLevel>();
+        }
+
 
 
         if (input_keydown(KEY_TAB)) {

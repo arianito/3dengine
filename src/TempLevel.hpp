@@ -186,7 +186,6 @@ class TempLevel : public CLevel {
                     pParticle->emitter->removeParticles++;
                     if (pParticle->emitter->removeParticles == pParticle->emitter->maxParticles)
                         mDirector->DestroyEntity(pParticle->emitter->mEntityId);
-
                 }
             }
         }

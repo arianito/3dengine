@@ -355,8 +355,7 @@ public:
     inline void DestroyEntity(CEntityId entityId) {
         if (!mEntities.Contains(entityId))
             return;
-
-        auto entity = mEntities[entityId];
+        auto entity = mEntities.Get(entityId);
 
         for (auto system: mSystems)
             system.second->OnEntityDestroyed(entityId);
@@ -431,6 +430,10 @@ public:
     }
 
     inline void Update() {
+
+        debug_origin(vec2_zero);
+        debug_stringf(Vec2{10, 100}, "entities: %d / %d", mEntities.Length(), mEntities.Capacity());
+
         for (auto sys: mSystems) {
             if (sys.second->mShouldUpdate)
                 sys.second->Update();
@@ -461,7 +464,7 @@ inline void CSystem<TAlloc, Types...>::Process() {
 
                 auto movedEntityId = movedEntity->mEntityId;
                 if (this->mEntityIndex.Contains(movedEntityId)) {
-                    this->mEntityIndex[movedEntityId] = index;
+                    this->mEntityIndex.Set(movedEntityId, index);
                     this->mShouldUpdate = mComponents.Length() > 0;
                 }
             }

@@ -22,17 +22,18 @@ private:
     };
 private:
     Node *mProbes{nullptr};
-    uint32_t mCapacity{8};
+    uint32_t mCapacity{2};
     uint32_t mLength{0};
     bool mAllowExpansion{true};
 
 public:
-    explicit inline TFlatMap() : TFlatMap(8, true) {}
+    explicit inline TFlatMap() : TFlatMap(2, true) {}
 
     explicit inline TFlatMap(uint32_t capacity) : TFlatMap(capacity, true) {}
 
-    explicit inline TFlatMap(uint32_t capacity, bool expansion) : mCapacity(expansion ? (capacity) : (capacity << 1)), mAllowExpansion(expansion) {
+    explicit inline TFlatMap(uint32_t capacity, bool expansion) : mAllowExpansion(expansion) {
         assert(!(capacity & (capacity - 1)) && "TFlatMap: Capacity should be power of 2");
+        mCapacity = expansion ? (capacity) : (capacity << 1);
         mProbes = Alloc<TAlloc, Node, true>(mCapacity);
     }
 
@@ -70,15 +71,10 @@ public:
     inline bool Set(const K &key, const V &value) {
         if (mAllowExpansion) expand();
         uint32_t index;
-        if (!linearProbeSet(mProbes, key, &index, mCapacity))
-            return false;
+        if (!linearProbeSet(mProbes, key, &index, mCapacity)) return false;
         auto &node = mProbes[index];
-
-        if (!mAllowExpansion && ((mLength << 1) > mCapacity - 1) && !node.used)
-            return false;
-
+        if (!mAllowExpansion && ((mLength << 1) > mCapacity - 1) && !node.used) return false;
         if (!node.used) mLength++;
-
         node.key = key;
         node.value = value;
         node.used = true;
@@ -102,10 +98,8 @@ public:
         uint32_t index;
         if (!linearProbeGet(key, &index, mCapacity)) return;
         auto &probe = mProbes[index];
-        if (probe.used) {
-            probe.used = false;
-            mLength--;
-        }
+        probe.used = false;
+        mLength--;
     }
 
     inline bool Contains(const K &key) {
@@ -137,15 +131,16 @@ private:
     }
 
     inline bool linearProbeSet(const Node *mList, const K &key, uint32_t *foundIndex, uint32_t capacity) const {
-        uint32_t seed = 0;
-        uint32_t index0 = hash_type<K>(key, seed) & (capacity - 1);
-        const Node *node = &mList[index0];
+        uint32_t hash = hash_type<K>(key, 0) & (capacity - 1);
+        const Node *node = &mList[hash];
         if (!node->used || node->key == key) {
-            *foundIndex = index0;
+            *foundIndex = hash;
             return true;
         }
+        hash = hash_type(key, 1);
+        uint32_t seed = 0;
         do {
-            uint32_t index = hash_type(key, ++seed) & (capacity - 1);
+            uint32_t index = (hash + seed++) & (capacity - 1);
             node = &mList[index];
             if (!node->used || node->key == key) {
                 *foundIndex = index;
@@ -156,21 +151,22 @@ private:
     }
 
     inline bool linearProbeGet(const K &key, uint32_t *foundIndex, uint32_t capacity) const {
-        uint32_t seed = 0;
-        uint32_t index0 = hash_type<K>(key, seed) & (capacity - 1);
-        Node *node = &mProbes[index0];
+        uint32_t hash = hash_type<K>(key, 0) & (capacity - 1);
+        Node *node = &mProbes[hash];
         if (node->used && node->key == key) {
-            *foundIndex = index0;
+            *foundIndex = hash;
             return true;
-        }
+        } else if (!node->used) return false;
+        hash = hash_type(key, 1);
+        uint32_t seed = 0;
         do {
-            uint32_t index = hash_type(key, ++seed) & (capacity - 1);
+            uint32_t index = (hash + seed++) & (capacity - 1);
             node = &mProbes[index];
             if (node->used && node->key == key) {
                 *foundIndex = index;
                 return true;
-            }
-        } while (seed < capacity);
+            } else if (!node->used) return false;
+        } while (seed < mCapacity);
         return false;
     }
 

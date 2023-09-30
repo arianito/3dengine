@@ -17,15 +17,15 @@ struct MyHash {
 class GraphLevel : public CLevel {
 
 #if use_c
-    std::unordered_map<Vec3, float, MyHash> map;
+    std::unordered_map<Vec3, float, MyHash> map{4096};
 #else
-    TFlatMap<Vec3, float, SlabMemory> *map;
+    TFlatMap<Vec3, float > *map;
 #endif
 
     void Create() override {
 #if use_c
 #else
-        map = AllocNew<SlabMemory, TFlatMap<Vec3, float, SlabMemory>>();
+        map = AllocNew<BuddyMemory, TFlatMap<Vec3, float>>(4096, false);
 #endif
     }
 
@@ -40,19 +40,24 @@ class GraphLevel : public CLevel {
         }
 
         Ray ray = camera_screenToWorld(input->position);
-        Vec3 world = vec3_intersectPlane(ray.origin, ray.origin + ray.direction, vec3_zero, vec3_up);
-        world.z = 0;
-        world = vec3_snap(world, 10);
-
-        if (input_keydown(KEY_SPACE)) {
-            p2slab_fit(alloc->slab);
-        }
+        Vec3 world = ray.origin + ray.direction * 0.1f;
 
         if (input_mousepress(MOUSE_LEFT)) {
 #if use_c
-            map.emplace(world, randf() * 10.0f);
+
+            for(int i = 0; i < 10; i++) {
+                if(map.size() < 4096) {
+                    world += vec3_rand(100, 100, 100);
+                    world = vec3_snap(world, 10);
+                    map.emplace(world, randf() * 20.0f);
+                }
+            }
 #else
-            map->Set(world, randf() * 10.0f);
+            for(int i = 0; i < 10; i++) {
+                world += vec3_rand(100,100,100);
+                world = vec3_snap(world, 10);
+                map->Set(world, randf() * 20.0f);
+            }
 #endif
         }
         draw_cubef(world, 10.0f, color_yellow);
@@ -86,7 +91,7 @@ class GraphLevel : public CLevel {
     void Destroy() override {
 #if use_c
 #else
-        Free<SlabMemory>(&map);
+        Free<BuddyMemory>(&map);
 #endif
     }
 };

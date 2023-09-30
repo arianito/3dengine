@@ -39,13 +39,16 @@ int main(int argc, const char *argv[]) {
 
     {
         GameWindow window;
-
         window.Create();
-
+        bool displayGrid = true;
         while (game_loop()) {
             input_update();
             editor_update();
-            grid_render();
+            if(displayGrid)
+                grid_render();
+
+            if(input_keydown(KEY_G))
+                displayGrid ^= 1;
 
             window.Update();
 

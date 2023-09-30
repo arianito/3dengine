@@ -99,7 +99,7 @@ static inline Ray camera_screenToWorld(Vec2 s) {
     }
 
     Ray r;
-    r.origin = rsw;
-    r.direction = vec3_norm(vec3_sub(rew, rsw));
+    r.origin = rew;
+    r.direction = vec3_sub(rsw, rew);
     return r;
 }

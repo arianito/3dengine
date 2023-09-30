@@ -6,11 +6,11 @@
 #include "engine/TVector.hpp"
 
 #define XXH_INLINE_ALL
+
 #include "xxhash.h"
 
 template<typename T>
 inline static uint32_t hash_type(const T &key, uint32_t seed);
-
 
 template<>
 inline uint32_t hash_type<TStringView>(const TStringView &key, uint32_t seed) {
@@ -51,6 +51,15 @@ inline uint32_t hash_type<unsigned int>(const unsigned int &key, uint32_t seed) 
         char bytes[4];
     } converter{key};
     return XXH32(converter.bytes, 4, seed);
+}
+
+template<>
+inline uint32_t hash_type<unsigned long long>(const unsigned long long &key, uint32_t seed) {
+    union {
+        unsigned long long value;
+        char bytes[8];
+    } converter{key};
+    return XXH32(converter.bytes, 8, seed);
 }
 
 template<>

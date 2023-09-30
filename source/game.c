@@ -75,7 +75,7 @@ void game_init() {
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
         return;
 
-    glfwSwapInterval(0);
+    glfwSwapInterval(1);
     glfwSetTime(0);
 
     GLint w, h;
