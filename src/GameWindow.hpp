@@ -5,10 +5,9 @@
 
 #include "engine/CLevelManager.hpp"
 
-#include "./StartLevel.hpp"
-#include "./BuddyLevel.hpp"
-#include "./TempLevel.hpp"
+#include "./GraphLevel.hpp"
 #include "./MeshLevel.hpp"
+#include "./TestLevel.hpp"
 
 enum {
     nSamples = 200
@@ -19,34 +18,30 @@ struct GameWindow {
     bool debug = true;
 
     inline void Create() {
-        manager.Add<StartLevel>();
-        manager.Add<BuddyLevel>();
-        manager.Add<TempLevel>();
+        manager.Add<GraphLevel>();
+        manager.Add<TestLevel>();
         manager.Add<MeshLevel>();
 
-        manager.Load<BuddyLevel>();
+        manager.Load<GraphLevel>();
     }
 
     inline void Update() {
         manager.Update();
 
         if (input_keydown(KEY_0)) {
-            manager.Load<StartLevel>();
+            manager.Load<GraphLevel>();
         }
         if (input_keydown(KEY_9)) {
-            manager.Load<TempLevel>();
+            manager.Load<TestLevel>();
         }
         if (input_keydown(KEY_8)) {
-            manager.Load<BuddyLevel>();
-        }
-        if (input_keydown(KEY_7)) {
             manager.Load<MeshLevel>();
         }
+
 
         if (input_keydown(KEY_TAB)) {
             debug ^= 1;
         }
-
         if (debug) {
             debug_origin(vec2(0, 1));
             debug_color(color_yellow);
@@ -67,7 +62,5 @@ struct GameWindow {
                           alloc->stack->usage, alloc->stack->total
             );
         }
-
-
     }
 };

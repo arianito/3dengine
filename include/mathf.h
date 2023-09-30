@@ -1056,9 +1056,9 @@ static inline float vec3_cosAngle2d(Vec3 a, Vec3 b) {
     return vec3_dot(a, b);
 }
 
-static inline Vec3 vec3_intersectPlane(Vec3 a, Vec3 b, Vec3 o, Vec3 n) {
-    b = vec3_sub(b, a);
-    return vec3_add(a, vec3_mulf(b, vec3_dot(vec3_sub(o, a), n) / vec3_dot(b, n)));
+static inline Vec3 vec3_intersectPlane(Vec3 start, Vec3 end, Vec3 planeOrigin, Vec3 planeNormal) {
+    end = vec3_sub(end, start);
+    return vec3_add(start, vec3_mulf(end, vec3_dot(vec3_sub(planeOrigin, start), planeNormal) / vec3_dot(end, planeNormal)));
 }
 
 // plane

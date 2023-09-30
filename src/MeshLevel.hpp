@@ -99,7 +99,7 @@ class MeshLevel : public CLevel {
 
             float t = gameTime->time * 30.0f;
 
-            Vec3 lightPos = vec3(cosd(t) * 500.0f, sind(t) * 500.0f, 200.0f);
+            Vec3 lightPos = camera->position;//vec3(cosd(t) * 500.0f, sind(t) * 500.0f, 200.0f);
 
             Rot lightRot = rot_lookAt(lightPos, vec3_zero, vec3_one);
             float zoom = camera->zoom;
@@ -126,7 +126,7 @@ class MeshLevel : public CLevel {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             //
             shader_begin(phongShader);
-            shader_vec3(phongShader, "lightPos", &lightPos);
+            shader_vec3(phongShader, "lightPos", &camera->position);
             shader_vec3(phongShader, "lightColor", &lightColor);
             shader_vec3(phongShader, "objectColor", &objectColor);
             shader_vec3(phongShader, "viewPos", &camera->position);

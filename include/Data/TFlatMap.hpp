@@ -8,22 +8,31 @@ extern "C" {
 #include "mem/utils.h"
 }
 
+#include "data/hash.hpp"
 #include "data/TString.hpp"
 #include "engine/Memory.hpp"
 
 template<typename K, typename V, class TAlloc = FreeListMemory>
 class TFlatMap {
 private:
-    struct Node {
+    struct __attribute__((aligned(32))) Node {
         K key;
         V value;
         bool used;
     };
+private:
+    Node *mProbes{nullptr};
+    uint32_t mCapacity{8};
+    uint32_t mLength{0};
+    bool mAllowExpansion{true};
 
 public:
-    explicit inline TFlatMap() : TFlatMap(8) {}
+    explicit inline TFlatMap() : TFlatMap(8, true) {}
 
-    explicit inline TFlatMap(int capacity) : mCapacity(capacity) {
+    explicit inline TFlatMap(uint32_t capacity) : TFlatMap(capacity, true) {}
+
+    explicit inline TFlatMap(uint32_t capacity, bool expansion) : mCapacity(expansion ? (capacity) : (capacity << 1)), mAllowExpansion(expansion) {
+        assert(!(capacity & (capacity - 1)) && "TFlatMap: Capacity should be power of 2");
         mProbes = Alloc<TAlloc, Node, true>(mCapacity);
     }
 
@@ -33,23 +42,19 @@ public:
         Free<TAlloc>(&mProbes);
     }
 
-    inline void Reserve(int newCapacity) {
+    inline void Reserve(uint32_t newCapacity) {
         if (newCapacity < (mLength << 1))
             return;
-
         Node *newList = Alloc<TAlloc, Node, true>(newCapacity);
-
-        for (int i = 0; i < mCapacity; i++) {
+        for (uint32_t i = 0; i < mCapacity; i++) {
             if (mProbes[i].used) {
-                Node &probe = mProbes[i];
-                unsigned int index = hash(probe.key, newCapacity);
-                while (newList[index].used && newList[index].key != probe.key) {
-                    index = (index + 1) % newCapacity;
-                }
+                Node *probe = &mProbes[i];
+                uint32_t index;
+                linearProbeSet(newList, probe->key, &index, newCapacity);
                 Node &newNode = newList[index];
-                newNode.key = probe.key;
-                newNode.value = probe.value;
-                newNode.used = probe.used;
+                newNode.key = probe->key;
+                newNode.value = probe->value;
+                newNode.used = probe->used;
             }
         }
 
@@ -63,15 +68,16 @@ public:
     }
 
     inline bool Set(const K &key, const V &value) {
-        expand();
-        int index = linearProbeSet(key);
-        if (index < 0)
+        if (mAllowExpansion) expand();
+        uint32_t index;
+        if (!linearProbeSet(mProbes, key, &index, mCapacity))
             return false;
-
         auto &node = mProbes[index];
 
-        if (!node.used)
-            mLength++;
+        if (!mAllowExpansion && ((mLength << 1) > mCapacity - 1) && !node.used)
+            return false;
+
+        if (!node.used) mLength++;
 
         node.key = key;
         node.value = value;
@@ -79,36 +85,41 @@ public:
         return true;
     }
 
+    inline const V &Get(const K &key) const {
+        uint32_t index;
+        bool found = linearProbeGet(key, &index, mCapacity);
+        assert(found && "TFlatMap: not found");
+        Node *probe = &mProbes[index];
+        return probe->value;
+    }
+
+    inline const V &operator[](const K &key) const {
+        return Get(key);
+    }
+
+
     [[maybe_unused]] inline void Remove(const K &key) {
-        int index = linearProbeGet(key);
-        assert(index >= 0 && "ProbeHashTable: key not found");
+        uint32_t index;
+        if (!linearProbeGet(key, &index, mCapacity)) return;
         auto &probe = mProbes[index];
-        if (probe.used && probe.key == key) {
+        if (probe.used) {
             probe.used = false;
             mLength--;
         }
     }
 
     inline bool Contains(const K &key) {
-        int index = linearProbeGet(key);
-        Node &probe = mProbes[index];
-        return index >= 0 && probe.used;
-    }
-
-    inline V &operator[](const K &key) {
-        int index = linearProbeGet(key);
-        Node &probe = mProbes[index];
-        assert((index >= 0 && probe.used) && "ProbeHashTable: not found");
-        return probe.value;
+        uint32_t index;
+        return linearProbeGet(key, &index, mCapacity);
     }
 
     [[maybe_unused]] [[nodiscard]]
-    inline const int &Capacity() const {
-        return mCapacity;
+    inline uint32_t Capacity() {
+        return mAllowExpansion ? mCapacity : (mCapacity >> 1);
     }
 
     [[maybe_unused]] [[nodiscard]]
-    inline const int &Length() const {
+    inline uint32_t Length() {
         return mLength;
     }
 
@@ -118,76 +129,49 @@ public:
         mLength = 0;
     }
 
-private:
-    static constexpr size_t mPrimeA{492366587};
-    static constexpr size_t mPrimeB{1645333507};
-    static constexpr size_t mPrimeC{6692367337};
-    Node *mProbes{nullptr};
-    int mCapacity{};
-    int mLength{0};
 
 private:
     inline void expand() {
-        float ratio = (float) mLength / mCapacity;
-        if (ratio < 0.5f)
-            return;
+        if (mCapacity > mLength) return;
         Reserve(mCapacity << 1);
     }
 
-    inline unsigned int hash(const K &key, unsigned int size) {
-        unsigned int hsh = 0;
-        if constexpr (std::is_pointer_v<K>) {
-            unsigned int sz = sizeof(*key);
-            if constexpr (sizeof(*key) == 1) {
-                K kw = key;
-                while (*kw != '\0') {
-                    hsh = (hsh << 5) + (*kw++);
-                }
-            } else {
-                const char *kw = ((char *) key);
-                for (int i = 0; i < sz; i++) {
-                    hsh = (hsh << 5) + (*kw++);
-                }
-            }
-        } else if constexpr (std::is_same_v<K, TString<TAlloc>>) {
-            auto keyO = (TString<TAlloc>) key;
-            unsigned int sz = keyO.Length();
-            const char *kw = keyO.Str();
-            for (int i = 0; i < sz; i++) {
-                hsh = (hsh << 5) + (*kw++);
-            }
-        } else {
-            unsigned int sz = sizeof(key);
-            const char *kw = ((char *) (&key));
-            for (int i = 0; i < sz; i++) {
-                hsh = (hsh << 5) + (*kw++);
-            }
+    inline bool linearProbeSet(const Node *mList, const K &key, uint32_t *foundIndex, uint32_t capacity) const {
+        uint32_t seed = 0;
+        uint32_t index0 = hash_type<K>(key, seed) & (capacity - 1);
+        const Node *node = &mList[index0];
+        if (!node->used || node->key == key) {
+            *foundIndex = index0;
+            return true;
         }
-        return ((mPrimeA * hsh + mPrimeB) % mPrimeC) & (size - 1);
+        do {
+            uint32_t index = hash_type(key, ++seed) & (capacity - 1);
+            node = &mList[index];
+            if (!node->used || node->key == key) {
+                *foundIndex = index;
+                return true;
+            }
+        } while (seed < capacity);
+        return false;
     }
 
-    inline int linearProbeSet(const K &key) {
-        int index = hash(key, mCapacity);
-        int i = 0;
-        while (mProbes[index].used && mProbes[index].key != key && i <= mCapacity) {
-            index = (index + 1) & (mCapacity - 1);
-            i++;
+    inline bool linearProbeGet(const K &key, uint32_t *foundIndex, uint32_t capacity) const {
+        uint32_t seed = 0;
+        uint32_t index0 = hash_type<K>(key, seed) & (capacity - 1);
+        Node *node = &mProbes[index0];
+        if (node->used && node->key == key) {
+            *foundIndex = index0;
+            return true;
         }
-        if (mProbes[index].key != key && mProbes[index].used)
-            return -1;
-        return index;
-    }
-
-    inline int linearProbeGet(const K &key) {
-        int index = hash(key, mCapacity);
-        int i = 0;
-        while (mProbes[index].key != key && i <= mCapacity) {
-            index = (index + 1) & (mCapacity - 1);
-            i++;
-        }
-        if (mProbes[index].key != key)
-            return -1;
-        return index;
+        do {
+            uint32_t index = hash_type(key, ++seed) & (capacity - 1);
+            node = &mProbes[index];
+            if (node->used && node->key == key) {
+                *foundIndex = index;
+                return true;
+            }
+        } while (seed < capacity);
+        return false;
     }
 
 public:

@@ -18,7 +18,7 @@ extern "C" {
 #define TVector_Down (TVector(0, 0, -1))
 
 
-struct __attribute__((aligned(16))) TVector {
+struct __attribute__((aligned(16), packed)) TVector {
     float X{0};
     float Y{0};
     float Z{0};
@@ -32,6 +32,7 @@ struct __attribute__((aligned(16))) TVector {
     explicit inline TVector(const float &x, const float &y, const float &z) : X(x), Y(y), Z(z) {}
 
     explicit inline TVector(const Vec3 &cVector) : X(cVector.x), Y(cVector.y), Z(cVector.z) {}
+
     explicit inline TVector(Vec3 &&cVector) : X(cVector.x), Y(cVector.y), Z(cVector.z) {}
 
     // operator equal
@@ -210,11 +211,11 @@ struct __attribute__((aligned(16))) TVector {
     inline float &operator[](int i) {
         assert(i >= 0 && i <= 2 && "TVector: invalid parameter index");
         if (i == 0)
-            return X;
+            return *(&X);
         if (i == 1)
-            return Y;
+            return *(&Y);
         if (i == 2)
-            return Z;
+            return *(&Z);
     }
 
 
