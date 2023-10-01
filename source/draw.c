@@ -91,10 +91,6 @@ void draw_render() {
         drawData->counter[i] = 0;
     }
 
-    glDisable(GL_DEPTH_TEST);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
     shader_end();
 }
 
@@ -177,15 +173,12 @@ void fill_bbox(BBox bbox, Color c) {
 
     Vertex va;
     va.color = c;
-
-    fill_face(&va, &vertices[1], &vertices[5], &vertices[6], &vertices[2]);
-    fill_face(&va, &vertices[0], &vertices[4], &vertices[7], &vertices[3]);
-
-    fill_face(&va, &vertices[3], &vertices[7], &vertices[6], &vertices[2]);
-    fill_face(&va, &vertices[0], &vertices[4], &vertices[5], &vertices[1]);
-
-    fill_face(&va, &vertices[4], &vertices[5], &vertices[6], &vertices[7]);
     fill_face(&va, &vertices[0], &vertices[1], &vertices[2], &vertices[3]);
+    fill_face(&va, &vertices[7], &vertices[6], &vertices[5], &vertices[4]);
+    fill_face(&va, &vertices[2], &vertices[6], &vertices[7], &vertices[3]);
+    fill_face(&va, &vertices[0], &vertices[4], &vertices[5], &vertices[1]);
+    fill_face(&va, &vertices[1], &vertices[5], &vertices[6], &vertices[2]);
+    fill_face(&va, &vertices[3], &vertices[7], &vertices[4], &vertices[0]);
 }
 
 void draw_cube(Vec3 a, Vec3 s, Color c) {

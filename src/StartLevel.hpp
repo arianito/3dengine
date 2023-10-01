@@ -152,7 +152,7 @@ class StartLevel : public CLevel {
         mDirector->AddComponent<TransformComponent>(entity, vec3_zero, rot_zero);
         mDirector->AddComponent<ShapeComponent>(entity, 0);
         mDirector->AddComponent<MovementComponent>(entity, 50.0f);
-        mDirector->AddComponent<ShooterComponent>(entity, 0.1f, 500.0f);
+        mDirector->AddComponent<ShooterComponent>(entity, 0.005f, 1000.0f);
         mDirector->Commit(entity);
 
         mDirector->Create();

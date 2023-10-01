@@ -75,7 +75,7 @@ void game_init() {
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
         return;
 
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
     glfwSetTime(0);
 
     GLint w, h;
@@ -105,7 +105,6 @@ char game_loop() {
 
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

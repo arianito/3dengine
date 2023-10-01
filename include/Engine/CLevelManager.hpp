@@ -5,7 +5,7 @@
 #include "mem/alloc.h"
 #include "engine/Memory.hpp"
 #include "data/TString.hpp"
-#include "data/TFlatMap.hpp"
+#include "data/TFastMap.hpp"
 
 
 typedef unsigned int CLevelId;
@@ -38,7 +38,7 @@ namespace CLevelInternals {
 template<class TAlloc = FreeListMemory>
 class CLevelManager {
 private:
-    TFlatMap<CLevelId, CLevel *, TAlloc> mLevels;
+    TFastMap<CLevelId, CLevel *, TAlloc> mLevels;
     CLevel *mPreviousLevel = nullptr;
     CLevel *mCurrentLevel = nullptr;
 public:
@@ -46,7 +46,7 @@ public:
         if (mCurrentLevel)
             mCurrentLevel->Destroy();
         for (const auto &level: mLevels) {
-            Free<FreeListMemory>(&level.second);
+            Free<FreeListMemory>(&level->value);
         }
     }
 
@@ -62,8 +62,9 @@ public:
     template<typename T>
     inline void Load() {
         auto id = CLevelInternals::GetLevelTypeId<T>();
-        if (!mLevels.Contains(id)) return;
-        mCurrentLevel = mLevels[id];
+        const auto level = mLevels.Get(id);
+        if (level != nullptr)
+            mCurrentLevel = *level;
     }
 
     inline void Update() {

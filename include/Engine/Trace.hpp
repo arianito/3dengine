@@ -13,7 +13,8 @@ auto operator<<(std::ostream &os, const T &t) -> decltype(t.Stream(os), os) {
 
 template<typename... Args>
 static inline void LTrace(Args const &... args) {
-    int unpack[]{0, (std::cout << args << std::endl, 0)...};
+    int unpack[]{0, (std::cout << args << "\t", 0)...};
+    std::cout << std::endl;
 }
 
 

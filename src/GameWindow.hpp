@@ -6,9 +6,7 @@
 #include "engine/CLevelManager.hpp"
 
 #include "./GraphLevel.hpp"
-#include "./MeshLevel.hpp"
-#include "./TestLevel.hpp"
-#include "./TempLevel.hpp"
+#include "./StartLevel.hpp"
 
 enum {
     nSamples = 200
@@ -20,9 +18,7 @@ struct GameWindow {
 
     inline void Create() {
         manager.Add<GraphLevel>();
-        manager.Add<TestLevel>();
-        manager.Add<MeshLevel>();
-        manager.Add<TempLevel>();
+        manager.Add<StartLevel>();
 
         manager.Load<GraphLevel>();
     }
@@ -34,16 +30,8 @@ struct GameWindow {
             manager.Load<GraphLevel>();
         }
         if (input_keydown(KEY_9)) {
-            manager.Load<TestLevel>();
+            manager.Load<StartLevel>();
         }
-        if (input_keydown(KEY_8)) {
-            manager.Load<MeshLevel>();
-        }
-        if (input_keydown(KEY_7)) {
-            manager.Load<TempLevel>();
-        }
-
-
 
         if (input_keydown(KEY_TAB)) {
             debug ^= 1;
