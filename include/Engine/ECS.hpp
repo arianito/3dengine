@@ -104,11 +104,12 @@ public:
     template<class T>
     inline T *GetComponent() {
         CComponentId id = ECSInternals::GetComponentTypeId<TAlloc, T>();
-        if (!mComponents.Contains(id)) {
+        const auto &component = mComponents.Get(id);
+        if (component == nullptr) {
             printf("Entity: Component %s not found.\n", typeid(T).name());
             return nullptr;
         }
-        return (T *) mComponents[id];
+        return (T *) (*component);
     }
 
     template<class T>
@@ -117,11 +118,10 @@ public:
         return mComponents.Contains(id);
     }
 
-    [[nodiscard]]
-    inline ComponentMap &Components() { return mComponents; }
+    inline ComponentMap *Components() { return &mComponents; }
 
     [[nodiscard]]
-    inline CEntityId Id() const { return mEntityId; }
+    inline const CEntityId &Id() const { return mEntityId; }
 };
 
 template<class TAlloc>
@@ -129,9 +129,6 @@ class CComponent {
     friend class CDirector<TAlloc>;
 
 public:
-    CEntityId mEntityId{0};
-    CEntity<TAlloc> *mEntity{nullptr};
-    CDirector<TAlloc> *mDirector{nullptr};
 
     explicit inline CComponent() = default;
 
@@ -150,7 +147,18 @@ public:
     template<class T>
     inline bool HasComponent() { return mEntity->template HasComponent<T>(); }
 
+    [[nodiscard]]
+    inline const CEntityId &EntityId() const { return mEntityId; }
+
+    inline const CEntity<TAlloc> *Entity() { return mEntity; }
+
+    inline const CDirector<TAlloc> *Director() { return mDirector; }
+
 protected:
+    CEntityId mEntityId{0};
+    CEntity<TAlloc> *mEntity{nullptr};
+    CDirector<TAlloc> *mDirector{nullptr};
+
     inline void SetEntity(CDirector<TAlloc> *director, const CEntityId &id, CEntity<TAlloc> *entity) {
         mEntityId = id;
         mEntity = entity;
@@ -172,7 +180,6 @@ public:
 
     virtual void Update() {}
 
-
 protected:
     friend class CDirector<TAlloc>;
 
@@ -180,11 +187,12 @@ protected:
     using EntityPtrStack = TArrayStack<CEntity<TAlloc> *, TAlloc>;
     using EntityIndexMap = TFastMap<CEntityId, int, TAlloc>;
 
+    CDirector<TAlloc> *mDirector{nullptr};
     EntityIdStack mDestroyStack;
     EntityPtrStack mCreateStack;
     EntityIndexMap mEntityIndex;
-    CDirector<TAlloc> *mDirector{nullptr};
     bool mShouldUpdate = false;
+    bool mLocked = false;
 
     virtual void Process() = 0;
 
@@ -229,6 +237,11 @@ protected:
     inline void Fit() override {
         CBaseSystem<TAlloc>::Fit();
         mComponents.Fit();
+    }
+
+    inline void SetTick(bool shouldUpdate) {
+        this->mShouldUpdate = shouldUpdate;
+        this->mLocked = !shouldUpdate;
     }
 
 public:
@@ -302,20 +315,21 @@ private:
     }
 
     inline void performDelete(CEntityId entityId) {
-        if (!mEntities.Contains(entityId))
+        const auto &entity = mEntities.Get(entityId);
+
+        if (entity == nullptr)
             return;
+
         for (const auto &p: mComponents) {
             CComponentId componentId = p->key;
-            const auto &entityComponents = p->value;
-            if (entityComponents->Contains(entityId)) {
-                const auto &component = entityComponents->Get(entityId);
+            const auto &component = p->value->Get(entityId);
+            if (component != nullptr) {
                 (*component)->~CComponent<TAlloc>();
                 auto slab = getComponentSlab(componentId);
                 slab_free(slab, (void **) component);
-                entityComponents->Remove(entityId);
+                p->value->Remove(entityId);
             }
         }
-        CEntity<TAlloc> **entity = mEntities.Get(entityId);
         (*entity)->~CEntity<TAlloc>();
         slab_free(mEntitySlab, (void **) entity);
         mEntities.Remove(entityId);
@@ -357,7 +371,6 @@ public:
     inline void DestroyEntity(CEntityId entityId) {
         if (!mEntities.Contains(entityId))
             return;
-        auto entity = mEntities.Get(entityId);
 
         for (auto system: mSystems)
             system->value->OnEntityDestroyed(entityId);
@@ -369,7 +382,7 @@ public:
     inline EntityComponentMap *Query() {
         CComponentId id = ECSInternals::GetComponentTypeId<TAlloc, T>();
         const auto &found = mComponents.Get(id);
-        if (found != nullptr) return nullptr;
+        if (found == nullptr) return nullptr;
         return (*found);
     }
 
@@ -382,7 +395,9 @@ public:
         const auto &found = mComponents.Get(id);
         if (found != nullptr) {
             entityComponents = (*found);
-            if (entityComponents->Contains(entityId)) { return (T *) ((*entityComponents)[entityId]); }
+            const auto &component = entityComponents->Get(entityId);
+            if (component != nullptr)
+                return (T *) (*component);
         } else {
             entityComponents = AllocNew<TAlloc, EntityComponentMap>();
             mComponents.Set(id, entityComponents);
@@ -420,7 +435,8 @@ public:
     template<class T, class... Args>
     inline T *AddSystem(Args &&...args) {
         CSystemId id = ECSInternals::GetSystemTypeId<TAlloc, T>();
-        if (mSystems.Contains(id)) return (T *) (mSystems[id]);
+        const auto &system = mSystems.Get(id);
+        if (system != nullptr) return (T *) (*system);
         T *sys = new(slab_alloc(getSystemSlab<T>())) T(std::forward<Args>(args)...);
         sys->mDirector = this;
         mSystems.Set(id, sys);
@@ -464,11 +480,11 @@ inline void CSystem<TAlloc, Types...>::Process() {
                 mComponents[*index] = std::move(mComponents[entityToMoveIndex]);
                 mComponents.Pop();
 
-                const auto &movedEntityId = movedEntity->mEntityId;
+                const auto &movedEntityId = movedEntity->EntityId();
                 const auto &movedEntityIndex = this->mEntityIndex.Get(movedEntityId);
                 if (movedEntityIndex != nullptr) {
                     *movedEntityIndex = *index;
-                    this->mShouldUpdate = mComponents.Length() > 0;
+                    this->mShouldUpdate = mComponents.Length() > 0 && !this->mLocked;
                 }
             }
             this->mEntityIndex.Remove(entityId);
@@ -479,13 +495,13 @@ inline void CSystem<TAlloc, Types...>::Process() {
         auto entity = this->mCreateStack.Pop();
         CTuple tuple;
         int matches = 0;
-        for (const auto& component: entity->Components()) {
+        for (const auto &component: *(entity->Components())) {
             if (hasComponent<0, Types...>(component->key, component->value, tuple)) {
                 ++matches;
                 if (matches == sizeof...(Types)) {
                     mComponents.Add(std::move(tuple));
                     this->mEntityIndex.Set(entity->Id(), mComponents.Length() - 1);
-                    this->mShouldUpdate = mComponents.Length() > 0;
+                    this->mShouldUpdate = mComponents.Length() > 0 && !this->mLocked;
                     break;
                 }
             }

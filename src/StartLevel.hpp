@@ -12,106 +12,120 @@ extern "C" {
 
 class CustomStartLevelAllocator {
 public:
-    static FreeListMemory *buddy;
+    static FreeListMemory *memory;
 
     inline static void *Alloc(size_t size, unsigned int alignment) {
-        return freelist_alloc(buddy, size, alignment);
+        return freelist_alloc(memory, size, alignment);
     }
 
     inline static void Free(void **ptr) {
-        freelist_free(buddy, ptr);
+        freelist_free(memory, ptr);
     }
 };
 
-FreeListMemory *CustomStartLevelAllocator::buddy = nullptr;
+FreeListMemory *CustomStartLevelAllocator::memory = nullptr;
 
 class StartLevel : public CLevel {
     using TAlloc = CustomStartLevelAllocator;
 
-    struct MovementComponent : public CComponent<TAlloc> {
-        float mSpeed;
+    struct TransformComponent : public CComponent<TAlloc> {
+        Vec3 position;
+        Rot rotation;
 
-        explicit inline MovementComponent(float speed) : mSpeed(speed) {}
+        explicit inline TransformComponent(Vec3 pos, Rot rot) : position(pos), rotation(rot) {}
     };
 
-    struct ShooterComponent : public CComponent<TAlloc> {
-        float mRate{0.05f};
-        float mSpeed{100.0f};
-        float mLastShoot{0};
+    struct CanonComponent : public CComponent<TAlloc> {
+        float fov{45};
+        float speed{200};
+        float shootRate{0.05f};
+        float bulletSpeed{100.0f};
+        float lastSuccessfulShoot{0};
 
-        ShooterComponent(float rate, float speed) : mRate(rate), mSpeed(speed) {}
+        explicit inline CanonComponent(float fov, float speed, float rate, float bulletSpeed) : fov(fov), speed(speed), shootRate(rate),
+                                                                                                bulletSpeed(bulletSpeed) {}
+    };
+
+    struct MovementComponent : public CComponent<TAlloc> {
+        float speed;
+
+        explicit inline MovementComponent(float speed) : speed(speed) {}
+    };
+
+    struct ColliderComponent : public CComponent<TAlloc> {
+        float radius{10.0f};
+
+        explicit inline ColliderComponent(float radius) : radius(radius) {}
+    };
+
+    struct PlayerComponent : public CComponent<TAlloc> {
+        float shootRate{0.05f};
+        float bulletSpeed{100.0f};
+        float lastSuccessfulShoot{0};
+
+        PlayerComponent(float rate, float bulletSpeed) : shootRate(rate), bulletSpeed(bulletSpeed) {}
     };
 
     struct ShapeComponent : public CComponent<TAlloc> {
-        int mType = 0;
+        int shapeType = 0;
 
-        explicit inline ShapeComponent(int type) : mType(type) {}
+        explicit inline ShapeComponent(int type) : shapeType(type) {}
     };
 
     struct ProjectileComponent : public CComponent<TAlloc> {
-        Vec3 mInitialPosition;
-        float mSpeed;
+        Vec3 initialPosition;
+        float speed;
 
-        explicit inline ProjectileComponent(Vec3 pos, float speed) : mInitialPosition(pos), mSpeed(speed) {}
+        explicit inline ProjectileComponent(Vec3 pos, float speed) : initialPosition(pos), speed(speed) {}
     };
 
-    struct TransformComponent : public CComponent<TAlloc> {
-        Vec3 mPosition;
-        Rot mRotation;
-
-        explicit inline TransformComponent(Vec3 pos, Rot rot) : mPosition(pos), mRotation(rot) {}
-    };
 
     struct ProjectileSystem : public CSystem<TAlloc, ProjectileComponent, TransformComponent> {
         void Update() override {
             for (auto &compTuple: Components()) {
-                auto pTransform = Get<TransformComponent>(compTuple);
-                auto pProjectile = Get<ProjectileComponent>(compTuple);
-
-                Vec3 fwd = rot_forward(pTransform->mRotation);
-                fwd = vec3_mulf(fwd, pProjectile->mSpeed * gameTime->deltaTime);
-                pTransform->mPosition = vec3_add(pTransform->mPosition, fwd);
-                auto d = vec3_dist(pTransform->mPosition, pProjectile->mInitialPosition);
-                if (d > 1000.0f) {
-                    mDirector->DestroyEntity(pTransform->mEntityId);
-                }
+                auto bulletTransform = Get<TransformComponent>(compTuple);
+                auto projectile = Get<ProjectileComponent>(compTuple);
+                bulletTransform->position += rot_forward(bulletTransform->rotation) * (projectile->speed * gameTime->deltaTime);
+                if (vec3_sqrMag(bulletTransform->position - projectile->initialPosition) > 1000000.0f)
+                    mDirector->DestroyEntity(bulletTransform->EntityId());
             }
         }
     };
 
     struct MovementSystem : public CSystem<TAlloc, MovementComponent, TransformComponent> {
         inline void Update() override {
-            Ray r = camera_screenToWorld(input->position);
-            Vec3 dest = vec3_intersectPlane(r.origin, vec3_add(r.origin, r.direction), vec3_zero, vec3_up);
+            Ray inputRay = camera_screenToWorld(input->position);
+            Vec3 mousePos = vec3_intersectPlane(inputRay.origin, vec3_add(inputRay.origin, inputRay.direction), vec3_zero, vec3_up);
 
+            float yAxis = input_axis(AXIS_HORIZONTAL);
+            float xAxis = input_axis(AXIS_VERTICAL);
 
             for (const auto &bucket: Components()) {
 
-                auto pTransform = std::get<TransformComponent *>(bucket);
-                auto pMovement = std::get<MovementComponent *>(bucket);
+                auto playerTransform = std::get<TransformComponent *>(bucket);
+                auto movement = std::get<MovementComponent *>(bucket);
 
-                Vec3 diff = vec3_norm(vec3_sub(dest, pTransform->mPosition));
-                Vec3 d2 = vec3_sub(dest, vec3_mulf(diff, 40.0f));
-
-                pTransform->mRotation = rot_lookAt(pTransform->mPosition, dest, vec3_up);
-                pTransform->mPosition = vec3_moveTowards(pTransform->mPosition, d2, pMovement->mSpeed * gameTime->deltaTime);
+                Vec3 move{xAxis, yAxis, 0};
+                Rot direction{0, camera->rotation.yaw, 0};
+                playerTransform->position += rot_rotate(direction, move) * gameTime->deltaTime * movement->speed;
+                playerTransform->rotation = rot_lookAt(playerTransform->position, mousePos, vec3_up);
             }
         }
     };
 
-    struct ShooterSystem : public CSystem<TAlloc, ShooterComponent, TransformComponent> {
+    struct ShooterSystem : public CSystem<TAlloc, PlayerComponent, TransformComponent> {
         void Update() override {
             auto down = input_mousepress(MOUSE_LEFT);
             for (auto &components: Components()) {
-                auto pShooter = Get<ShooterComponent>(components);
+                auto pShooter = Get<PlayerComponent>(components);
                 auto pTransform = Get<TransformComponent>(components);
-                if (down && (gameTime->time - pShooter->mLastShoot > pShooter->mRate)) {
+                if (down && (gameTime->time - pShooter->lastSuccessfulShoot > pShooter->shootRate)) {
                     auto entityId = mDirector->CreateEntity();
-                    mDirector->AddComponent<TransformComponent>(entityId, pTransform->mPosition, pTransform->mRotation);
-                    mDirector->AddComponent<ProjectileComponent>(entityId, pTransform->mPosition, pShooter->mSpeed);
-                    mDirector->AddComponent<ShapeComponent>(entityId, 2);
+                    mDirector->AddComponent<TransformComponent>(entityId, pTransform->position, pTransform->rotation);
+                    mDirector->AddComponent<ProjectileComponent>(entityId, pTransform->position, pShooter->bulletSpeed);
+                    mDirector->AddComponent<ShapeComponent>(entityId, 1);
                     mDirector->Commit(entityId);
-                    pShooter->mLastShoot = gameTime->time;
+                    pShooter->lastSuccessfulShoot = gameTime->time;
                 }
             }
         }
@@ -122,17 +136,75 @@ class StartLevel : public CLevel {
             for (const auto &bucket: Components()) {
                 auto pShape = Get<ShapeComponent>(bucket);
                 auto pTransform = Get<TransformComponent>(bucket);
-                if (pShape->mType == 0) {
-                    draw_circleXY(pTransform->mPosition, 10, color_yellow, 12);
-                    draw_ray(ray_scale(ray_fromRot(pTransform->mPosition, pTransform->mRotation), 20), color_yellow);
-                } else if (pShape->mType == 1) {
-                    draw_cubef(pTransform->mPosition, 20, color_red);
-                    draw_ray(ray_scale(ray_fromRot(pTransform->mPosition, pTransform->mRotation), 20), color_red);
-                } else if (pShape->mType == 2) {
-                    draw_cubef(pTransform->mPosition, 5, color_red);
-                    draw_ray(ray_scale(ray_fromRot(pTransform->mPosition, pTransform->mRotation), 20), color_red);
+                if (pShape->shapeType == 0) {
+                    draw_circleXY(pTransform->position, 10, color_yellow, 12);
+                    draw_ray(ray_scale(ray_fromRot(pTransform->position, pTransform->rotation), 20), color_yellow);
+                } else if (pShape->shapeType == 1) {
+                    draw_cubef(pTransform->position, 5, color_red);
+                    draw_ray(ray_scale(ray_fromRot(pTransform->position, pTransform->rotation), 20), color_red);
+                } else if (pShape->shapeType == 2) {
+                    draw_circleXY(pTransform->position, 10, color_blue, 12);
+                    draw_ray(ray_scale(ray_fromRot(pTransform->position, pTransform->rotation), 20), color_blue);
                 }
             }
+        }
+    };
+
+    struct CanonSystem : public CSystem<TAlloc, CanonComponent, TransformComponent> {
+        TransformComponent *playerTransform{};
+        inline void Update() override {
+            if (playerTransform == nullptr) {
+                auto players = mDirector->Query<PlayerComponent>();
+                if (players != nullptr) {
+                    for (const auto &p: *players) {
+                        playerTransform = p->value->GetComponent<TransformComponent>();
+                        break;
+                    }
+                }
+            }
+            float n = (float)Components().Length();
+            float p = 360.0f / n;
+            float r = 0;
+            for (const auto &bucket: Components()) {
+                auto canonTransform = Get<TransformComponent>(bucket);
+                auto canon = Get<CanonComponent>(bucket);
+                if (playerTransform != nullptr) {
+                    Vec3 targetPosition = Vec3{cosd(r), sind(r), 0} * 50 + playerTransform->position - (~(playerTransform->position - canonTransform->position) * 80.0f);
+
+                    canonTransform->rotation = rot_lerp(canonTransform->rotation,
+                                                        rot_lookAt(canonTransform->position, playerTransform->position, vec3_up),
+                                                        10.0f * gameTime->deltaTime);
+
+                    canonTransform->position = vec3_moveTowards(canonTransform->position,
+                                                                targetPosition,
+                                                                canon->speed * gameTime->deltaTime);
+
+
+                    bool canShoot = vec3_sqrMag(canonTransform->position - playerTransform->position) < 40000;
+                    if (canShoot && (gameTime->time - canon->lastSuccessfulShoot > canon->shootRate)) {
+                        auto entityId = mDirector->CreateEntity();
+                        mDirector->AddComponent<TransformComponent>(
+                                entityId,
+                                canonTransform->position,
+                                canonTransform->rotation
+                        );
+                        mDirector->AddComponent<ProjectileComponent>(entityId, canonTransform->position, canon->bulletSpeed);
+                        mDirector->AddComponent<ShapeComponent>(entityId, 1);
+                        mDirector->Commit(entityId);
+                        canon->lastSuccessfulShoot = gameTime->time;
+                    }
+                }
+                r += p;
+            }
+        }
+    };
+
+    struct CollisionSystem : public CSystem<TAlloc, ColliderComponent, TransformComponent> {
+        inline void Update() override {
+            for(const auto& bucket: Components()) {
+
+            }
+
         }
     };
 
@@ -140,20 +212,29 @@ class StartLevel : public CLevel {
 
     inline void Create() override {
 
-        CustomStartLevelAllocator::buddy = make_freelist(16 * MEGABYTES);
+        CustomStartLevelAllocator::memory = make_freelist(16 * MEGABYTES);
         mDirector = AllocNew<TAlloc, CDirector<TAlloc>>();
-
         mDirector->AddSystem<MovementSystem>();
         mDirector->AddSystem<ShooterSystem>();
         mDirector->AddSystem<ProjectileSystem>();
         mDirector->AddSystem<RenderSystem>();
+        mDirector->AddSystem<CanonSystem>();
 
-        auto entity = mDirector->CreateEntity();
-        mDirector->AddComponent<TransformComponent>(entity, vec3_zero, rot_zero);
-        mDirector->AddComponent<ShapeComponent>(entity, 0);
-        mDirector->AddComponent<MovementComponent>(entity, 50.0f);
-        mDirector->AddComponent<ShooterComponent>(entity, 0.005f, 1000.0f);
-        mDirector->Commit(entity);
+
+        auto player = mDirector->CreateEntity();
+        mDirector->AddComponent<TransformComponent>(player, vec3_zero, rot_zero);
+        mDirector->AddComponent<ShapeComponent>(player, 0);
+        mDirector->AddComponent<MovementComponent>(player, 250.0f);
+        mDirector->AddComponent<PlayerComponent>(player, 0.1f, 1000.0f);
+        mDirector->Commit(player);
+        int n = 5;
+        for (int i = -n; i <= n; i++) {
+            auto canon = mDirector->CreateEntity();
+            mDirector->AddComponent<TransformComponent>(canon, Vec3{(float) i * 20.0f, 100, 0}, rot_zero);
+            mDirector->AddComponent<ShapeComponent>(canon, 2);
+            mDirector->AddComponent<CanonComponent>(canon, 45, 100, 0.2f, 500.0f);
+            mDirector->Commit(canon);
+        }
 
         mDirector->Create();
     }
@@ -163,7 +244,7 @@ class StartLevel : public CLevel {
         debug_origin(vec2(1, 1));
         debug_color(color_yellow);
         Vec2 pos = vec2(game->width - 10, game->height - 10);
-        debug_stringf(pos, "temp %d / %d", freelist_usage(CustomStartLevelAllocator::buddy), CustomStartLevelAllocator::buddy->total);
+        debug_stringf(pos, "temp %d / %d", freelist_usage(CustomStartLevelAllocator::memory), CustomStartLevelAllocator::memory->total);
 
         if (input_keydown(KEY_SPACE)) {
             mDirector->Fit();
@@ -172,6 +253,6 @@ class StartLevel : public CLevel {
 
     inline void Destroy() override {
         Free<TAlloc>(&mDirector);
-        freelist_destroy(&CustomStartLevelAllocator::buddy);
+        freelist_destroy(&CustomStartLevelAllocator::memory);
     }
 };

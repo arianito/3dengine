@@ -20,7 +20,7 @@ struct GameWindow {
         manager.Add<GraphLevel>();
         manager.Add<StartLevel>();
 
-        manager.Load<GraphLevel>();
+        manager.Load<StartLevel>();
     }
 
     inline void Update() {

@@ -46,7 +46,6 @@ inline static Vec3 &operator+=(Vec3 &current, const float &other) {
 }
 
 // operator (-)
-
 inline static Vec3 operator-(const Vec3 &a) {
     return Vec3{-a.x, -a.y, -a.z};
 }
@@ -183,8 +182,186 @@ inline static bool operator!=(const float &a, const Vec3 &b) {
 inline static bool operator!=(const Vec3 &a, const float &b) {
     return !(a == b);
 }
+
+inline static bool operator!(const Vec3 &a) {
+    return vec3_near0(a);
+}
 //
 
 inline static Vec3 operator~(const Vec3 &a) {
     return vec3_norm(a);
+}
+
+// -------------------------------------------------------
+
+
+
+
+// vec3
+// operator (+)
+
+inline static Rot operator+(const Rot &a) {
+    return Rot{fabs(a.pitch), fabs(a.yaw), fabs(a.roll)};
+}
+
+inline static Rot operator+(const Rot &a, const Rot &b) {
+    return Rot{a.pitch + b.pitch, a.yaw + b.yaw, a.roll + b.roll};
+}
+
+inline static Rot operator+(const Rot &a, const float &b) {
+    return Rot{a.pitch + b, a.yaw + b, a.roll + b};
+}
+
+inline static Rot operator+(const float &a, const Rot &b) {
+    return Rot{a + b.pitch, a + b.yaw, a + b.roll};
+}
+
+inline static Rot &operator+=(Rot &current, const Rot &other) {
+    current.pitch += other.pitch;
+    current.yaw += other.yaw;
+    current.roll += other.roll;
+    return current;
+}
+
+inline static Rot &operator+=(Rot &current, const float &other) {
+    current.pitch += other;
+    current.yaw += other;
+    current.roll += other;
+    return current;
+}
+
+// operator (-)
+inline static Rot operator-(const Rot &a) {
+    return Rot{-a.pitch, -a.yaw, -a.roll};
+}
+
+inline static Rot operator-(const Rot &a, const Rot &b) {
+    return Rot{a.pitch - b.pitch, a.yaw - b.yaw, a.roll - b.roll};
+}
+
+inline static Rot operator-(const Rot &a, const float &b) {
+    return Rot{a.pitch - b, a.yaw - b, a.roll - b};
+}
+
+inline static Rot operator-(const float &a, const Rot &b) {
+    return Rot{a - b.pitch, a - b.yaw, a - b.roll};
+}
+
+inline static Rot &operator-=(Rot &current, const Rot &other) {
+    current.pitch -= other.pitch;
+    current.yaw -= other.yaw;
+    current.roll -= other.roll;
+    return current;
+}
+
+inline static Rot &operator-=(Rot &current, const float &other) {
+    current.pitch -= other;
+    current.yaw -= other;
+    current.roll -= other;
+    return current;
+}
+
+// operator (*)
+
+inline static Rot operator*(const Rot &a, const Rot &b) {
+    return Rot{a.pitch * b.pitch, a.yaw * b.yaw, a.roll * b.roll};
+}
+
+inline static Rot operator*(const Rot &a, const float &b) {
+    return Rot{a.pitch * b, a.yaw * b, a.roll * b};
+}
+
+inline static Rot operator*(const float &a, const Rot &b) {
+    return Rot{a * b.pitch, a * b.yaw, a * b.roll};
+}
+
+inline static Rot &operator*=(Rot &current, const Rot &other) {
+    current.pitch *= other.pitch;
+    current.yaw *= other.yaw;
+    current.roll *= other.roll;
+    return current;
+}
+
+inline static Rot &operator*=(Rot &current, const float &other) {
+    current.pitch *= other;
+    current.yaw *= other;
+    current.roll *= other;
+    return current;
+}
+
+// operator (/)
+
+inline static Rot operator/(const Rot &a, const Rot &b) {
+    return Rot{
+            b.pitch == 0 ? 0 : a.pitch / b.pitch,
+            b.yaw == 0 ? 0 : a.yaw / b.yaw,
+            b.roll == 0 ? 0 : a.roll / b.roll
+    };
+}
+
+inline static Rot operator/(const Rot &a, const float &b) {
+    if (b == 0) return Rot{0, 0, 0};
+    return Rot{a.pitch / b, a.yaw / b, a.roll / b};
+}
+
+inline static Rot operator/(const float &a, const Rot &b) {
+    return Rot{
+            b.pitch == 0 ? 0 : a / b.pitch,
+            b.yaw == 0 ? 0 : a / b.yaw,
+            b.roll == 0 ? 0 : a / b.roll
+    };
+}
+
+inline static Rot &operator/=(Rot &current, const Rot &other) {
+    current.pitch = other.pitch == 0 ? 0 : current.pitch / other.pitch;
+    current.yaw = other.yaw == 0 ? 0 : current.yaw / other.yaw;
+    current.roll = other.roll == 0 ? 0 : current.roll / other.roll;
+    return current;
+}
+
+inline static Rot &operator/=(Rot &current, const float &other) {
+    if (other == 0) {
+        current.pitch = 0;
+        current.yaw = 0;
+        current.roll = 0;
+        return current;
+    }
+    current.pitch /= other;
+    current.yaw /= other;
+    current.roll /= other;
+    return current;
+}
+
+// a == b
+inline static bool operator==(const Rot &a, const Rot &b) {
+    return rot_nearEq(a, b);
+}
+
+inline static bool operator==(const float &a, const Rot &b) {
+    return nearEq(a, b.pitch) && nearEq(a, b.yaw) && nearEq(a, b.roll);
+}
+
+inline static bool operator==(const Rot &a, const float &b) {
+    return nearEq(a.pitch, b) && nearEq(a.yaw, b) && nearEq(a.roll, b);
+}
+
+// a != b
+inline static bool operator!=(const Rot &a, const Rot &b) {
+    return !(a == b);
+}
+
+inline static bool operator!=(const float &a, const Rot &b) {
+    return !(a == b);
+}
+
+inline static bool operator!=(const Rot &a, const float &b) {
+    return !(a == b);
+}
+
+inline static bool operator!(const Rot &a) {
+    return rot_near0(a);
+}
+
+inline static Rot operator~(const Rot &a) {
+    return rot_norm(a);
 }

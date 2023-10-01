@@ -2,6 +2,21 @@
 
 #include <stddef.h>
 
+#define PRINT_BITS(x)                                             \
+  do {                                                            \
+    typeof(x) a__ = (x);                                          \
+    char *p__ = (char *)&a__ + sizeof(x) - 1;                     \
+    size_t bytes__ = sizeof(x);                                   \
+    printf(#x ": ");                                              \
+    while (bytes__--) {                                           \
+      char bits__ = 8;                                            \
+      while (bits__--) putchar(*p__ & (1 << bits__) ? '1' : '0'); \
+      putchar('|');                                               \
+      p__--;                                                      \
+    }                                                             \
+    putchar('\n');                                                \
+  } while (0)
+
 #define MODULO(address, alignment) (address & (alignment - 1UL))
 #define NEXTPOW2(num) ((num < 8) ? 8 : ((num | (num >> 1) | (num >> 2) | (num >> 4) | (num >> 8) | (num >> 16)) + 1))
 #define PREVPOW2(num) ((num <= 2) ? 2 : (((num | (num >> 1) | (num >> 2) | (num >> 4) | (num >> 8) | (num >> 16)) >> 1) + 1))
@@ -43,6 +58,7 @@
 
 typedef struct {
     void *(*alloc)(size_t);
+
     void (*free)(void *);
 } GeneralAllocator;
 

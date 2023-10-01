@@ -1423,7 +1423,7 @@ static inline char rot_nan(Rot a) {
     return (char) (!isFinite(a.pitch) || !isFinite(a.yaw) || !isFinite(a.roll));
 }
 
-static inline Rot rot_norm(Rot a) {
+    static inline Rot rot_norm(Rot a) {
     a.pitch = normAxis(a.pitch);
     a.yaw = normAxis(a.yaw);
     a.roll = normAxis(a.roll);

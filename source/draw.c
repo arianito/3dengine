@@ -476,28 +476,28 @@ void draw_frustum(Vec3 pos, Rot rt, float fov, float ratio, float nr, float fr, 
     }
 
     Vertex va;
-    va.color = color_alpha(c, 0.15f);
+    va.color = color_alpha(c, 0.4f);
     fill_face(&va, &points[0], &points[1], &points[2], &points[3]);
 
 
-    draw_line(pos, points[0], color_white);
-    draw_line(pos, points[1], color_white);
-    draw_line(pos, points[2], color_white);
-    draw_line(pos, points[3], color_white);
+    draw_line(pos, points[0], c);
+    draw_line(pos, points[1], c);
+    draw_line(pos, points[2], c);
+    draw_line(pos, points[3], c);
 
-    draw_line(points[0], points[1], color_white);
-    draw_line(points[1], points[2], color_white);
-    draw_line(points[2], points[3], color_white);
-    draw_line(points[3], points[0], color_white);
+    draw_line(points[0], points[1], c);
+    draw_line(points[1], points[2], c);
+    draw_line(points[2], points[3], c);
+    draw_line(points[3], points[0], c);
 
-    draw_line(points[4], points[5], color_white);
-    draw_line(points[5], points[6], color_white);
-    draw_line(points[6], points[7], color_white);
-    draw_line(points[7], points[4], color_white);
+    draw_line(points[4], points[5], c);
+    draw_line(points[5], points[6], c);
+    draw_line(points[6], points[7], c);
+    draw_line(points[7], points[4], c);
 
-    draw_line(points[0], points[4], color_white);
-    draw_line(points[1], points[5], color_white);
-    draw_line(points[2], points[6], color_white);
-    draw_line(points[3], points[7], color_white);
+    draw_line(points[0], points[4], c);
+    draw_line(points[1], points[5], c);
+    draw_line(points[2], points[6], c);
+    draw_line(points[3], points[7], c);
 
 }

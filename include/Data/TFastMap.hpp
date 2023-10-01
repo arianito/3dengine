@@ -5,39 +5,22 @@
 #include <cstdint>
 #include "data/hash.hpp"
 
-#define print_bits(x)                                             \
-  do {                                                            \
-    typeof(x) a__ = (x);                                          \
-    char *p__ = (char *)&a__ + sizeof(x) - 1;                     \
-    size_t bytes__ = sizeof(x);                                   \
-    printf(#x ": ");                                              \
-    while (bytes__--) {                                           \
-      char bits__ = 8;                                            \
-      while (bits__--) putchar(*p__ & (1 << bits__) ? '1' : '0'); \
-      putchar('|');                                               \
-      p__--;                                                      \
-    }                                                             \
-    putchar('\n');                                                \
-  } while (0)
-
 #define H1(hash) (hash >> 7)
 #define H2(hash) (hash & 0x7F)
-
-enum Ctrl : int8_t {
-    kEmpty = -128, // 0b10000000
-    kDeleted = -2, // 0b11111110
-    kSentinel = -1,// 0b11111111
-};
 
 #define IS_EMPTY (c) (c == kEmpty)
 #define IS_FULL (c) ((int8_t)c >= 0)
 #define IS_DELETED (c) (c == kDeleted)
 #define IS_EMPTY_OR_DELETED (c) ((int8_t)c < kSentinel)
 
-
 template<typename TKey, typename TValue, typename TAlloc = FreeListMemory>
 class TFastMap {
 private:
+    enum Ctrl : int8_t {
+        kEmpty = -128, // 0b10000000
+        kDeleted = -2, // 0b11111110
+        kSentinel = -1,// 0b11111111
+    };
     static constexpr unsigned int primes[90] = {
             2ul, 3ul, 5ul, 7ul, 11ul, 13ul, 17ul, 23ul, 29ul, 37ul, 47ul,
             59ul, 73ul, 97ul, 127ul, 151ul, 197ul, 251ul, 313ul, 397ul,
@@ -69,7 +52,7 @@ private:
         Group *mBegin{};
         Group *mEnd{};
         Node *mCurrent{};
-        int mIndex = 0;
+        uint32_t mIndex = 0;
     public:
         explicit inline iterator() = default;
 
@@ -135,7 +118,6 @@ public:
         Free<TAlloc>(&mGroups);
     }
 
-
     inline void Set(const TKey &key, const TValue &value) {
         Node *node = set(key);
         if (!node) return;
@@ -161,8 +143,8 @@ public:
     }
 
     inline void Fit() {
-        for(int i = 0; i < 90; i++) {
-            if(primes[i] > mLength) {
+        for (int i = 0; i < 90; i++) {
+            if (primes[i] > mLength) {
                 mPrimeIdx = i;
                 rehash();
                 return;
@@ -279,9 +261,9 @@ private:
         Group *oldGroups = mGroups;
         uint32_t nNumOldGroups = mNumGroups;
         Reserve(primes[mPrimeIdx++]);
-        mLength = 0;
         iterator it{oldGroups, oldGroups + nNumOldGroups};
         iterator end{oldGroups + nNumOldGroups, oldGroups + nNumOldGroups};
+        mLength = 0;
         for (; it != end; ++it) {
             const auto &node = (*it);
             Set(node->key, node->value);
@@ -291,10 +273,6 @@ private:
 
     inline static uint16_t matchEmpty(__m128i ctrl) {
         return (uint16_t) _mm_movemask_epi8(_mm_cmpeq_epi8(_mm_set1_epi8(kEmpty), ctrl));
-    }
-
-    inline static uint16_t matchEmptyOrDeleted(__m128i ctrl) {
-        return (uint16_t) _mm_movemask_epi8(_mm_cmpeq_epi8(_mm_set1_epi8(kSentinel), ctrl));
     }
 
     inline static uint16_t match(__m128i ctrl, int8_t hash) {
