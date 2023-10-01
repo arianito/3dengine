@@ -18,7 +18,7 @@
   } while (0)
 
 #define MODULO(address, alignment) (address & (alignment - 1UL))
-#define NEXTPOW2(num) ((num < 8) ? 8 : ((num | (num >> 1) | (num >> 2) | (num >> 4) | (num >> 8) | (num >> 16)) + 1))
+#define NEXTPOW2(num) ((num < 2) ? 2 : ((num | (num >> 1) | (num >> 2) | (num >> 4) | (num >> 8) | (num >> 16)) + 1))
 #define PREVPOW2(num) ((num <= 2) ? 2 : (((num | (num >> 1) | (num >> 2) | (num >> 4) | (num >> 8) | (num >> 16)) >> 1) + 1))
 #define ISPOW2(alignment) (!(alignment & (alignment - 1UL)))
 #define MEMORY_PADDING(address, alignment) ((alignment - (address & (alignment - 1UL))) & (alignment - 1UL))

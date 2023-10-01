@@ -8,13 +8,16 @@
 #define XXH_INLINE_ALL
 
 #include "xxhash.h"
+#define big_prime_int32 (4247846927ul)
+
+#define general_hash_function(input, len, seed) (XXH32(input, len, seed) % big_prime_int32)
 
 template<typename T>
 inline static uint32_t hash_type(const T &key, uint32_t seed);
 
 template<>
 inline uint32_t hash_type<TStringView>(const TStringView &key, uint32_t seed) {
-    return XXH32(key.begin(), key.length(), seed);
+    return general_hash_function(key.begin(), key.length(), seed);
 }
 
 template<>
@@ -23,7 +26,7 @@ inline uint32_t hash_type<char>(const char &key, uint32_t seed) {
         short value;
         char bytes[1];
     } converter{key};
-    return XXH32(converter.bytes, 1, seed);
+    return general_hash_function(converter.bytes, 1, seed);
 }
 
 template<>
@@ -32,7 +35,7 @@ inline uint32_t hash_type<short>(const short &key, uint32_t seed) {
         short value;
         char bytes[2];
     } converter{key};
-    return XXH32(converter.bytes, 2, seed);
+    return general_hash_function(converter.bytes, 2, seed);
 }
 
 template<>
@@ -41,7 +44,7 @@ inline uint32_t hash_type<int>(const int &key, uint32_t seed) {
         int value;
         char bytes[4];
     } converter{key};
-    return XXH32(converter.bytes, 4, seed);
+    return general_hash_function(converter.bytes, 4, seed);
 }
 
 template<>
@@ -50,7 +53,7 @@ inline uint32_t hash_type<unsigned int>(const unsigned int &key, uint32_t seed) 
         unsigned int value;
         char bytes[4];
     } converter{key};
-    return XXH32(converter.bytes, 4, seed);
+    return general_hash_function(converter.bytes, 4, seed);
 }
 
 template<>
@@ -59,7 +62,7 @@ inline uint32_t hash_type<unsigned long long>(const unsigned long long &key, uin
         unsigned long long value;
         char bytes[8];
     } converter{key};
-    return XXH32(converter.bytes, 8, seed);
+    return general_hash_function(converter.bytes, 8, seed);
 }
 
 template<>
@@ -68,7 +71,7 @@ inline uint32_t hash_type<float>(const float &key, uint32_t seed) {
         float value;
         char bytes[4];
     } converter{key};
-    return XXH32(converter.bytes, 4, seed);
+    return general_hash_function(converter.bytes, 4, seed);
 }
 
 
@@ -78,7 +81,7 @@ inline uint32_t hash_type<Vec2>(const Vec2 &key, uint32_t seed) {
         Vec2 value;
         char bytes[8];
     } converter{key};
-    return XXH32(converter.bytes, 8, seed);
+    return general_hash_function(converter.bytes, 8, seed);
 }
 
 template<>
@@ -87,7 +90,7 @@ inline uint32_t hash_type<Vec3>(const Vec3 &key, uint32_t seed) {
         Vec3 value;
         char bytes[12];
     } converter{key};
-    return XXH32(converter.bytes, 12, seed);
+    return general_hash_function(converter.bytes, 12, seed);
 }
 
 template<>
@@ -120,5 +123,5 @@ inline uint32_t hash_type<BBox>(const BBox &key, uint32_t seed) {
     } converter{key};
     converter.items[3] = 0;
     converter.items[7] = 0;
-    return XXH32(converter.bytes, 32, seed);
+    return general_hash_function(converter.bytes, 32, seed);
 }

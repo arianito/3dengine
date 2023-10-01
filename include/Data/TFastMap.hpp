@@ -97,22 +97,15 @@ private:
     Group *mGroups{};
     uint32_t mLength{};
     uint32_t mNumGroups{};
-    uint32_t mPrimeIdx{};
+    uint32_t mPrimeIdx{0};
     double mLoadFactor{0};
 
 public:
     explicit inline TFastMap() {
-        Reserve(primes[mPrimeIdx++]);
+        reserve(2);
     }
 
     explicit inline TFastMap(const TFastMap &) = delete;
-
-
-    inline void Reserve(const uint32_t &numGroups) {
-        mGroups = Alloc<TAlloc, Group, true>(numGroups);
-        for (int i = 0; i < numGroups; i++) mGroups[i].control = _mm_set1_epi8(kEmpty);
-        mNumGroups = numGroups;
-    }
 
     inline ~TFastMap() {
         Free<TAlloc>(&mGroups);
@@ -146,7 +139,7 @@ public:
         for (int i = 0; i < 90; i++) {
             if (primes[i] > mLength) {
                 mPrimeIdx = i;
-                rehash();
+                rehash(primes[mPrimeIdx++]);
                 return;
             }
         }
@@ -170,30 +163,29 @@ public:
 
 private:
     inline Node *set(const TKey &key) {
-        if (mLoadFactor >= 0.5) {
-            rehash();
-        }
-        const uint32_t hash = hash_type<TKey>(key, 0);
+        if (mLoadFactor >= 0.5)
+            rehash(primes[mPrimeIdx++]);
+        const uint32_t hash = hash_type<TKey>(key, 232);
         uint32_t groupIndex{H1(hash) % mNumGroups};
         uint8_t h2 = H2(hash);
-        Group *g;
-        while (true) {
-            g = &mGroups[groupIndex];
-            uint16_t matches = match(g->control, h2);
-            int8_t i = 0;
-            while (matches) {
-                if ((matches & 1) && g->nodes[i].key == key)
-                    return &g->nodes[i];
-                matches >>= 1;
-                i++;
-            }
-            if (matchEmpty(g->control)) break;
-            groupIndex = (groupIndex + 1) % mNumGroups;
+        Group *g = &mGroups[groupIndex];
+        uint16_t matches = match(g->control, h2);
+        int8_t i = 0;
+        while (matches) {
+            if ((matches & 1) && g->nodes[i].key == key)
+                return &g->nodes[i];
+            matches >>= 1;
+            i++;
+        }
+        if (!matchEmpty(g->control)) {
+            rehash(primes[mPrimeIdx++]);
+            printf("rehash\n");
+            return set(key);
         }
 
-        int8_t i = 0;
         int8_t freeIndex = 0;
-        uint16_t matches = _mm_movemask_epi8(g->control);
+        matches = _mm_movemask_epi8(g->control);
+        i = 0;
         while (matches) {
             if (matches & 1) {
                 freeIndex = i;
@@ -212,7 +204,7 @@ private:
     }
 
     inline Node *get(const TKey &key) {
-        const uint32_t hash = hash_type<TKey>(key, 0);
+        const uint32_t hash = hash_type<TKey>(key, 232);
         uint32_t groupIndex{H1(hash) % mNumGroups};
         uint8_t h2 = H2(hash);
         Group *g;
@@ -233,7 +225,7 @@ private:
     }
 
     inline bool remove(const TKey &key) {
-        const uint32_t hash = hash_type<TKey>(key, 0);
+        const uint32_t hash = hash_type<TKey>(key, 232);
         uint32_t groupIndex{H1(hash) % mNumGroups};
         uint8_t h2 = H2(hash);
         Group *g;
@@ -257,10 +249,16 @@ private:
         return false;
     }
 
-    inline void rehash() {
+    inline void reserve(const uint32_t &numGroups) {
+        mGroups = Alloc<TAlloc, Group, true>(numGroups);
+        for (int i = 0; i < numGroups; i++) mGroups[i].control = _mm_set1_epi8(kEmpty);
+        mNumGroups = numGroups;
+    }
+
+    inline void rehash(uint32_t newSize) {
         Group *oldGroups = mGroups;
         uint32_t nNumOldGroups = mNumGroups;
-        Reserve(primes[mPrimeIdx++]);
+        reserve(newSize);
         iterator it{oldGroups, oldGroups + nNumOldGroups};
         iterator end{oldGroups + nNumOldGroups, oldGroups + nNumOldGroups};
         mLength = 0;
@@ -272,7 +270,8 @@ private:
     }
 
     inline static uint16_t matchEmpty(__m128i ctrl) {
-        return (uint16_t) _mm_movemask_epi8(_mm_cmpeq_epi8(_mm_set1_epi8(kEmpty), ctrl));
+        return (uint16_t) _mm_movemask_epi8(ctrl);
+//        return (uint16_t) _mm_movemask_epi8(_mm_cmpeq_epi8(_mm_set1_epi8(kEmpty), ctrl));
     }
 
     inline static uint16_t match(__m128i ctrl, int8_t hash) {

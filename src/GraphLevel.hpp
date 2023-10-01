@@ -41,20 +41,35 @@ class GraphLevel : public CLevel {
         debug_color(color_white);
 
         Ray ray = camera_screenToWorld(input->position);
-        Vec3 world = ray.origin + ray.direction * 0.1f;
-        world = vec3_intersectPlane(ray.origin, ray.origin + ray.direction, vec3_zero, vec3_up);
+        Vec3 world = ray.origin + ray.direction * (camera->zoom / 5000.0f);
+//        world = vec3_intersectPlane(ray.origin, ray.origin + ray.direction, vec3_zero, vec3_up);
+
+        if (input_keydown(KEY_SPACE)) {
+            map->Fit();
+        }
 
         if (input_keydown(KEY_Z)) {
             deleteMode ^= 1;
         }
 
         if (input_mousepress(MOUSE_LEFT)) {
-//            world += vec3_rand(100, 100, 100);
-            world = vec3_snap(world, 10);
             if (deleteMode) {
-                map->Remove(world);
+                int n = 10;
+                world = vec3_snap(world, 10);
+                for (int i = -n; i <= n; i++) {
+                    for (int j = -n; j <= n; j++) {
+                        for (int k = -n; k <= n; k++) {
+                            map->Remove(world + Vec3{(float) i * 10, (float) j * 10, (float) k * 10});
+                        }
+                    }
+                }
             } else {
-                map->Set(world, color_alpha(color_red, randf() + 0.2f));
+                int n = 5;
+                for (int i = -n; i <= n; i++) {
+                    world += vec3_rand(100, 100, 100);
+                    world = vec3_snap(world, 10);
+                    map->Set(world, color_alpha(color_red, randf() + 0.2f));
+                }
             }
 
         }
@@ -81,7 +96,7 @@ class GraphLevel : public CLevel {
         }
 
         for (const auto &node: *map) {
-            draw_point(node->key, 5, node->value);
+            draw_point(node->key, 8, node->value);
         }
 
         debug_stringf(Vec2{10, 20}, "map: %s -> %d / %d", deleteMode ? "delete" : "insert", map->Length(), map->Capacity());
@@ -92,7 +107,6 @@ class GraphLevel : public CLevel {
         debug_color(color_yellow);
         Vec2 pos = vec2(game->width - 10, game->height - 10);
         debug_stringf(pos, "temp %d / %d", freelist_usage(CustomStartLevelAllocator::memory), CustomStartLevelAllocator::memory->total);
-
 
 
     }

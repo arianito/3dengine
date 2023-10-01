@@ -30,7 +30,7 @@ class CBaseSystem;
 template<class TAlloc>
 class CDirector;
 
-typedef size_t CECSIdType;
+typedef uint64_t CECSIdType;
 
 typedef CECSIdType CComponentId;
 typedef CECSIdType CSystemId;
@@ -182,34 +182,19 @@ public:
 
 protected:
     friend class CDirector<TAlloc>;
-
-    using EntityIdStack = TArrayStack<CEntityId, TAlloc>;
-    using EntityPtrStack = TArrayStack<CEntity<TAlloc> *, TAlloc>;
     using EntityIndexMap = TFastMap<CEntityId, int, TAlloc>;
-
     CDirector<TAlloc> *mDirector{nullptr};
-    EntityIdStack mDestroyStack;
-    EntityPtrStack mCreateStack;
     EntityIndexMap mEntityIndex;
     bool mShouldUpdate = false;
     bool mLocked = false;
 
-    virtual void Process() = 0;
-
     virtual void Fit() {
-        mDestroyStack.Fit();
-        mCreateStack.Fit();
         mEntityIndex.Fit();
     }
 
-    inline void OnEntityCreated(CEntity<TAlloc> *entity) {
-        mCreateStack.Push(entity);
-    }
+    virtual void OnEntityCreated(CEntity<TAlloc> *entity) = 0;
 
-    inline void OnEntityDestroyed(CEntityId entityId) {
-        if (!mEntityIndex.Contains(entityId)) return;
-        mDestroyStack.Push(entityId);
-    }
+    virtual void OnEntityDestroyed(CEntityId entityId) = 0;
 };
 
 template<class TAlloc, class ...Types>
@@ -232,8 +217,6 @@ protected:
         return false;
     }
 
-    inline void Process() override;
-
     inline void Fit() override {
         CBaseSystem<TAlloc>::Fit();
         mComponents.Fit();
@@ -242,6 +225,43 @@ protected:
     inline void SetTick(bool shouldUpdate) {
         this->mShouldUpdate = shouldUpdate;
         this->mLocked = !shouldUpdate;
+    }
+
+    inline void OnEntityCreated(CEntity<TAlloc> *entity) override {
+        CTuple tuple;
+        int matches = 0;
+        for (const auto &component: *(entity->Components())) {
+            if (hasComponent<0, Types...>(component->key, component->value, tuple)) {
+                ++matches;
+                if (matches == sizeof...(Types)) {
+                    mComponents.Add(std::move(tuple));
+                    this->mEntityIndex.Set(entity->Id(), mComponents.Length() - 1);
+                    this->mShouldUpdate = mComponents.Length() > 0 && !this->mLocked;
+                    break;
+                }
+            }
+        }
+    }
+
+    inline void OnEntityDestroyed(CEntityId entityId) override {
+        const auto &index = this->mEntityIndex.Get(entityId);
+        if (index != nullptr) {
+            const auto entityToMoveIndex = mComponents.Length() - 1;
+            const auto movedEntity = std::get<0>(mComponents[entityToMoveIndex]);
+
+            if (*index < mComponents.Length()) {
+                mComponents[*index] = std::move(mComponents[entityToMoveIndex]);
+                mComponents.Pop();
+
+                const auto &movedEntityId = movedEntity->EntityId();
+                const auto &movedEntityIndex = this->mEntityIndex.Get(movedEntityId);
+                if (movedEntityIndex != nullptr) {
+                    *movedEntityIndex = *index;
+                    this->mShouldUpdate = mComponents.Length() > 0 && !this->mLocked;
+                }
+            }
+            this->mEntityIndex.Remove(entityId);
+        }
     }
 
 public:
@@ -264,7 +284,6 @@ private:
     using SystemMap = TFastMap<CSystemId, CBaseSystem<TAlloc> *, TAlloc>;
     using EntityComponentMap = TFastMap<CEntityId, CComponent<TAlloc> *, TAlloc>;
     using ComponentEntityComponentMap = TFastMap<CComponentId, EntityComponentMap *, TAlloc>;
-    using EntityIdStack = TArrayStack<CEntityId, TAlloc>;
     using PartialSlabMemory = TFastMap<CECSIdType, SlabMemory *, TAlloc>;
 
 
@@ -276,7 +295,6 @@ private:
     SlabMemory *mEntitySlab{nullptr};
     PartialSlabMemory mComponentsSlab;
     PartialSlabMemory mSystemsSlab;
-    EntityIdStack mDestroyStack;
     unsigned int mSlabCount = 16;
 
 
@@ -375,7 +393,7 @@ public:
         for (auto system: mSystems)
             system->value->OnEntityDestroyed(entityId);
 
-        mDestroyStack.Push(entityId);
+        performDelete(entityId);
     }
 
     template<class T>
@@ -448,63 +466,12 @@ public:
     }
 
     inline void Update() {
-
         debug_origin(vec2_zero);
         debug_stringf(Vec2{10, 100}, "entities: %d / %d", mEntities.Length(), mEntities.Capacity());
 
         for (auto sys: mSystems) {
             if (sys->value->mShouldUpdate)
                 sys->value->Update();
-
-            sys->value->Process();
-        }
-
-        while (!mDestroyStack.Empty()) {
-            auto entityId = mDestroyStack.Pop();
-            performDelete(entityId);
         }
     }
 };
-
-
-template<class TAlloc, class... Types>
-inline void CSystem<TAlloc, Types...>::Process() {
-    while (!this->mDestroyStack.Empty()) {
-        auto entityId = this->mDestroyStack.Pop();
-        const auto &index = this->mEntityIndex.Get(entityId);
-        if (index != nullptr) {
-            const auto entityToMoveIndex = mComponents.Length() - 1;
-            const auto movedEntity = std::get<0>(mComponents[entityToMoveIndex]);
-
-            if (*index < mComponents.Length()) {
-                mComponents[*index] = std::move(mComponents[entityToMoveIndex]);
-                mComponents.Pop();
-
-                const auto &movedEntityId = movedEntity->EntityId();
-                const auto &movedEntityIndex = this->mEntityIndex.Get(movedEntityId);
-                if (movedEntityIndex != nullptr) {
-                    *movedEntityIndex = *index;
-                    this->mShouldUpdate = mComponents.Length() > 0 && !this->mLocked;
-                }
-            }
-            this->mEntityIndex.Remove(entityId);
-        }
-    }
-
-    while (!this->mCreateStack.Empty()) {
-        auto entity = this->mCreateStack.Pop();
-        CTuple tuple;
-        int matches = 0;
-        for (const auto &component: *(entity->Components())) {
-            if (hasComponent<0, Types...>(component->key, component->value, tuple)) {
-                ++matches;
-                if (matches == sizeof...(Types)) {
-                    mComponents.Add(std::move(tuple));
-                    this->mEntityIndex.Set(entity->Id(), mComponents.Length() - 1);
-                    this->mShouldUpdate = mComponents.Length() > 0 && !this->mLocked;
-                    break;
-                }
-            }
-        }
-    }
-}

@@ -8,25 +8,11 @@ extern "C" {
 #include "engine/CLevelManager.hpp"
 #include "engine/ECS.hpp"
 #include "engine/Memory.hpp"
-
-
-class CustomStartLevelAllocator {
-public:
-    static FreeListMemory *memory;
-
-    inline static void *Alloc(size_t size, unsigned int alignment) {
-        return freelist_alloc(memory, size, alignment);
-    }
-
-    inline static void Free(void **ptr) {
-        freelist_free(memory, ptr);
-    }
-};
-
-FreeListMemory *CustomStartLevelAllocator::memory = nullptr;
+#include "data/hash.hpp"
+#include "engine/mathf.hpp"
 
 class StartLevel : public CLevel {
-    using TAlloc = CustomStartLevelAllocator;
+    using TAlloc = BuddyMemory;
 
     struct TransformComponent : public CComponent<TAlloc> {
         Vec3 position;
@@ -101,10 +87,8 @@ class StartLevel : public CLevel {
             float xAxis = input_axis(AXIS_VERTICAL);
 
             for (const auto &bucket: Components()) {
-
                 auto playerTransform = std::get<TransformComponent *>(bucket);
                 auto movement = std::get<MovementComponent *>(bucket);
-
                 Vec3 move{xAxis, yAxis, 0};
                 Rot direction{0, camera->rotation.yaw, 0};
                 playerTransform->position += rot_rotate(direction, move) * gameTime->deltaTime * movement->speed;
@@ -201,10 +185,6 @@ class StartLevel : public CLevel {
 
     struct CollisionSystem : public CSystem<TAlloc, ColliderComponent, TransformComponent> {
         inline void Update() override {
-            for(const auto& bucket: Components()) {
-
-            }
-
         }
     };
 
@@ -212,7 +192,6 @@ class StartLevel : public CLevel {
 
     inline void Create() override {
 
-        CustomStartLevelAllocator::memory = make_freelist(16 * MEGABYTES);
         mDirector = AllocNew<TAlloc, CDirector<TAlloc>>();
         mDirector->AddSystem<MovementSystem>();
         mDirector->AddSystem<ShooterSystem>();
@@ -220,14 +199,13 @@ class StartLevel : public CLevel {
         mDirector->AddSystem<RenderSystem>();
         mDirector->AddSystem<CanonSystem>();
 
-
         auto player = mDirector->CreateEntity();
         mDirector->AddComponent<TransformComponent>(player, vec3_zero, rot_zero);
         mDirector->AddComponent<ShapeComponent>(player, 0);
         mDirector->AddComponent<MovementComponent>(player, 250.0f);
         mDirector->AddComponent<PlayerComponent>(player, 0.1f, 1000.0f);
         mDirector->Commit(player);
-        int n = 5;
+        int n = 10;
         for (int i = -n; i <= n; i++) {
             auto canon = mDirector->CreateEntity();
             mDirector->AddComponent<TransformComponent>(canon, Vec3{(float) i * 20.0f, 100, 0}, rot_zero);
@@ -241,10 +219,6 @@ class StartLevel : public CLevel {
 
     inline void Update() override {
         mDirector->Update();
-        debug_origin(vec2(1, 1));
-        debug_color(color_yellow);
-        Vec2 pos = vec2(game->width - 10, game->height - 10);
-        debug_stringf(pos, "temp %d / %d", freelist_usage(CustomStartLevelAllocator::memory), CustomStartLevelAllocator::memory->total);
 
         if (input_keydown(KEY_SPACE)) {
             mDirector->Fit();
@@ -253,6 +227,5 @@ class StartLevel : public CLevel {
 
     inline void Destroy() override {
         Free<TAlloc>(&mDirector);
-        freelist_destroy(&CustomStartLevelAllocator::memory);
     }
 };
