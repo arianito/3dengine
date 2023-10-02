@@ -99,10 +99,12 @@ private:
     uint32_t mNumGroups{};
     uint32_t mPrimeIdx{0};
     double mLoadFactor{0};
+    uint32_t mSeed{0};
 
 public:
     explicit inline TFastMap() {
-        reserve(2);
+        reserve(1);
+//        mSeed = (uint32_t)(randf() * primes[5]);
     }
 
     explicit inline TFastMap(const TFastMap &) = delete;
@@ -136,17 +138,11 @@ public:
     }
 
     inline void Fit() {
-        for (int i = 0; i < 90; i++) {
-            if (primes[i] > mLength) {
-                mPrimeIdx = i;
-                rehash(primes[mPrimeIdx++]);
-                return;
-            }
-        }
+        rehashFit();
     }
 
     inline uint32_t Capacity() {
-        return mNumGroups * 16;
+        return mNumGroups << 4;
     }
 
     inline uint32_t Length() {
@@ -163,9 +159,8 @@ public:
 
 private:
     inline Node *set(const TKey &key) {
-        if (mLoadFactor >= 0.5)
-            rehash(primes[mPrimeIdx++]);
-        const uint32_t hash = hash_type<TKey>(key, 232);
+        rehashGrow();
+        const uint32_t hash = hash_type<TKey>(key, mSeed);
         uint32_t groupIndex{H1(hash) % mNumGroups};
         uint8_t h2 = H2(hash);
         Group *g = &mGroups[groupIndex];
@@ -178,8 +173,7 @@ private:
             i++;
         }
         if (!matchEmpty(g->control)) {
-            rehash(primes[mPrimeIdx++]);
-            printf("rehash\n");
+            rehashInPlace();
             return set(key);
         }
 
@@ -199,52 +193,41 @@ private:
         simdArray[freeIndex] = h2;
         g->nodes[freeIndex].key = key;
         mLength++;
-        mLoadFactor = ((double) mLength / (mNumGroups << 4));
         return &g->nodes[freeIndex];
     }
 
     inline Node *get(const TKey &key) {
-        const uint32_t hash = hash_type<TKey>(key, 232);
+        const uint32_t hash = hash_type<TKey>(key, mSeed);
         uint32_t groupIndex{H1(hash) % mNumGroups};
         uint8_t h2 = H2(hash);
-        Group *g;
-        while (true) {
-            g = &mGroups[groupIndex];
-            uint16_t matches = match(g->control, h2);
-            int i = 0;
-            while (matches) {
-                if ((matches & 1) && g->nodes[i].key == key)
-                    return &g->nodes[i];
-                matches >>= 1;
-                i++;
-            }
-            if (matchEmpty(g->control)) break;
-            groupIndex = (groupIndex + 1) % mNumGroups;
+        Group *g = &mGroups[groupIndex];
+        uint16_t matches = match(g->control, h2);
+        int i = 0;
+        while (matches) {
+            if ((matches & 1) && g->nodes[i].key == key)
+                return &g->nodes[i];
+            matches >>= 1;
+            i++;
         }
         return nullptr;
     }
 
     inline bool remove(const TKey &key) {
-        const uint32_t hash = hash_type<TKey>(key, 232);
+        const uint32_t hash = hash_type<TKey>(key, mSeed);
         uint32_t groupIndex{H1(hash) % mNumGroups};
         uint8_t h2 = H2(hash);
-        Group *g;
-        while (true) {
-            g = &mGroups[groupIndex];
-            uint16_t matches = match(g->control, h2);
-            int i = 0;
-            while (matches) {
-                if ((matches & 1) && g->nodes[i].key == key) {
-                    auto simdArray = reinterpret_cast<uint8_t *>(&g->control);
-                    simdArray[i] = kDeleted;
-                    mLength--;
-                    return true;
-                }
-                matches >>= 1;
-                i++;
+        Group *g = &mGroups[groupIndex];
+        uint16_t matches = match(g->control, h2);
+        int i = 0;
+        while (matches) {
+            if ((matches & 1) && g->nodes[i].key == key) {
+                auto simdArray = reinterpret_cast<uint8_t *>(&g->control);
+                simdArray[i] = kDeleted;
+                mLength--;
+                return true;
             }
-            if (matchEmpty(g->control)) break;
-            groupIndex = (groupIndex + 1) % mNumGroups;
+            matches >>= 1;
+            i++;
         }
         return false;
     }
@@ -267,6 +250,28 @@ private:
             Set(node->key, node->value);
         }
         Free<TAlloc>(&oldGroups);
+    }
+
+    inline void rehashGrow() {
+        mLoadFactor = ((double) mLength / (mNumGroups << 4));
+        if (mLoadFactor >= 0.4)
+            rehash(primes[mPrimeIdx++]);
+    }
+
+    inline void rehashFit() {
+        for (int i = 0; i < 90; i++) {
+            if (primes[i] > (mLength >> 4)) {
+                mPrimeIdx = i;
+                rehash(primes[mPrimeIdx]);
+                return;
+            }
+        }
+    }
+
+    inline void rehashInPlace() {
+        mSeed = (uint32_t)(randf() * primes[30] + primes[10]);
+        rehash(primes[mPrimeIdx++]);
+        printf("ren\n");
     }
 
     inline static uint16_t matchEmpty(__m128i ctrl) {

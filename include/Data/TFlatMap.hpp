@@ -43,6 +43,7 @@ public:
     uint32_t mLength{0};
     uint32_t mNextPrime{0};
     uint32_t mPeak{0};
+    uint32_t mSeed{0};
     static constexpr double mMaxLoadFactor{0.5f};
 
 public:

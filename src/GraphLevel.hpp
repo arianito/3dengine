@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ctime"
 #include <unordered_map>
 #include "engine/CLevelManager.hpp"
 #include "data/hash.hpp"
@@ -36,6 +37,7 @@ class GraphLevel : public CLevel {
         map = AllocNew<FreeListMemory, Map>();
     }
 
+    double benchmark = 0;
     void Update() override {
         debug_origin(Vec2{0, 0});
         debug_color(color_white);
@@ -96,7 +98,7 @@ class GraphLevel : public CLevel {
         }
 
         for (const auto &node: *map) {
-            draw_point(node->key, 8, node->value);
+            draw_point(node->key, (1.22f - node->value.a) * 10.0f, node->value);
         }
 
         debug_stringf(Vec2{10, 20}, "map: %s -> %d / %d", deleteMode ? "delete" : "insert", map->Length(), map->Capacity());
