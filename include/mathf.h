@@ -1423,7 +1423,7 @@ static inline char rot_nan(Rot a) {
     return (char) (!isFinite(a.pitch) || !isFinite(a.yaw) || !isFinite(a.roll));
 }
 
-    static inline Rot rot_norm(Rot a) {
+static inline Rot rot_norm(Rot a) {
     a.pitch = normAxis(a.pitch);
     a.yaw = normAxis(a.yaw);
     a.roll = normAxis(a.roll);
@@ -1475,29 +1475,12 @@ static inline Mat4 rot_matrix(Rot a, Vec3 origin) {
     float sy = sind(a.yaw);
     float cr = cosd(a.roll);
     float sr = sind(a.roll);
-    Mat4 m;
-
-    m.m[0][0] = cp * cy;
-    m.m[0][1] = cp * sy;
-    m.m[0][2] = sp;
-    m.m[0][3] = 0.0f;
-
-    m.m[1][0] = sr * sp * cy - cr * sy;
-    m.m[1][1] = sr * sp * sy + cr * cy;
-    m.m[1][2] = -sr * cp;
-    m.m[1][3] = 0.0f;
-
-    m.m[2][0] = -(cr * sp * cy + sr * sy);
-    m.m[2][1] = cy * sr - cr * sp * sy;
-    m.m[2][2] = cr * cp;
-    m.m[2][3] = 0.0f;
-
-    m.m[3][0] = origin.x;
-    m.m[3][1] = origin.y;
-    m.m[3][2] = origin.z;
-    m.m[3][3] = 1.0f;
-
-    return m;
+    return (Mat4) {
+            cp * cy, cp * sy, sp, 0.0f,
+            sr * sp * cy - cr * sy, sr * sp * sy + cr * cy, -sr * cp, 0.0f,
+            -(cr * sp * cy + sr * sy), cy * sr - cr * sp * sy, cr * cp, 0.0f,
+            origin.x, origin.y, origin.z, 1.0f
+    };
 }
 
 static inline Vec3 rot_forward(Rot a) {
@@ -2560,4 +2543,3 @@ static inline Sphere sphere(Vec3 position, float radius) {
     s.radius = radius;
     return s;
 }
-

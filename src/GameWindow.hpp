@@ -7,6 +7,7 @@
 
 #include "./GraphLevel.hpp"
 #include "./StartLevel.hpp"
+#include "./BuddyLevel.hpp"
 
 enum {
     nSamples = 200
@@ -19,6 +20,7 @@ struct GameWindow {
     inline void Create() {
         manager.Add<GraphLevel>();
         manager.Add<StartLevel>();
+        manager.Add<BuddyLevel>();
 
         manager.Load<GraphLevel>();
     }
@@ -30,12 +32,13 @@ struct GameWindow {
             manager.Load<GraphLevel>();
         }
         if (input_keydown(KEY_9)) {
-            manager.Load<StartLevel>();
+            manager.Load<BuddyLevel>();
         }
 
         if (input_keydown(KEY_TAB)) {
             debug ^= 1;
         }
+
         if (debug) {
             debug_origin(vec2(0, 1));
             debug_color(color_yellow);

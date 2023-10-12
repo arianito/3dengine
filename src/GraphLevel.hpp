@@ -1,5 +1,9 @@
 #pragma once
 
+extern "C" {
+#include "shader.h"
+}
+
 #include "ctime"
 #include <unordered_map>
 #include "engine/CLevelManager.hpp"
@@ -10,10 +14,11 @@
 #include "engine/Trace.hpp"
 
 #include <immintrin.h>
+#include "engine/CMesh.hpp"
 
 
 class GraphLevel : public CLevel {
-
+private:
     class CustomStartLevelAllocator {
     public:
         static FreeListMemory *memory;
@@ -27,94 +32,108 @@ class GraphLevel : public CLevel {
         }
     };
 
+private:
+    struct Data {
+        Color color;
+        float size;
+        float index;
+    };
+    using Map = TFastMap<Vec3, Data, CustomStartLevelAllocator>;
+    Map *map{};
+    CMeshGroup<CustomStartLevelAllocator> *group;
+    bool camMode = false;
+    float lastImpact = -100;
 
-    using Map = TFastMap<Vec3, Color, CustomStartLevelAllocator>;
-    Map *map;
-    bool deleteMode = false;
-
+public:
     void Create() override {
-        CustomStartLevelAllocator::memory = make_freelist(32 * MEGABYTES);
-        map = AllocNew<FreeListMemory, Map>();
+        CustomStartLevelAllocator::memory = make_freelist(128 * MEGABYTES);
+        map = AllocNew<CustomStartLevelAllocator, Map>();
+        group = CWavefrontOBJ<CustomStartLevelAllocator>::Load("models/monkey.obj");
     }
 
-    double benchmark = 0;
     void Update() override {
         debug_origin(Vec2{0, 0});
         debug_color(color_white);
 
         Ray ray = camera_screenToWorld(input->position);
-        Vec3 world = ray.origin + ray.direction * (camera->zoom / 5000.0f);
-//        world = vec3_intersectPlane(ray.origin, ray.origin + ray.direction, vec3_zero, vec3_up);
-
-        if (input_keydown(KEY_SPACE)) {
-            map->Fit();
-        }
+        Vec3 world = ray.origin + ray.direction * (camera->zoom / 10000.0f);
 
         if (input_keydown(KEY_Z)) {
-            deleteMode ^= 1;
+            camMode ^= 1;
         }
 
         if (input_mousepress(MOUSE_LEFT)) {
-            if (deleteMode) {
-                int n = 10;
-                world = vec3_snap(world, 10);
-                for (int i = -n; i <= n; i++) {
-                    for (int j = -n; j <= n; j++) {
-                        for (int k = -n; k <= n; k++) {
-                            map->Remove(world + Vec3{(float) i * 10, (float) j * 10, (float) k * 10});
-                        }
-                    }
-                }
-            } else {
-                int n = 5;
-                for (int i = -n; i <= n; i++) {
-                    world += vec3_rand(100, 100, 100);
-                    world = vec3_snap(world, 10);
-                    map->Set(world, color_alpha(color_red, randf() + 0.2f));
-                }
-            }
-
-        }
-
-        if (input_keydown(KEY_M)) {
             int n = 5;
-            if (deleteMode) {
-                for (int i = -n; i <= n; i++) {
-                    for (int j = -n; j <= n; j++) {
-                        for (int k = -n; k <= n; k++) {
-                            map->Remove(Vec3{(float) i * 10, (float) j * 10, (float) k * 10});
-                        }
-                    }
-                }
-            } else {
-                for (int i = -n; i <= n; i++) {
-                    for (int j = -n; j <= n; j++) {
-                        for (int k = -n; k <= n; k++) {
-                            map->Set(Vec3{(float) i * 10, (float) j * 10, (float) k * 10}, color_alpha(color_red, randf() + 0.1f));
-                        }
-                    }
-                }
+            float f = gameTime->time;
+            float r = 0.1f;
+            for (int i = -n; i <= n; i++) {
+                Vec3 p = world + vec3_rand(300, 300, 300);// + Vec3{0, 0, 1000.0f};
+                p = vec3_snapCube(p, 20);
+                Data d{};
+                d.color = color_alpha(color_lerp(color_green, color_yellow, randf()), randf());
+                d.size = randf() * 6.0f + 0.2f;
+                d.index = f;
+                map->Set(p, d);
+                f += r;
             }
         }
 
-        for (const auto &node: *map) {
-            draw_point(node->key, (1.22f - node->value.a) * 10.0f, node->value);
+        if (input_keydown(KEY_L)) {
+            float f = gameTime->time;
+            float r = 0.1f;
+            for (const auto &v: group->Meshes[0]->Vertices) {
+                Vec3 p = v.Position * 500;// + Vec3{0, 0, 1000.0f};
+                p = vec3_snapCube(p, 10);
+                Data d{};
+                d.color = color_alpha(color_lerp(color_green, color_yellow, randf()), randf());
+                d.size = randf() * 6.0f + 0.2f;
+                d.index = f;
+                map->Set(p, d);
+                f += r;
+            }
         }
 
-        debug_stringf(Vec2{10, 20}, "map: %s -> %d / %d", deleteMode ? "delete" : "insert", map->Length(), map->Capacity());
-        fill_cubef(world, 10, color_alpha(color_yellow, 0.2f));
+        if (input_keydown(KEY_SPACE)) {
+            lastImpact = gameTime->time;
+        }
+        if (input_keydown(KEY_M)) {
+            map->Clear();
+        }
 
+        if (camMode) {
+            camera->rotation = rot(-30, gameTime->time * 30.0f, 0);
+            camera->position = rot_forward(camera->rotation) * -camera->zoom;
+            camera_update();
+        }
 
+        float t = gameTime->time;//fminf(gameTime->time - lastImpact, 2) + 1.0f;
+
+        int i = 0;
+        for (const auto &node: *map) {
+            const Vec3 &pos = node->key;
+            const Data &data = node->value;
+            Vec3 p = pos;
+            float mg = vec3_mag2d(pos);
+
+            p *= (1 / sind(mg * 0.5f + t));
+
+            float sz = data.size + clamp(10000 / mg, 0, 10.0f);
+            p.z += tand(t * i * 0.03f);
+
+            draw_point(p, sz, data.color);
+            i++;
+        }
+
+        debug_stringf(Vec2{10, 20}, "map: %d / %d", map->Length(), map->Capacity());
         debug_origin(vec2(1, 1));
         debug_color(color_yellow);
         Vec2 pos = vec2(game->width - 10, game->height - 10);
-        debug_stringf(pos, "temp %d / %d", freelist_usage(CustomStartLevelAllocator::memory), CustomStartLevelAllocator::memory->total);
-
+        debug_stringf(pos, "temp %d / %d\ntime: %.2f", freelist_usage(CustomStartLevelAllocator::memory), CustomStartLevelAllocator::memory->total, t);
 
     }
 
     void Destroy() override {
-        Free<FreeListMemory>(&map);
+        freelist_destroy(&CustomStartLevelAllocator::memory);
     }
 };
 

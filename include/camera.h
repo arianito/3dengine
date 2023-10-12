@@ -34,13 +34,12 @@ typedef struct {
 extern Camera *camera;
 
 static inline void camera_update() {
-    float farPlane = 5000.0f;
+    float farPlane = 10000.0f;
     if (!(camera->ortho & VIEW_ORTHOGRAPHIC)) {
         camera->view = mat4_view(camera->position, camera->rotation);
         camera->projection = mat4_perspective(camera->fov, game->ratio, 1.0f, farPlane);
     } else {
         Rot r = camera->rotation;
-//        r.pitch += 180;
         float height = camera->zoom * (camera->fov * 0.005556f);
         float width = height * game->ratio;
         camera->projection = mat4_orthographic(-width, width, -height, height, -farPlane, farPlane);
@@ -51,11 +50,11 @@ static inline void camera_update() {
 
 static inline void camera_init() {
     camera = alloc_global(Camera, sizeof(Camera));
-    camera->rotation = rot(-15, 180, 0);
-    Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -300);
+    camera->rotation = rot(-35, 180, 0);
+    camera->zoom = 1000.0f;
+    Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -camera->zoom);
     camera->position = vec3_add(backward, vec3_zero);
     camera->fov = 80.0f;
-    camera->zoom = 300.0f;
     camera->ortho = VIEW_INITIAL;
     camera_update();
 }

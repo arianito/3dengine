@@ -18,8 +18,8 @@
 #define BUFFER_OFFSET(x) ((const void *)(x))
 
 enum {
-    max_space = 100 * KILOBYTES,
-    max_elements = 2000,
+    max_space = 1 * MEGABYTES,
+    max_elements = 4096,
 };
 
 typedef struct {
@@ -208,9 +208,7 @@ void debug_render() {
     glBindTexture(GL_TEXTURE_2D, debugData->fontTexture[0]);
 
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glFrontFace(GL_CW);
+    glDisable(GL_CULL_FACE);
 
     if (debugData->count2d > 0) {
         Mat4 ortho = mat4_orthographic(0, game->width, game->height, 0, -1.0f,

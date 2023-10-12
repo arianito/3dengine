@@ -2,25 +2,25 @@
 
 #include "engine/CLevelManager.hpp"
 #include "data/TAVLTree.hpp"
+#include "data/TBinaryTree.hpp"
 
 class BuddyLevel : public CLevel {
 
-    TAVLTree<int, SlabMemory> *tree;
+    using Tree = TBinaryTree<int, SlabMemory>;
+//    TAVLTree<int, SlabMemory> *tree;
+    Tree *tree;
 
     inline void Create() override {
-        tree = AllocNew<SlabMemory, TAVLTree<int, SlabMemory>>();
+        tree = AllocNew<SlabMemory, TBinaryTree<int, SlabMemory>>();
     }
 
     inline void Update() override {
-        drawTree(vec3(0, 0, 100), tree->mHead);
-        if (input_keypress(KEY_SPACE)) {
-            tree->Add(tree->Length());
+        drawTree(vec3(0, 0, 100), tree->mRoot);
+        if (input_keydown(KEY_SPACE)) {
+            tree->Add((int)(randf() * 1000));
         }
-        if (input_keypress(KEY_M)) {
-            if (!tree->Empty())                tree->Remove(tree->Front());
-        }
-        if (input_keydown(KEY_ENTER)) {
-            tree->inorder(tree->mHead);
+        if (input_keydown(KEY_M)) {
+            if (!tree->Empty()) tree->Remove(tree->Front());
         }
     }
 
@@ -29,7 +29,7 @@ class BuddyLevel : public CLevel {
     }
 
 
-    inline void drawTree(Vec3 pos, TAVLTree<int, SlabMemory>::Node *node) {
+    inline void drawTree(Vec3 pos, Tree::Node *node) {
         if (node == nullptr)
             return;
 

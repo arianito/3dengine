@@ -6,7 +6,7 @@
 
 template<typename T, class TAlloc>
 class TBinaryTree {
-private:
+public:
     struct Node {
         T value;
         Node *left;
@@ -46,11 +46,22 @@ public:
         return mLength;
     }
 
-    inline void Remove(T value) {
+    inline void Remove(const T& value) {
         mRoot = remove(mRoot, value);
     }
+    inline void Add(const T& value) {
+        mRoot = insert(mRoot, value);
+    }
 
-private:
+    inline const T &Front() {
+        assert(mRoot != nullptr && "BST: is empty");
+        return mRoot->value;
+    }
+    inline bool Empty() {
+        return mRoot == nullptr;
+    }
+
+public:
 
     inline int height(Node *node) {
         if (node == nullptr)
@@ -69,7 +80,7 @@ private:
         return fmaxf(1, width(root->left) + width(root->right));
     }
 
-    inline Node *insert(Node *node, T value) {
+    inline Node *insert(Node *node, const T& value) {
         if (node == nullptr) {
             Node *newNode = Alloc<TAlloc, Node>();
             newNode->left = nullptr;
@@ -106,7 +117,7 @@ private:
         return root->value;
     }
 
-    inline bool isLesser(Node *root, T value) {
+    inline bool isLesser(Node *root, const T& value) {
         if (root == nullptr)
             return true;
         if (root->value > value)
@@ -114,7 +125,7 @@ private:
         return isLesser(root->left, value) && isLesser(root->right, value);
     }
 
-    inline bool isGreater(Node *root, T value) {
+    inline bool isGreater(Node *root, const T& value) {
         if (root == nullptr)
             return true;
         if (root->value < value)
@@ -133,7 +144,7 @@ private:
 
     }
 
-    inline bool search(Node *node, T value) {
+    inline bool search(Node *node, const T& value) {
         if (node == nullptr)
             return false;
         if (value > node->value)
@@ -145,7 +156,7 @@ private:
         return true;
     }
 
-    inline Node *remove(Node *node, T value) {
+    inline Node *remove(Node *node, const T& value) {
         if (node == nullptr)
             return node;
 

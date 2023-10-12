@@ -97,8 +97,8 @@ void input_infinite() {
     }
     if (input->delta.y < 0 && input->position.y < pad) {
         input->position.y = height;
-        if (input->delta.x < -(height - pad))
-            input->delta.x += height - pad;
+        if (input->delta.y < -(height - pad))
+            input->delta.y += height - pad;
         changed = 1;
     }
     if (input->delta.y > 0 && input->position.y > height - pad) {
