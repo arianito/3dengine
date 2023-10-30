@@ -5,7 +5,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
 void *arena_alloc(ArenaMemory *self, unsigned int size, unsigned int alignment) {
+#if MEM_DEBUG_MODE
     if (!ISPOW2(alignment)) {
         printf("arena: alloc failed, invalid alignment\n");
         return NULL;
@@ -14,6 +16,7 @@ void *arena_alloc(ArenaMemory *self, unsigned int size, unsigned int alignment) 
         printf("arena: alloc failed, invalid instance\n");
         return NULL;
     }
+#endif
     size_t address = ((size_t) self - self->_padding) + self->usage;
     int padding = MEMORY_PADDING(address, alignment);
     if (self->usage + size + padding > self->total) {
@@ -26,10 +29,12 @@ void *arena_alloc(ArenaMemory *self, unsigned int size, unsigned int alignment) 
 }
 
 void arena_reset(ArenaMemory *self) {
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("arena: reset failed, invalid instance\n");
         return;
     }
+#endif
     const unsigned int space = MEMORY_SPACE_STD(ArenaMemory);
     self->usage = self->_padding + space;
 }

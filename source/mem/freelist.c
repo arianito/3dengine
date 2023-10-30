@@ -89,6 +89,7 @@ void freelist_joinnext(FreeListMemory *self, FreeListMemory *previousNode, FreeL
 }
 
 void *freelist_alloc(FreeListMemory *self, unsigned int size, unsigned int alignment) {
+#if MEM_DEBUG_MODE
     if (!ISPOW2(alignment)) {
         printf("freelist: alloc failed, invalid alignment\n");
         return NULL;
@@ -97,6 +98,7 @@ void *freelist_alloc(FreeListMemory *self, unsigned int size, unsigned int align
         printf("freelist: alloc failed, invalid instance\n");
         return NULL;
     }
+#endif
     unsigned int padding;
     FreeListMemory *prevNode;
     FreeListMemory *node;
@@ -132,7 +134,7 @@ void *freelist_alloc(FreeListMemory *self, unsigned int size, unsigned int align
 }
 
 char freelist_free(FreeListMemory *self, void **ptr) {
-
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("freelist: free failed, invalid instance\n");
         return 0;
@@ -141,7 +143,7 @@ char freelist_free(FreeListMemory *self, void **ptr) {
         printf("freelist: free failed, invalid pointer\n");
         return 0;
     }
-
+#endif
     unsigned int space = MEMORY_SPACE_STD(FreeListMemory);
 
     FreeListMemory *freeedNode = (FreeListMemory *) ((size_t) (*ptr) - space);

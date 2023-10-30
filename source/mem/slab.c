@@ -146,10 +146,12 @@ void slab_destroy(SlabMemory **self) {
 }
 
 void *slab_alloc(SlabMemory *self) {
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("slab: alloc failed, invalid instance\n");
         return NULL;
     }
+#endif
     if (self->_objects == NULL) {
         SlabPage *slab = create_slab(self);
         if (slab == NULL) {
@@ -167,7 +169,7 @@ void *slab_alloc(SlabMemory *self) {
 }
 
 char slab_free(SlabMemory *self, void **ptr) {
-
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("slab: free failed, invalid instance\n");
         return 0;
@@ -176,6 +178,7 @@ char slab_free(SlabMemory *self, void **ptr) {
         printf("slab: free failed, invalid pointer\n");
         return 0;
     }
+#endif
     const unsigned int space = MEMORY_SPACE_STD(SlabObject);
     SlabObject *node = (SlabObject *) ((size_t) (*ptr) - space);
 

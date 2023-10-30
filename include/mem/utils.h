@@ -2,6 +2,8 @@
 
 #include <stddef.h>
 
+#define MEM_DEBUG_MODE 0
+
 #define PRINT_BITS(x)                                             \
   do {                                                            \
     typeof(x) a__ = (x);                                          \

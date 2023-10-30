@@ -5,35 +5,43 @@
 
 #include "engine/CLevelManager.hpp"
 
-#include "./GraphLevel.hpp"
-#include "./StartLevel.hpp"
-#include "./BuddyLevel.hpp"
+#include "Fluid/FluidSim.hpp"
 
-enum {
-    nSamples = 200
-};
+
+int reverseExists(const std::vector<std::string>& arr) {
+    int ans = 0;
+    std::unordered_map<std::string, int> map;
+    int n = arr.size();
+    for(int i = 0; i < n; i++) {
+        std::string tmp{arr[i]};
+        std::reverse(tmp.begin(), tmp.end());
+        map[tmp] = i;
+    }
+    for (int i = 0; i < n; i++) {
+        const auto& found = map.find(arr[i]);
+        if(found != map.end() && found->second != i) {
+            ans ++;
+        }
+    }
+    return ans / 2;
+}
 
 struct GameWindow {
     CLevelManager<> manager;
     bool debug = true;
 
     inline void Create() {
-        manager.Add<GraphLevel>();
-        manager.Add<StartLevel>();
-        manager.Add<BuddyLevel>();
+        manager.Add<FluidSim>();
+        manager.Load<FluidSim>();
 
-        manager.Load<GraphLevel>();
+//        printf("%d\n", reverseExists({"cd","ac","dc","ca","zz"}));
+//        printf("%d\n", reverseExists({"ac", "dc","bc"}));
+//        printf("%d\n", reverseExists({"ac", "ca"}));
+//        printf("%d\n", reverseExists({"cd", "cd", "dc", "dc"}));
     }
 
     inline void Update() {
         manager.Update();
-
-        if (input_keydown(KEY_0)) {
-            manager.Load<GraphLevel>();
-        }
-        if (input_keydown(KEY_9)) {
-            manager.Load<BuddyLevel>();
-        }
 
         if (input_keydown(KEY_TAB)) {
             debug ^= 1;

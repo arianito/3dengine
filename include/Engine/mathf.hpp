@@ -15,10 +15,6 @@ inline static bool operator==(const Triangle &lhs, const Triangle &rhs) {
 // vec3
 // operator (+)
 
-inline static Vec3 operator+(const Vec3 &a) {
-    return Vec3{fabs(a.x), fabs(a.y), fabs(a.z)};
-}
-
 inline static Vec3 operator+(const Vec3 &a, const Vec3 &b) {
     return Vec3{a.x + b.x, a.y + b.y, a.z + b.z};
 }
@@ -191,10 +187,142 @@ inline static bool operator!(const Vec3 &a) {
 inline static Vec3 operator~(const Vec3 &a) {
     return vec3_norm(a);
 }
-
 // -------------------------------------------------------
 
 
+// vec3
+// operator (+)
+
+
+inline static Vec3i operator+(const Vec3i &a, const Vec3i &b) {
+    return Vec3i{a.x + b.x, a.y + b.y, a.z + b.z};
+}
+
+inline static Vec3i operator+(const Vec3i &a, const int &b) {
+    return Vec3i{a.x + b, a.y + b, a.z + b};
+}
+
+inline static Vec3i operator+(const int &a, const Vec3i &b) {
+    return Vec3i{a + b.x, a + b.y, a + b.z};
+}
+
+inline static Vec3i &operator+=(Vec3i &current, const Vec3i &other) {
+    current.x += other.x;
+    current.y += other.y;
+    current.z += other.z;
+    return current;
+}
+
+inline static Vec3i &operator+=(Vec3i &current, const int &other) {
+    current.x += other;
+    current.y += other;
+    current.z += other;
+    return current;
+}
+
+// operator (-)
+inline static Vec3i operator-(const Vec3i &a) {
+    return Vec3i{-a.x, -a.y, -a.z};
+}
+
+inline static Vec3i operator-(const Vec3i &a, const Vec3i &b) {
+    return Vec3i{a.x - b.x, a.y - b.y, a.z - b.z};
+}
+
+inline static Vec3i operator-(const Vec3i &a, const int &b) {
+    return Vec3i{a.x - b, a.y - b, a.z - b};
+}
+
+inline static Vec3i operator-(const int &a, const Vec3i &b) {
+    return Vec3i{a - b.x, a - b.y, a - b.z};
+}
+
+inline static Vec3i &operator-=(Vec3i &current, const Vec3i &other) {
+    current.x -= other.x;
+    current.y -= other.y;
+    current.z -= other.z;
+    return current;
+}
+
+inline static Vec3i &operator-=(Vec3i &current, const int &other) {
+    current.x -= other;
+    current.y -= other;
+    current.z -= other;
+    return current;
+}
+
+// operator (*)
+
+inline static Vec3i operator*(const Vec3i &a, const Vec3i &b) {
+    return Vec3i{a.x * b.x, a.y * b.y, a.z * b.z};
+}
+
+inline static Vec3i operator*(const Vec3i &a, const int &b) {
+    return Vec3i{a.x * b, a.y * b, a.z * b};
+}
+
+inline static Vec3i operator*(const int &a, const Vec3i &b) {
+    return Vec3i{a * b.x, a * b.y, a * b.z};
+}
+
+inline static Vec3i &operator*=(Vec3i &current, const Vec3i &other) {
+    current.x *= other.x;
+    current.y *= other.y;
+    current.z *= other.z;
+    return current;
+}
+
+inline static Vec3i &operator*=(Vec3i &current, const int &other) {
+    current.x *= other;
+    current.y *= other;
+    current.z *= other;
+    return current;
+}
+
+// operator (/)
+
+inline static Vec3i operator/(const Vec3i &a, const Vec3i &b) {
+    return Vec3i{
+            b.x == 0 ? INT_MAX : a.x / b.x,
+            b.y == 0 ? INT_MAX : a.y / b.y,
+            b.z == 0 ? INT_MAX : a.z / b.z
+    };
+}
+
+inline static Vec3i operator/(const Vec3i &a, const int &b) {
+    if (b == 0) return Vec3i{INT_MAX, INT_MAX, INT_MAX};
+    return Vec3i{a.x / b, a.y / b, a.z / b};
+}
+
+inline static Vec3i operator/(const int &a, const Vec3i &b) {
+    return Vec3i{
+            b.x == 0 ? INT_MAX : a / b.x,
+            b.y == 0 ? INT_MAX : a / b.y,
+            b.z == 0 ? INT_MAX : a / b.z
+    };
+}
+
+inline static Vec3i &operator/=(Vec3i &current, const Vec3i &other) {
+    current.x = other.x == 0 ? INT_MAX : current.x / other.x;
+    current.y = other.y == 0 ? INT_MAX : current.y / other.y;
+    current.z = other.z == 0 ? INT_MAX : current.z / other.z;
+    return current;
+}
+
+inline static Vec3i &operator/=(Vec3i &current, const int &other) {
+    if (other == 0) {
+        current.x = INT_MAX;
+        current.y = INT_MAX;
+        current.z = INT_MAX;
+        return current;
+    }
+    current.x /= other;
+    current.y /= other;
+    current.z /= other;
+    return current;
+}
+
+// -------------------------------------------------------
 
 
 // vec3
@@ -232,7 +360,7 @@ inline static Rot &operator+=(Rot &current, const float &other) {
 
 // operator (-)
 inline static Rot operator-(const Rot &a) {
-    return Rot{-a.pitch, -a.yaw, -a.roll};
+    return rot_inv(a);
 }
 
 inline static Rot operator-(const Rot &a, const Rot &b) {

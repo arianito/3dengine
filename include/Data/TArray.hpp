@@ -13,7 +13,7 @@ template<typename T, class TAlloc = FreeListMemory>
 class TArray {
 private:
     T *mList;
-    int mCapacity{8};
+    unsigned int mCapacity{8};
     int mLength{0};
 public:
 
@@ -33,7 +33,7 @@ public:
             return ptr != other.ptr;
         }
 
-        inline const T &operator*() const {
+        inline T &operator*() {
             return *ptr;
         }
     };
@@ -58,7 +58,7 @@ private:
 public:
     explicit inline TArray() : TArray(8) {}
 
-    inline TArray(int capacity) : mCapacity(capacity), mLength(0) {
+    inline TArray(unsigned int capacity) : mCapacity(capacity), mLength(0) {
         mList = Alloc<TAlloc, T>(mCapacity);
     }
 
@@ -94,9 +94,9 @@ public:
         mCapacity = newCapacity;
     }
 
-    inline void Remove(int index) {
+    inline void Remove(unsigned int index) {
         assert(index >= 0 && index < mLength && "Array: Index out of range.\n");
-        for (int i = index; i < mLength - 1; i++)
+        for (unsigned int i = index; i < mLength - 1; i++)
             mList[i] = mList[i + 1];
         mLength--;
     }
@@ -110,18 +110,18 @@ public:
         Insert(element, mLength);
     }
 
-    inline void Insert(const T &element, int index) {
+    inline void Insert(const T &element, unsigned int index) {
         assert(index >= 0 && index <= mLength && "Array: Index out of range.\n");
         expand();
 
-        for (int i = mLength; i > index; i--)
+        for (unsigned int i = mLength; i > index; i--)
             mList[i] = mList[i - 1];
 
         mList[index] = element;
         mLength++;
     }
 
-    inline T &operator[](int index) {
+    inline T &operator[](unsigned int index) {
         assert(index >= 0 && index < mLength && "Array: Index out of range.\n");
         return mList[index];
     }
@@ -146,7 +146,7 @@ public:
         return mLength;
     }
 
-    inline const int &Capacity() {
+    inline const unsigned int &Capacity() {
         return mCapacity;
     }
 };

@@ -15,11 +15,22 @@ typedef struct __attribute__((aligned(8), packed)) {
     float y;
 } Vec2;
 
+typedef struct __attribute__((aligned(8), packed)) {
+    int x;
+    int y;
+} Vec2i;
+
 typedef struct __attribute__((aligned(16), packed)) {
     float x;
     float y;
     float z;
 } Vec3;
+
+typedef struct __attribute__((aligned(16), packed)) {
+    int x;
+    int y;
+    int z;
+} Vec3i;
 
 typedef struct __attribute__((aligned(16), packed)) {
     float x;
@@ -769,11 +780,19 @@ static inline Vec3 vec3(float x, float y, float z) {
     return a;
 }
 
+static inline Vec3 vec3_randv(Vec3 halfBound) {
+    Vec3 a;
+    a.x = randf() * halfBound.x * 2.0f - halfBound.x;
+    a.y = randf() * halfBound.y * 2.0f - halfBound.y;
+    a.z = randf() * halfBound.z * 2.0f - halfBound.z;
+    return a;
+}
+
 static inline Vec3 vec3_rand(float x, float y, float z) {
     Vec3 a;
-    a.x = randf() * x - x * 0.5f;
-    a.y = randf() * y - y * 0.5f;
-    a.z = randf() * z - z * 0.5f;
+    a.x = randf() * x * 2.0f - x;
+    a.y = randf() * y * 2.0f - y;
+    a.z = randf() * z * 2.0f - z;
     return a;
 }
 

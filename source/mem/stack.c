@@ -12,6 +12,7 @@ typedef struct {
 } StackMemoryNode;
 
 void *stack_alloc(StackMemory *self, unsigned int size, unsigned int alignment) {
+#if MEM_DEBUG_MODE
     if (!ISPOW2(alignment)) {
         printf("stack: alloc failed, invalid alignment\n");
         return NULL;
@@ -20,6 +21,7 @@ void *stack_alloc(StackMemory *self, unsigned int size, unsigned int alignment) 
         printf("stack: alloc failed, invalid instance\n");
         return NULL;
     }
+#endif
     size_t start = (size_t) self - self->_padding;
     size_t address = start + self->usage;
     const unsigned int padding = MEMORY_ALIGNMENT(address, sizeof(StackMemoryNode), alignment);
@@ -38,6 +40,7 @@ void *stack_alloc(StackMemory *self, unsigned int size, unsigned int alignment) 
 }
 
 char stack_free(StackMemory *self, void **p) {
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("stack: free failed, invalid instance\n");
         return 0;
@@ -46,6 +49,7 @@ char stack_free(StackMemory *self, void **p) {
         printf("stack: free failed, invalid pointer\n");
         return 0;
     }
+#endif
     size_t start = (size_t) self - self->_padding;
     size_t address = (size_t) (*p);
 
@@ -66,7 +70,7 @@ char stack_free(StackMemory *self, void **p) {
 }
 
 char stack_pop(StackMemory *self) {
-
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("stack: free failed, invalid instance\n");
         return 0;
@@ -75,7 +79,7 @@ char stack_pop(StackMemory *self) {
         printf("stack: free failed, invalid pointer\n");
         return 0;
     }
-
+#endif
     const unsigned int space = MEMORY_SPACE_STD(StackMemoryNode);
     StackMemoryNode *node = (StackMemoryNode *) self->_head;
 
@@ -92,10 +96,12 @@ char stack_pop(StackMemory *self) {
 }
 
 void stack_reset(StackMemory *self) {
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("stack: reset failed, invalid instance\n");
         return;
     }
+#endif
     const unsigned int space = MEMORY_SPACE_STD(StackMemory);
     self->usage = self->_padding + space;
     self->_head = NULL;

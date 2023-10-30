@@ -171,10 +171,12 @@ int p2slab_next(int num) {
 }
 
 void *p2slab_alloc(P2SlabMemory *self, unsigned int size) {
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("p2slab alloc failed, invalid instance\n");
         return NULL;
     }
+#endif
     unsigned int order = 0;
     size = p2slab_next((int) size);
     while (size > 1) {
@@ -202,7 +204,7 @@ void *p2slab_alloc(P2SlabMemory *self, unsigned int size) {
 }
 
 char p2slab_free(P2SlabMemory *self, void **ptr) {
-
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("p2slab free failed, invalid instance\n");
         return 0;
@@ -211,6 +213,7 @@ char p2slab_free(P2SlabMemory *self, void **ptr) {
         printf("p2slab free failed, invalid pointer\n");
         return 0;
     }
+#endif
     const unsigned int space = MEMORY_SPACE_STD(P2SlabObject);
     P2SlabObject *node = (P2SlabObject *) ((size_t) (*ptr) - space);
 

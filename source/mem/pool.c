@@ -23,6 +23,7 @@ PoolMemoryNode *pool_dequeue(PoolMemory *self) {
 }
 
 void *pool_alloc(PoolMemory *self) {
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("pool: alloc failed, invalid instance\n");
         return NULL;
@@ -31,6 +32,7 @@ void *pool_alloc(PoolMemory *self) {
         printf("pool: alloc failed, insufficient memory\n");
         return NULL;
     }
+#endif
     PoolMemoryNode *node = pool_dequeue(self);
     self->usage -= self->_objectSize;
     const unsigned int space = MEMORY_SPACE_STD(PoolMemoryNode);
@@ -38,6 +40,7 @@ void *pool_alloc(PoolMemory *self) {
 }
 
 unsigned char pool_free(PoolMemory *self, void **p) {
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("pool: free failed, invalid instance\n");
         return 0;
@@ -46,6 +49,7 @@ unsigned char pool_free(PoolMemory *self, void **p) {
         printf("pool: free failed, invalid pointer\n");
         return 0;
     }
+#endif
     size_t address = (size_t) (*p);
 
     const unsigned int space = MEMORY_SPACE_STD(PoolMemoryNode);

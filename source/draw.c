@@ -372,6 +372,34 @@ void draw_circleYZ(Vec3 a, float r, Color c, int s) {
     }
 }
 
+
+void fill_circleYZ(Vec3 a, float r, Color c, int s) {
+    float p = 360.0f / (float) s;
+    float sp = sind(p);
+    float cp = cosd(p);
+    Vec3 r1 = {0.0f, 1.0f, 0.0f};
+    Vec3 v1 = vec3_mulf(r1, r);
+    v1 = vec3_add(v1, a);
+    for (int i = 0; i < s; i++) {
+        Vec3 r2;
+        r2.y = cp * r1.y - sp * r1.z;
+        r2.z = sp * r1.y + cp * r1.z;
+        r2.x = 0;
+        Vec3 v2 = vec3_add(vec3_mulf(r2, r), a);
+
+        Vertex va;
+        va.color = c;
+        va.position = v1;
+        add_vertex(2, va);
+        va.position = v2;
+        add_vertex(2, va);
+        va.position = a;
+        add_vertex(2, va);
+
+        r1 = r2;
+        v1 = v2;
+    }
+}
 void draw_sphere(Vec3 a, float r, Color c, int s) {
     draw_circleXZ(a, r, c, s);
     draw_circleXY(a, r, c, s);

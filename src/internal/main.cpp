@@ -40,7 +40,7 @@ int main(int argc, const char *argv[]) {
     {
         GameWindow window;
         window.Create();
-        bool displayGrid = true;
+        bool displayGrid = false;
         while (game_loop()) {
             input_update();
             editor_update();

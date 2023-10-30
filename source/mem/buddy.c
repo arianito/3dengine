@@ -134,6 +134,7 @@ void buddy_merge(BuddyBlock *head, BuddyBlock *tail) {
 }
 
 void *buddy_alloc(BuddyMemory *self, unsigned int size) {
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("buddy: alloc failed, invalid instance\n");
         return NULL;
@@ -142,6 +143,7 @@ void *buddy_alloc(BuddyMemory *self, unsigned int size) {
         printf("buddy: invalid size\n");
         return NULL;
     }
+#endif
     const unsigned int space = MEMORY_SPACE_STD(BuddyBlock);
     size += space;
 
@@ -163,6 +165,7 @@ void *buddy_alloc(BuddyMemory *self, unsigned int size) {
 }
 
 char buddy_free(BuddyMemory *self, void **ptr) {
+#if MEM_DEBUG_MODE
     if (self == NULL) {
         printf("buddy: free failed, invalid instance\n");
         return 0;
@@ -171,16 +174,16 @@ char buddy_free(BuddyMemory *self, void **ptr) {
         printf("buddy: free failed, invalid pointer\n");
         return 0;
     }
-
     size_t head_address = (size_t) (self->_head);
     size_t tail_address = (size_t) (self->_tail);
+#endif
     size_t ptr_address = (size_t) (*ptr);
-
+#if MEM_DEBUG_MODE
     if (ptr_address < head_address || ptr_address >= tail_address) {
         printf("buddy: free failed, out of boundary\n");
         return 0;
     }
-
+#endif
     unsigned int space = MEMORY_SPACE_STD(BuddyBlock);
     BuddyBlock *block = (BuddyBlock *) (ptr_address - space);
     block->free = 1;

@@ -34,7 +34,6 @@ void draw_triangle(Triangle t, Color c);
 
 void draw_tetrahedron(Tetrahedron t, Color c);
 
-
 void fill_tetrahedron(Tetrahedron t, Color c);
 
 void draw_circleXY(Vec3 a, float r, Color c, int s);
@@ -42,6 +41,7 @@ void draw_circleXY(Vec3 a, float r, Color c, int s);
 void draw_circleXZ(Vec3 a, float r, Color c, int s);
 
 void draw_circleYZ(Vec3 a, float r, Color c, int s);
+void fill_circleYZ(Vec3 a, float r, Color c, int s);
 
 void draw_sphere(Vec3 a, float r, Color c, int s);
 

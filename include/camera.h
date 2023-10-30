@@ -50,8 +50,8 @@ static inline void camera_update() {
 
 static inline void camera_init() {
     camera = alloc_global(Camera, sizeof(Camera));
-    camera->rotation = rot(-35, 180, 0);
-    camera->zoom = 1000.0f;
+    camera->rotation = rot(0, 180, 0);
+    camera->zoom = 1600.0f;
     Vec3 backward = vec3_mulf(rot_forward(camera->rotation), -camera->zoom);
     camera->position = vec3_add(backward, vec3_zero);
     camera->fov = 80.0f;
