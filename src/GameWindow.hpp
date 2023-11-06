@@ -1,43 +1,101 @@
 #pragma once
 
 #include <memory>
-
-
+#include "engine/CMesh.hpp"
 #include "engine/CLevelManager.hpp"
+#include "engine/mathf.hpp"
 
-#include "Fluid/FluidSim.hpp"
+extern "C" {
+#include "noise.h"
+#include "shader.h"
+}
 
+class MeshAlloc {
 
-int reverseExists(const std::vector<std::string>& arr) {
-    int ans = 0;
-    std::unordered_map<std::string, int> map;
-    int n = arr.size();
-    for(int i = 0; i < n; i++) {
-        std::string tmp{arr[i]};
-        std::reverse(tmp.begin(), tmp.end());
-        map[tmp] = i;
+public:
+    static P2SlabMemory *memory;
+
+    static inline void create() {
+        memory = make_p2slab(10);
     }
-    for (int i = 0; i < n; i++) {
-        const auto& found = map.find(arr[i]);
-        if(found != map.end() && found->second != i) {
-            ans ++;
+
+    static inline void destroy() {
+        p2slab_destroy(&memory);
+    }
+
+    inline static void *Alloc(size_t size, unsigned int alignment) {
+        return p2slab_alloc(memory, size);
+    }
+
+    inline static void Free(void **ptr) {
+        p2slab_free(memory, ptr);
+    }
+
+    inline static size_t usage() {
+        return memory->usage;
+    }
+
+    inline static size_t size() {
+        return memory->total;
+    }
+
+    inline static void fit() {
+        p2slab_fit(memory);
+    }
+
+};
+
+P2SlabMemory *MeshAlloc::memory = nullptr;
+
+struct Temp : public CLevel {
+    using TAlloc = MeshAlloc;
+    CMeshGroup<TAlloc> *mesh;
+    Shader frac_shader;
+
+    void Create() override {
+        TAlloc::create();
+
+        frac_shader = shader_load("shaders/frac.vs", "shaders/frac.fs");
+        mesh = CWavefrontOBJ<TAlloc>::Load("models/plane2.obj");
+
+        for (const auto &item: mesh->Meshes) {
+            item->Prepare();
         }
     }
-    return ans / 2;
-}
+
+    void Update() override {
+        shader_begin(frac_shader);
+        shader_mat4(frac_shader, "viewProjection", &camera->viewProjection);
+        shader_mat4(frac_shader, "model", &mat4_identity);
+        shader_float(frac_shader, "time", gameTime->time * 0.5f);
+
+        Ray r = camera_screenToWorld(input->position);
+        Vec3 pos = vec3_intersectPlane(r.origin, r.origin + r.direction * 100.0f, vec3_zero, vec3_up);
+        pos /= 200.0f;
+
+        Vec2 mousePos{pos.x, pos.y};
+        shader_vec2(frac_shader, "mouse", &mousePos);
+
+        for (const auto &item: mesh->Meshes)
+            item->Render();
+
+        shader_end();
+    }
+
+    void Destroy() override {
+        shader_destroy(frac_shader);
+        Free<TAlloc>(&mesh);
+        TAlloc::destroy();
+    }
+};
 
 struct GameWindow {
     CLevelManager<> manager;
     bool debug = true;
 
     inline void Create() {
-        manager.Add<FluidSim>();
-        manager.Load<FluidSim>();
-
-//        printf("%d\n", reverseExists({"cd","ac","dc","ca","zz"}));
-//        printf("%d\n", reverseExists({"ac", "dc","bc"}));
-//        printf("%d\n", reverseExists({"ac", "ca"}));
-//        printf("%d\n", reverseExists({"cd", "cd", "dc", "dc"}));
+        manager.Add<Temp>();
+        manager.Load<Temp>();
     }
 
     inline void Update() {

@@ -9,7 +9,12 @@ extern "C" {
 #include "engine/Trace.hpp"
 #include "data/TArray.hpp"
 
-struct __attribute__((aligned(64), packed)) TMeshVertex  {
+#define GLFW_INCLUDE_NONE
+
+#include <GLFW/glfw3.h>
+#include <glad/glad.h>
+
+struct __attribute__((aligned(64), packed)) TMeshVertex {
     Vec3 Position{};
     Vec3 Normal{};
     Vec2 TexCoord{};
@@ -26,14 +31,66 @@ struct CMaterial {
 template<class TAlloc>
 struct CMesh {
     TString<TAlloc> Name;
-    CMaterial Material;
     TArray<TMeshVertex, TAlloc> Vertices;
     TArray<int, TAlloc> Indices;
 
     explicit inline CMesh() = default;
 
     explicit inline CMesh(const CMesh &) = delete;
+
+    inline ~CMesh();
+
+    inline void Prepare();
+
+    inline void Render();
+
+private:
+    GLuint modelVAO, modelVBO, modelEBO;
 };
+
+template<class TAlloc>
+void CMesh<TAlloc>::Prepare() {
+
+    glGenVertexArrays(1, &modelVAO);
+    glGenBuffers(1, &modelVBO);
+    glGenBuffers(1, &modelEBO);
+
+    glBindVertexArray(modelVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, modelVBO);
+    glBufferData(GL_ARRAY_BUFFER, Vertices.Length() * sizeof(TMeshVertex), Vertices.Ptr(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, Indices.Length() * sizeof(int), Indices.Ptr(), GL_STATIC_DRAW);
+
+    // vertex positions
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TMeshVertex), (void *) BUFFER_OFFSET(0));
+    // vertex normals
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(TMeshVertex), (void *) BUFFER_OFFSET(16));
+    // vertex normals
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(TMeshVertex), (void *) offsetof(TMeshVertex, TexCoord));
+
+    glBindVertexArray(0);
+    printf(" -- %d \n", modelVAO);
+}
+
+template<class TAlloc>
+void CMesh<TAlloc>::Render() {
+    if (!modelVAO)return;
+    glBindVertexArray(modelVAO);
+    glDrawElements(GL_TRIANGLES, Indices.Length(), GL_UNSIGNED_INT, nullptr);
+}
+
+template<class TAlloc>
+CMesh<TAlloc>::~CMesh() {
+    if (!modelVAO) return;
+    glDeleteVertexArrays(1, &modelVAO);
+    glDeleteBuffers(1, &modelVBO);
+    glDeleteBuffers(1, &modelEBO);
+}
+
 
 template<class TAlloc>
 struct CMeshGroup {
