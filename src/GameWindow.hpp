@@ -10,82 +10,106 @@ extern "C" {
 #include "shader.h"
 }
 
-class MeshAlloc {
-
+template<class TAlloc = FreeListMemory>
+class QuadTree {
+private:
+    BBox boundary;
+    TArray<Vec3, TAlloc> points{4};
+    QuadTree *blocks[8]{nullptr};
 public:
-    static P2SlabMemory *memory;
+    explicit QuadTree(BBox bounds) : boundary{bounds} {}
 
-    static inline void create() {
-        memory = make_p2slab(10);
+    ~QuadTree() {
+        if (blocks[0]) {
+            for (auto &block: blocks) {
+                Free<TAlloc>(&block);
+            }
+        }
     }
 
-    static inline void destroy() {
-        p2slab_destroy(&memory);
+    bool Add(const Vec3 &pos) {
+        if (!bbox_containsPoint(boundary, pos)) return false;
+
+        if (!blocks[0]) {
+            if (points.Length() < 4) {
+                points.Add(pos);
+                return true;
+            }
+            subdivide();
+        }
+
+        for (auto &block: blocks) {
+            if (block->Add(pos)) return true;
+        }
+
+        return false;
     }
 
-    inline static void *Alloc(size_t size, unsigned int alignment) {
-        return p2slab_alloc(memory, size);
+    void draw() {
+        draw_bbox(boundary, color_gray);
+        if (!blocks[0]) return;
+
+        for (auto &block: blocks) {
+            block->draw();
+        }
     }
 
-    inline static void Free(void **ptr) {
-        p2slab_free(memory, ptr);
-    }
+private:
+    void subdivide() {
+        Vec3 halfSize = bbox_size(boundary) * 0.5f;
+        Vec3 start;
 
-    inline static size_t usage() {
-        return memory->usage;
-    }
+        start = boundary.min + Vec3{0, 0, 0};
+        blocks[0] = AllocNew<TAlloc, QuadTree>(BBox{start, start + halfSize});
+        start = boundary.min + Vec3{0, halfSize.y, 0};
+        blocks[1] = AllocNew<TAlloc, QuadTree>(BBox{start, start + halfSize});
+        start = boundary.min + Vec3{0, 0, halfSize.z};
+        blocks[2] = AllocNew<TAlloc, QuadTree>(BBox{start, start + halfSize});
+        start = boundary.min + Vec3{0, halfSize.y, halfSize.z};
+        blocks[3] = AllocNew<TAlloc, QuadTree>(BBox{start, start + halfSize});
 
-    inline static size_t size() {
-        return memory->total;
-    }
-
-    inline static void fit() {
-        p2slab_fit(memory);
+        start = boundary.min + Vec3{halfSize.x, 0, 0};
+        blocks[4] = AllocNew<TAlloc, QuadTree>(BBox{start, start + halfSize});
+        start = boundary.min + Vec3{halfSize.x, halfSize.y, 0};
+        blocks[5] = AllocNew<TAlloc, QuadTree>(BBox{start, start + halfSize});
+        start = boundary.min + Vec3{halfSize.x, 0, halfSize.z};
+        blocks[6] = AllocNew<TAlloc, QuadTree>(BBox{start, start + halfSize});
+        start = boundary.min + Vec3{halfSize.x, halfSize.y, halfSize.z};
+        blocks[7] = AllocNew<TAlloc, QuadTree>(BBox{start, start + halfSize});
     }
 
 };
 
-P2SlabMemory *MeshAlloc::memory = nullptr;
-
 struct Temp : public CLevel {
-    using TAlloc = MeshAlloc;
-    CMeshGroup<TAlloc> *mesh;
-    Shader frac_shader;
+    TArray<Vec3, SlabMemory> arr;
+    QuadTree<SlabMemory> quad{
+            BBox{
+                    Vec3{-100, -100, -100},
+                    Vec3{100, 100, 100}
+            }
+    };
 
     void Create() override {
-        TAlloc::create();
-
-        frac_shader = shader_load("shaders/frac.vs", "shaders/frac.fs");
-        mesh = CWavefrontOBJ<TAlloc>::Load("models/plane2.obj");
-
-        for (const auto &item: mesh->Meshes) {
-            item->Prepare();
-        }
     }
 
     void Update() override {
-        shader_begin(frac_shader);
-        shader_mat4(frac_shader, "viewProjection", &camera->viewProjection);
-        shader_mat4(frac_shader, "model", &mat4_identity);
-        shader_float(frac_shader, "time", gameTime->time * 0.5f);
+        for (const auto &pos: arr) {
+            float r = vec3_mag(pos);
+            draw_point(pos, 0.01f, color_red);
+        }
 
-        Ray r = camera_screenToWorld(input->position);
-        Vec3 pos = vec3_intersectPlane(r.origin, r.origin + r.direction * 100.0f, vec3_zero, vec3_up);
-        pos /= 200.0f;
+        if (input_mousepress(MOUSE_LEFT)) {
+            Ray r = camera_screenToWorld(input->position);
+            Vec3 mouse = vec3_intersectPlane(r.origin, r.origin + r.direction * 10, vec3_zero, vec3_up);
+            Vec3 p = mouse + vec3_rand(5, 5, 5);
 
-        Vec2 mousePos{pos.x, pos.y};
-        shader_vec2(frac_shader, "mouse", &mousePos);
-
-        for (const auto &item: mesh->Meshes)
-            item->Render();
-
-        shader_end();
+            arr.Add(p);
+            quad.Add(p);
+        }
+        quad.draw();
     }
 
     void Destroy() override {
-        shader_destroy(frac_shader);
-        Free<TAlloc>(&mesh);
-        TAlloc::destroy();
     }
 };
 
